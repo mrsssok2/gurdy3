@@ -25,6 +25,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "gurdy_core"))
 from gurdy_core import frontier as fr   # noqa: E402
 
 WORLD = (-2.0, 6.5, -3.0, 3.0)          # flat_lab interior bounds (gen_world_flat_lab.py)
+if os.environ.get("WORLD_BOUNDS"):       # xmin,xmax,ymin,ymax (lab4: -2,6,-2,6)
+    WORLD = tuple(float(v) for v in os.environ["WORLD_BOUNDS"].split(","))
 
 
 class Mon(Node):
