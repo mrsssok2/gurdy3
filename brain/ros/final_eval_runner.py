@@ -16,7 +16,7 @@ import time
 import traceback
 
 from ..eval.final_checks import evaluate
-from ..eval.final_suite import BY_ID
+from ..eval.suites import suite_module
 from .readiness import SetupFailed, first_reply_setup_failure, wait_ready
 
 
@@ -34,12 +34,13 @@ def main() -> None:
     ap.add_argument("--out", required=True)
     ap.add_argument("--places"); ap.add_argument("--map-id", default="flat_lab"); ap.add_argument("--odom-topic", default="/odom")
     ap.add_argument("--ollama", default="gurdy-sft-400"); ap.add_argument("--memory-db", default=None)
+    ap.add_argument("--seed", type=int, default=None, help="held-out runs: seeds the start offset (random 0-8 sim s wait after readiness, before the first step); the LLM runs at temperature 0")
     ap.add_argument("--ready-s", type=float, default=90.0, help="wall seconds to wait for Nav2 / costmaps / localization / a real plan before the first command")
     ap.add_argument("--hang-s", type=float, default=90.0, help="wall seconds without /clock progress = Gazebo hang")
     a = ap.parse_args()
-    m = BY_ID[a.mission]
+    m = suite_module().BY_ID[a.mission]
     rec: dict = {"mission": a.mission, "name": m["name"], "category": m["category"], "model": a.ollama, "status": "error", "messages": [], "turns": [],
-                 "stops": [], "estops": [], "faults": [], "poses": [], "path_m": 0.0, "max_tilt": 0.0, "falls": 0, "semantic": [], "limit_s": m["limit_s"]}
+                 "stops": [], "estops": [], "faults": [], "poses": [], "path_m": 0.0, "max_tilt": 0.0, "falls": 0, "semantic": [], "limit_s": m["limit_s"], "seed": a.seed}
     code = 4
     try:
         code = run(a, m, rec)
@@ -195,6 +196,10 @@ def run(a, m: dict, rec: dict) -> int:
 
     status = "ok"
     try:
+        if a.seed is not None:                                     # run-to-run variation for repeated held-out runs: when, relative to the sim, the mission starts
+            import random
+            rec["start_offset_s"] = round(random.Random(a.seed).uniform(0.0, 8.0), 2)
+            advance(rec["start_offset_s"])
         for step in m["steps"]:
             kind = step[0]
             if kind == "say":

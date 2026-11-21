@@ -12,7 +12,9 @@ from pathlib import Path
 from ..ros.readiness import first_reply_setup_failure
 
 from .final_checks import evaluate
-from .final_suite import SUITE
+from .suites import suite_module
+
+SUITE = suite_module().SUITE
 
 
 def load(run: Path) -> list[dict]:

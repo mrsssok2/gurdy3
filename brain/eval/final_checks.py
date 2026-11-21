@@ -5,7 +5,13 @@ from __future__ import annotations
 import math
 import re
 
-from .final_suite import BY_ID, PLACES, arrival_claim, percentages, region_contains, resolve_region
+from .final_suite import arrival_claim, percentages, region_contains
+from .suites import suite_module
+
+
+def resolve_region(spec):
+    """A place name of the ACTIVE suite (env GURDY_FINAL_SUITE) or an explicit region tuple."""
+    return suite_module().PLACES[spec] if isinstance(spec, str) else tuple(spec)
 
 
 def robot_texts(rec: dict) -> list[str]:
@@ -118,7 +124,7 @@ def arrival_errors(rec: dict, goal) -> list[str]:
 
 def evaluate(rec: dict) -> dict:
     """Verdict for one record: checks, wrong claims, success."""
-    m = BY_ID[rec["mission"]]
+    m = suite_module().BY_ID[rec["mission"]]
     results = []
     for chk in m["checks"]:
         ok, why = run_check(tuple(chk), rec)

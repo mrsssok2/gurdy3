@@ -12,15 +12,23 @@
 # Results: brain/runs/final_eval/<timestamp>/{meta.json,status.txt,run.log,missions/<id>.json,logs/,report.md,summary.json}; at the end docs/results/phase5_final_eval.md.
 set -uo pipefail
 cd "$(dirname "$0")/.."
-export MODEL=${MODEL:-gurdy-sft-400}; PORT=11435; ATTEMPTS=${ATTEMPTS:-3}; WALL_FACTOR=${WALL_FACTOR:-4}; WALL_MIN=${WALL_MIN:-300}; DOC=${DOC:-docs/results/phase5_final_eval.md}
+# SUITE=final_suite_lab4 (Gurdy 3.0 held-out, world lab4) selects the suite module, world, saved map, places file and map id; SEED=N seeds the start offset (final_eval_runner --seed).
+export GURDY_FINAL_SUITE=${SUITE:-final_suite}; SEED=${SEED:-}
+read -r WORLD MAP_NAME MAP_ID PLACES_FILE <<<"$(python3 -c "
+from brain.eval.suites import suite_module as m
+s = m(); print(getattr(s, 'WORLD', 'flat_lab'), getattr(s, 'MAP_NAME', 'flat_lab_tripod_gt'), getattr(s, 'MAP_ID', 'flat_lab'), getattr(s, 'PLACES_FILE', 'maps/flat_lab.places.yaml'))")"
+export WORLD MAP_NAME MAP_ID PLACES_FILE
+export MODEL=${MODEL:-gurdy-sft-400}; PORT=11435; ATTEMPTS=${ATTEMPTS:-3}; WALL_FACTOR=${WALL_FACTOR:-4}; WALL_MIN=${WALL_MIN:-300}; DOC=${DOC:-$([ "${SUITE:-final_suite}" = final_suite ] && echo docs/results/phase5_final_eval.md || echo "")}
 TS=$(date -u +%Y%m%d_%H%M%S); RUN=${RUN_DIR:-brain/runs/final_eval/$TS}
+[ -n "$DOC" ] || DOC="$RUN/report_full.md"
 mkdir -p "$RUN/missions" "$RUN/logs" "$RUN/attempts"
 RUN_REL=${RUN#"$PWD"/}      # the repo is mounted in the container at ~/gurdy2 (same relative layout), so logs can be written there directly
 case "$RUN_REL" in /*) echo "RUN_DIR must be inside the repo ($PWD)"; exit 1 ;; esac
 log() { echo "$(date -u +%H:%M:%S) $*" | tee -a "$RUN/run.log"; }
 IDS=$(python3 -c "
 import os
-from brain.eval.final_suite import SUITE
+from brain.eval.suites import suite_module
+SUITE = suite_module().SUITE
 only=[x for x in os.environ.get('ONLY','').split(',') if x]
 print(' '.join(m['id'] for m in SUITE if not only or m['id'] in only))")
 [ -n "$IDS" ] || { echo "no missions selected"; exit 1; }
@@ -46,7 +54,7 @@ trap 'docker rm -f gurdy3_final_eval >/dev/null 2>&1; log "interrupted / exiting
 log "final eval: $N missions, model $MODEL, run dir $RUN"
 
 result_status() { python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('status','?'))" "$1" 2>/dev/null || echo "unreadable"; }
-limit_of() { python3 -c "from brain.eval.final_suite import BY_ID;print(BY_ID['$1']['limit_s'])"; }
+limit_of() { python3 -c "from brain.eval.suites import suite_module;print(suite_module().BY_ID['$1']['limit_s'])"; }
 
 run_one() {   # $1 = mission id; returns 0 when a valid result file exists
   local id=$1 limit attempt rc st t_att wall walled=0 out="$RUN/missions/$1.json" chat
@@ -61,16 +69,16 @@ run_one() {   # $1 = mission id; returns 0 when a valid result file exists
     chat="$RUN_REL/logs/$id.attempt$attempt.stack"; mkdir -p "$chat"
     log "$id: attempt $attempt/$ATTEMPTS (limit ${limit}s sim, wall limit ${wall}s)"
     t_att=$SECONDS
-    timeout -k 30 "$wall" docker compose run --rm -T --name gurdy3_final_eval -e OLLAMA_URL -e MODEL -e ID="$id" -e OUT="$out" -e CHAT="$chat" sim bash -c '
+    timeout -k 30 "$wall" docker compose run --rm -T --name gurdy3_final_eval -e OLLAMA_URL -e MODEL -e GURDY_FINAL_SUITE -e WORLD -e MAP_NAME -e MAP_ID -e PLACES_FILE -e SEED -e ID="$id" -e OUT="$out" -e CHAT="$chat" sim bash -c '
       cd ~/gurdy2 && source ros2_ws/install/setup.bash && export PYTHONPATH=$HOME/gurdy2:$HOME/gurdy2/gurdy_core:$HOME/gurdy2/sim_mujoco:$PYTHONPATH
-      source scripts/lib_nav_start.sh; mkdir -p "$CHAT"; cp maps/flat_lab.places.yaml "$CHAT/places.yaml"
+      source scripts/lib_nav_start.sh; mkdir -p "$CHAT"; cp "$PLACES_FILE" "$CHAT/places.yaml"
       trap "stop_nav_stack" EXIT
-      start_nav_stack "$CHAT" gui:=false world:=flat_lab perception:=true estop_gate:=true target_frame:=map nav:=localization map:=flat_lab_tripod_gt navigation:=true controller:=policy odom_source:=ground_truth > "$CHAT/start.log" 2>&1 < /dev/null \
+      start_nav_stack "$CHAT" gui:=false world:=$WORLD perception:=true estop_gate:=true target_frame:=map nav:=localization map:=$MAP_NAME navigation:=true controller:=policy odom_source:=ground_truth > "$CHAT/start.log" 2>&1 < /dev/null \
         || { echo "Nav2 never became ready"; tail -20 "$CHAT/launch.log"; exit 5; }
       ros2 launch gurdy_safety monitors.launch.py odom_topic:=/odom > "$CHAT/monitors.log" 2>&1 < /dev/null &
       ros2 run gurdy_navigation frontier_explorer_node --ros-args -p serve_action:=true -p clock_topic:=/clock_slow -p log_path:=$CHAT/explore_log.json -p done_path:=$CHAT/explore.done > "$CHAT/explorer.log" 2>&1 < /dev/null &
       sleep 12
-      python3 -m brain.ros.final_eval_runner --mission "$ID" --out "$OUT" --ollama "$MODEL" --places "$CHAT/places.yaml" --map-id flat_lab --odom-topic /odom --memory-db "$CHAT/memory.db" 2>&1 | grep --line-buffered -v "^terminate"
+      python3 -m brain.ros.final_eval_runner --mission "$ID" --out "$OUT" --ollama "$MODEL" --places "$CHAT/places.yaml" --map-id $MAP_ID --odom-topic /odom ${SEED:+--seed $SEED} --memory-db "$CHAT/memory.db" 2>&1 | grep --line-buffered -v "^terminate"
       exit ${PIPESTATUS[0]}
     ' > "$RUN/logs/$id.attempt$attempt.log" 2>&1
     rc=$?
