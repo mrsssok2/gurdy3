@@ -1,0 +1,8 @@
+  RSS CMD
+592580 gz sim -r -v 2 /home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/lab4.sdf -s --headless-rendering
+99908 /usr/bin/python3 /home/ubuntu/gurdy2/ros2_ws/install/gurdy_policy/lib/gurdy_policy/policy_node --ros-args --params-file /tmp/launch_params_56w4zn7j -r /cmd_vel:=/cmd_vel
+92096 /usr/bin/python3 /opt/ros/jazzy/bin/ros2 launch gurdy_bringup sim.launch.py gui:=false world:=lab4 nav:=slam navigation:=true controller:=policy odom_source:=ground_truth
+85180 /opt/ros/jazzy/lib/slam_toolbox/async_slam_toolbox_node --ros-args -r __node:=slam_toolbox -r __ns:=/ --params-file /home/ubuntu/gurdy2/ros2_ws/install/gurdy_navigation/share/gurdy_navigation/config/slam_toolbox.yaml --params-file /tmp/launch_params_tarxezke
+83968 /usr/bin/python3 /home/ubuntu/gurdy2/ros2_ws/install/gurdy_navigation/lib/gurdy_navigation/odom_tf_node --ros-args
+81620 /opt/ros/jazzy/lib/nav2_bt_navigator/bt_navigator --ros-args --log-level info --ros-args -r __node:=bt_navigator -p use_sim_time:=True --params-file /tmp/launch_params_bct8a1y9 -r /tf:=tf -r /tf_static:=tf_static
+81080 /usr/bin/python3 /home/ubuntu/gurdy2/ros2_ws/install/gurdy_navigation/lib/gurdy_navigation/scan_self_filter_node --ros-args --params-file /tmp/launch_params_t92aw4z5
