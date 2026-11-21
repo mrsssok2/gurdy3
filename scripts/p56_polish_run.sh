@@ -11,7 +11,7 @@ if ! curl -sf "localhost:$PORT/api/tags" >/dev/null; then
 fi
 curl -s "localhost:$PORT/api/generate" -d "{\"model\":\"$MODEL\",\"keep_alive\":\"30m\"}" >/dev/null
 export OLLAMA_URL=http://$(hostname -I | cut -d' ' -f1):$PORT
-docker compose run --rm -T --name gurdy_agent -e OLLAMA_URL -e MODEL -e OUT=$OUT -e ONLY sim bash -c '
+docker compose run --rm -T --name gurdy3_agent -e OLLAMA_URL -e MODEL -e OUT=$OUT -e ONLY sim bash -c '
   cd ~/gurdy2 && (cd ros2_ws && colcon build --symlink-install --packages-select gurdy_safety gurdy_bringup gurdy_navigation >/dev/null 2>&1); source ros2_ws/install/setup.bash
   export PYTHONPATH=$HOME/gurdy2:$HOME/gurdy2/gurdy_core:$HOME/gurdy2/sim_mujoco:$PYTHONPATH
   source scripts/lib_nav_start.sh; O=/tmp/o; mkdir -p $O; cp maps/flat_lab.places.yaml $O/places.yaml

@@ -42,7 +42,7 @@ Safety of this setup: the CA private key `~/.gurdy/tls/ca.key` never leaves the 
 Plain `http://` on the LAN keeps working for everything except the microphone. **Tailscale Serve (`docs/phase7_remote.md`) gives a real https certificate and works from anywhere**, then none of the CA steps are needed.
 
 ## If something is off
-- No mic button: the page found no speech service. `docker logs gurdy_speech` (it needs the `voice_gpu` image + `~/p5_models`, `~/p5_pkgs`, `~/p5_tts`); the button appears once `GET /api/health` says `"voice": true`.
+- No mic button: the page found no speech service. `docker logs gurdy3_speech` (it needs the `voice_gpu` image + `~/p5_models`, `~/p5_pkgs`, `~/p5_tts`); the button appears once `GET /api/health` says `"voice": true`.
 - "The microphone needs a secure page": you opened `http://<IP>:8080` on the phone; use the `https://…:8443` address.
 - "Too short": hold the button while speaking (the clip must be at least 0.4 s). "Sorry, I didn't catch that": silence or noise was filtered out.
 - The first request after start is slower (model warm-up); after that Whisper takes about 0.3 s on the GPU.

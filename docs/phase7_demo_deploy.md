@@ -1,6 +1,6 @@
 # Public demo: a static page that runs the simulation in the browser
 
-**Why this changed:** Hugging Face now needs a PRO subscription for Docker Spaces on free CPU (static Spaces stay free). So the public demo no longer needs a server at all: the dashboard plus the **real Python simulation** (mock `flat_lab` world, agent with safety / grounding / executor, keyword planner with the smart phrasings) run inside the visitor's browser. It is published for free on **GitHub Pages** (`https://mrsssok2.github.io/gurdy2/`) and can also be uploaded as a **static Hugging Face Space**.
+**Why this changed:** Hugging Face now needs a PRO subscription for Docker Spaces on free CPU (static Spaces stay free). So the public demo no longer needs a server at all: the dashboard plus the **real Python simulation** (mock `flat_lab` world, agent with safety / grounding / executor, keyword planner with the smart phrasings) run inside the visitor's browser. It is published for free on **GitHub Pages** (`https://mrsssok2.github.io/gurdy3/`) and can also be uploaded as a **static Hugging Face Space**.
 
 What a visitor gets: the same dashboard (map, planned path, chat with suggestion chips, status, alerts, demo banner, E-STOP), no mic, no token, no server, nothing sent anywhere. Every visitor automatically has a private robot (it lives in their own tab); a reload starts a new one.
 
@@ -19,15 +19,15 @@ Pyodide wins on fidelity and upkeep; its only cost is the one-time download. The
 `scripts/build_static_demo.py` copies `web/app` (the normal dashboard, unchanged apart from one line: no service worker in the static build), adds `static_backend.js` (answers the dashboard's `fetch("/api/…")` and `WebSocket("/ws")` calls locally), `demo_worker.js` (a Web Worker that loads Pyodide from the CDN, installs `pyyaml`, unpacks `gurdy_demo.zip` and runs `web/static_demo/session.py`) and `gurdy_demo.zip` (88 KiB of the repo's Python: no server, ROS, LLM client or audio code). The simulation advances 3x faster than wall time, like the server demo.
 Pyodide version pinned: 0.27.7 (Python 3.12.7). It is loaded from `cdn.jsdelivr.net`; to host it yourself pass `--pyodide-base`.
 
-Measured 2026-11-19 in headless Chromium: first visit loads **5.6 MiB (CDN) + 0.23 MiB**; chat "enter room B", "yes" walks the robot to room B, E-STOP works, no mic button, demo banner shown, a second browser context starts with an empty chat and a robot at the origin, a reload resets the world, no JavaScript errors, works from a sub-path (`/gurdy2/`) like GitHub Pages. Not tested on a real phone or on Safari/Firefox.
+Measured 2026-11-19 in headless Chromium: first visit loads **5.6 MiB (CDN) + 0.23 MiB**; chat "enter room B", "yes" walks the robot to room B, E-STOP works, no mic button, demo banner shown, a second browser context starts with an empty chat and a robot at the origin, a reload resets the world, no JavaScript errors, works from a sub-path (`/gurdy3/`) like GitHub Pages. Not tested on a real phone or on Safari/Firefox.
 
-## Step by step: GitHub Pages (your repo `mrsssok2/gurdy2`)
+## Step by step: GitHub Pages (your repo `mrsssok2/gurdy3`)
 1. **The repo must be public** (Pages is free for public repositories; for a private repo it needs a paid plan).
 2. **Push** the commits (`git push`). The workflow `.github/workflows/pages.yml` runs on every push to `main` that touches the demo files.
 3. In the repo on github.com: **Settings → Pages → Build and deployment → Source: "GitHub Actions"** (not "Deploy from a branch"). Do this once; it needs no token.
 4. Open the **Actions** tab → workflow **"Publish static demo"**. If it did not start (for example because the push happened before step 3), click **Run workflow** (branch `main`). It has three jobs: `test` (runs the demo tests), `build`, `deploy`; all must be green (about 2-3 minutes).
-5. The deploy job prints the page URL; it is **https://mrsssok2.github.io/gurdy2/** (give it a minute after the job finishes).
-6. **Check it:** open the URL (laptop and phone): loading screen for a few seconds, then the dashboard with the banner "Demo: simulated robot"; type "go to room B", then "yes"; the robot walks. In the browser's developer tools (F12 → Network / Console) there must be no red 404 / CORS errors. `curl -I https://mrsssok2.github.io/gurdy2/` answers 200.
+5. The deploy job prints the page URL; it is **https://mrsssok2.github.io/gurdy3/** (give it a minute after the job finishes).
+6. **Check it:** open the URL (laptop and phone): loading screen for a few seconds, then the dashboard with the banner "Demo: simulated robot"; type "go to room B", then "yes"; the robot walks. In the browser's developer tools (F12 → Network / Console) there must be no red 404 / CORS errors. `curl -I https://mrsssok2.github.io/gurdy3/` answers 200.
 7. If a job fails: open it and read the red step. Typical causes: Pages not set to "GitHub Actions" (step 3); the repo is private; a test fails (the log shows which).
 
 **Updating later:** change the code, `git push`; the workflow rebuilds and republishes by itself. Nothing else to do.
@@ -98,7 +98,7 @@ Data use: the first mic press costs about 50 MB (do it on Wi-Fi); after that not
 Run once with `REMOVE_IMAGE=true scripts/run_browser_tests.sh` to delete the ~1.5 GB Playwright image afterwards.
 
 ## Your steps to try both
-1. **Push** (`git push`); the Pages workflow rebuilds and publishes (Actions tab → "Publish static demo" green). Open https://mrsssok2.github.io/gurdy2/ (hard-refresh once so the new files load).
+1. **Push** (`git push`); the Pages workflow rebuilds and publishes (Actions tab → "Publish static demo" green). Open https://mrsssok2.github.io/gurdy3/ (hard-refresh once so the new files load).
 2. **Voice in the demo:** press and hold the mic button, allow the microphone, wait for the progress card (about 50 MB, once), say "go to room B", release; then hold again and say "yes". Gurdy answers aloud (speaker icon = mute).
 3. **Connect to my robot:** on the robot PC, `scripts/start_web_robot.sh tailscale voice` (the default allow-list already contains `https://mrsssok2.github.io`; for another page set `GURDY_ALLOWED_ORIGINS`). On the phone / laptop with Tailscale ON open the demo page, tap **Connect to my robot**, paste `https://<your-pc>.<tailnet>.ts.net/#token=<token>` (the line the script prints), Connect. Banner "Connected to REAL robot"; type or hold-to-talk (the robot's GPU Whisper). **Back to demo** returns to the simulation.
 4. Check the failure path: turn Tailscale off on the phone and try Connect: "Your robot isn't running or this device isn't on your Tailscale network."

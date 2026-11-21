@@ -1,6 +1,8 @@
-# Gurdy 2.0
+# Gurdy 3.0
 
-**Try the live demo: [mrsssok2.github.io/gurdy2](https://mrsssok2.github.io/gurdy2/) - runs in your browser, voice included.** Press *Connect to my robot* on that page to drive your own robot over Tailscale.
+Builds on Gurdy 2.0 (github.com/mrsssok2/gurdy2, frozen at commit 4c7d047c490efefdce13526f18f7db52b700e327). Everything below is the Gurdy 2.0 baseline; Gurdy 3.0 results will be added next to it (see ROADMAP.md).
+
+**Try the live demo: [mrsssok2.github.io/gurdy3](https://mrsssok2.github.io/gurdy3/) - runs in your browser, voice included.** Press *Connect to my robot* on that page to drive your own robot over Tailscale.
 
 **What it does:** a six-legged robot in simulation that you can talk to in plain English, typed or spoken (Whisper on the GPU, ~0.3 s per command, 3.7 % word error rate). It walks with a learned (reinforcement-learning) gait, maps and explores a building on its own, recognises objects by name, and plans missions with a fine-tuned LLM running locally.
 **What it proves:** the whole stack runs offline on one 6 GB laptop GPU. Measured: the learned gait tracks commands more accurately and uses less energy than a classic gait, the robot mapped 99 % of a lab, found 11/11 objects, and the fine-tuned LLM scored 94 % vs 59 % for the base model on 100 commands, with no hallucinated replies reaching the user.
@@ -24,7 +26,7 @@ The live demo is a static page (the real Python simulation runs in your browser,
 
 ![The public demo page connected to the real robot via Tailscale](docs/images/gurdy_github_connected_real.png)
 
-*The public demo page (mrsssok2.github.io/gurdy2) connected to the real robot via Tailscale: spoken 'Go to room B' (84 %, GPU Whisper on the laptop), the robot walking through the doorway in Gazebo (right).*
+*The public demo page (mrsssok2.github.io/gurdy3) connected to the real robot via Tailscale: spoken 'Go to room B' (84 %, GPU Whisper on the laptop), the robot walking through the doorway in Gazebo (right).*
 
 | <img src="docs/images/gurdy_phone_voice_chat.png" width="300"> | <img src="docs/images/gurdy_phone_map.png" width="300"> |
 |---|---|

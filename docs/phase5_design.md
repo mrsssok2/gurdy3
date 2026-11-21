@@ -39,7 +39,7 @@ the same turn, and a checker (1.5) rejects answers that state something no tool 
                     │ RobotBackend protocol                            │
                     ├───────────────────────┬──────────────────────────┤
                     │ RosBackend            │ MockBackend              │
-                    │ (gurdy_agent, rclpy)  │ (pure Python, fast)      │
+                    │ (gurdy3_agent, rclpy)  │ (pure Python, fast)      │
                     └──────────┬────────────┴──────────────────────────┘
         Nav2 actions · explorer action · semantic map · costmap · TF · status · events · memory DB
 ```
@@ -499,7 +499,7 @@ hard timeouts and a morning check.
 | 5.3 | **Evaluation harness + test sets**: 100-set + AC sets, scorer, latency logging; first table: keyword parser vs base models | `phase5_eval.md` v0 | 2 days | – | LLM only |
 | 5.4 | **Data generation + SFT**: generator, validation, TTS→Whisper noise round trip, pilot, full SFT for 0.6B and 1.7B, learning curve | SFT vs base on the 100-set | 2 days | 2 nights (noise round trip; SFT 1.7B) | training |
 | 5.5 | **DPO + GGUF + comparison**: mistake mining, DPO, quantise, Modelfile, parity, four-system table, model card draft | offline model in Ollama, GPU and CPU latency | 2 days | 1 night (mining + DPO) | training |
-| 5.6 | **ROS backend** (`gurdy_agent`): Nav2 / explorer actions, object service, places file, walk / turn executor; text commands in Gazebo | "go to room B, find the red box, come back" typed, in Gazebo | 3 days | – | set A |
+| 5.6 | **ROS backend** (`gurdy3_agent`): Nav2 / explorer actions, object service, places file, walk / turn executor; text commands in Gazebo | "go to room B, find the red box, come back" typed, in Gazebo | 3 days | – | set A |
 | 5.7 | **Status, events, alerts, safety in ROS**: battery sim, leg health + fault injection, event bus, alert manager, gate node / e-stop, keepout zones; scripted-cause tests | each alert triggered; e-stop latency; 10 no-go runs | 3 days | 1 night (no-go runs + false-alert run) | set A |
 | 5.8 | **Voice**: audio through WSLg, VAD, Whisper, TTS, streaming e-stop, voice-path test set, latency | spoken mission; works with network off | 2 days | – | set A |
 | 5.9 | **Memory + reports**: SQLite, restart test, staleness, change detection, mission report (HTML / Markdown + photos) | "where did you last see the red box?" after a restart; report file | 2 days | – | set A |
@@ -524,7 +524,7 @@ brain/
 ├── eval/         test sets, scorer, run_eval.py, keyword_parser.py
 ├── ollama/       Modelfiles
 └── voice/        VAD, STT, TTS wrappers
-ros2_ws/src/gurdy_agent/     RosBackend, agent node, battery_sim, leg_health, monitors, cmd_vel_gate
+ros2_ws/src/gurdy3_agent/     RosBackend, agent node, battery_sim, leg_health, monitors, cmd_vel_gate
 docker/brain/                agent + voice runtime (FROM the ROS image); training image FROM the vision image
 ```
 

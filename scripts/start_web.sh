@@ -14,8 +14,8 @@ export GURDY_WEB_TOKEN="${GURDY_WEB_TOKEN:-$(python3 -c 'import secrets;print(se
 $LAN && export WEB_PUBLISH=0.0.0.0 || export WEB_PUBLISH=127.0.0.1
 if $TAIL; then source scripts/lib_tailscale.sh; ts_check || exit 1; fi
 EXTRA=(); PORTS=(-p "$WEB_PUBLISH:8080:8080")
-docker rm -f gurdy2-web gurdy_speech >/dev/null 2>&1 || true
-trap 'docker rm -f gurdy_speech >/dev/null 2>&1 || true; { $TAIL && ts_stop; } || true' EXIT
+docker rm -f gurdy3-web gurdy3_speech >/dev/null 2>&1 || true
+trap 'docker rm -f gurdy3_speech >/dev/null 2>&1 || true; { $TAIL && ts_stop; } || true' EXIT
 if $HTTPS; then
   [ -f "$HOME/.gurdy/tls/gurdy.crt" ] || { echo "no certificate yet: run scripts/make_web_cert.sh <the laptop's Wi-Fi / hotspot IP> first (docs/phase7_voice.md)"; exit 1; }
   export GURDY_TLS_PORT=8443 GURDY_TLS_CERT=/tls/gurdy.crt GURDY_TLS_KEY=/tls/gurdy.key GURDY_TLS_CA=/tls/ca.crt
@@ -27,4 +27,4 @@ $LAN && echo "phone:  http://<PC Wi-Fi IPv4>:8080/#token=$GURDY_WEB_TOKEN"
 $HTTPS && echo "https:  https://localhost:8443/#token=$GURDY_WEB_TOKEN   (phone: https://<PC IPv4>:8443/#token=...)"
 if $TAIL; then ts_start 8080 || exit 1; echo "anywhere: ${TS_URL}#token=$GURDY_WEB_TOKEN   (private: Tailscale must be ON on the phone)"; fi
 echo "stop:   Ctrl+C (the containers are removed)"
-docker compose run --rm --name gurdy2-web "${EXTRA[@]}" "${PORTS[@]}" web
+docker compose run --rm --name gurdy3-web "${EXTRA[@]}" "${PORTS[@]}" web

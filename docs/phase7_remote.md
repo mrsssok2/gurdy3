@@ -101,5 +101,5 @@ The token is in the part after `#`: it is never sent to the server in the URL an
 | Every command says "My language model is not running right now." | The agent container cannot reach Ollama. `scripts/start_web_robot.sh` now tests this itself (it tries every address a container could use and runs one real prompt inside the agent container before printing READY, otherwise it stops with the reason). Run it again; if it says no container can reach Ollama, check `ss -ltn | grep 11435` (must show `*:11435`). |
 | Phone: page does not load | Tailscale on in the phone app? Other VPN off? PowerShell `tailscale serve status` shows the entry? Robot script still running? |
 | Phone: loads but "Invalid token" / asks for the token | Use the exact URL of this run (the token changes every start). |
-| Page loads, no mic button | Voice was not started: use `… tailscale voice`; `docker logs gurdy_speech`. |
+| Page loads, no mic button | Voice was not started: use `… tailscale voice`; `docker logs gurdy3_speech`. |
 | Certificate warning | Should not happen with serve. If it does, you opened the `100.x.y.z` address or `http://`: use the `https://….ts.net` name. |

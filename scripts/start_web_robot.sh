@@ -31,10 +31,10 @@ if $HTTPS; then
 fi
 if $VOICE; then source scripts/lib_speech.sh; start_speech_service; EXTRA+=(-e GURDY_SPEECH_URL); fi
 LOG=/tmp/gurdy_web.log; RAM=/tmp/gurdy_web_ram.log; : > "$LOG"; : > "$RAM"
-cleanup() { $TAIL && ts_stop; [ -n "${SAMPLER:-}" ] && kill "$SAMPLER" 2>/dev/null || true; docker rm -f gurdy_agent gurdy_speech >/dev/null 2>&1 || true
+cleanup() { $TAIL && ts_stop; [ -n "${SAMPLER:-}" ] && kill "$SAMPLER" 2>/dev/null || true; docker rm -f gurdy3_agent gurdy3_speech >/dev/null 2>&1 || true
   if [ -s "$RAM" ]; then awk '{ if ($2>c) c=$2; if ($3>w) w=$3; if ($4>g) g=$4 } END { printf "peak: container %d MiB, WSL used %d MiB, GPU %d MiB (samples: /tmp/gurdy_web_ram.log)\n", c, w, g }' "$RAM"; fi; }
 trap cleanup EXIT INT TERM
-docker compose run --rm -T --name gurdy_agent "${PORTS[@]}" "${EXTRA[@]}" -e OLLAMA_URL -e MODEL -e GUI -e MEMORY -e GURDY_WEB_TOKEN -e GURDY_ALLOWED_ORIGINS \
+docker compose run --rm -T --name gurdy3_agent "${PORTS[@]}" "${EXTRA[@]}" -e OLLAMA_URL -e MODEL -e GUI -e MEMORY -e GURDY_WEB_TOKEN -e GURDY_ALLOWED_ORIGINS \
   -v "$HOME/.gurdy:/home/ubuntu/.gurdy" sim bash -c '
   cd ~/gurdy2 && source ros2_ws/install/setup.bash && export PYTHONPATH=$HOME/gurdy2:$HOME/gurdy2/gurdy_core:$HOME/gurdy2/sim_mujoco:$PYTHONPATH
   source scripts/lib_nav_start.sh; mkdir -p /tmp/chat; cp maps/flat_lab.places.yaml /tmp/chat/places.yaml
@@ -51,7 +51,7 @@ docker compose run --rm -T --name gurdy_agent "${PORTS[@]}" "${EXTRA[@]}" -e OLL
 AGENT_PID=$!
 # RAM sampler: <t> <container MiB> <WSL used MiB> <GPU MiB>
 ( set +eo pipefail; while true; do
-    c=$(docker stats --no-stream --format '{{.MemUsage}}' gurdy_agent 2>/dev/null | awk '{v=$1; if (v ~ /GiB/) {sub("GiB","",v); v*=1024} else sub("MiB","",v); printf "%d", v}')
+    c=$(docker stats --no-stream --format '{{.MemUsage}}' gurdy3_agent 2>/dev/null | awk '{v=$1; if (v ~ /GiB/) {sub("GiB","",v); v*=1024} else sub("MiB","",v); printf "%d", v}')
     w=$(free -m | awk '/Mem:/ {print $3}'); g=$(/usr/lib/wsl/lib/nvidia-smi --query-gpu=memory.used --format=csv,noheader,nounits 2>/dev/null | head -1)
     echo "$(date +%s) ${c:-0} ${w:-0} ${g:-0}" >> "$RAM"; sleep 5; done ) &
 SAMPLER=$!
@@ -63,12 +63,12 @@ for _ in $(seq 400); do
   sleep 1
 done
 grep -q "access token:" "$LOG" || { echo "the web app did not start in time"; tail -25 "$LOG"; exit 1; }
-if [ "$MODEL" != keyword ]; then ollama_verify_in gurdy_agent "$MODEL" || exit 1; fi      # never say READY with a language model the agent cannot reach
+if [ "$MODEL" != keyword ]; then ollama_verify_in gurdy3_agent "$MODEL" || exit 1; fi      # never say READY with a language model the agent cannot reach
 echo
 echo "READY. Open in the laptop browser:  http://localhost:8080/#token=$GURDY_WEB_TOKEN"
 [ "$PUBLISH" = 0.0.0.0 ] && echo "Phone (same Wi-Fi):                 http://<PC Wi-Fi IPv4>:8080/#token=$GURDY_WEB_TOKEN   (docs/phase7_phone.md)"
 $HTTPS && echo "https (phone microphone):           https://<PC IPv4>:8443/#token=$GURDY_WEB_TOKEN   (trust the CA first: docs/phase7_voice.md)"
-$VOICE && echo "Voice: hold the mic button (laptop: hold Space) and speak; the speech service is container gurdy_speech."
+$VOICE && echo "Voice: hold the mic button (laptop: hold Space) and speak; the speech service is container gurdy3_speech."
 if $TAIL; then ts_start 8080 || exit 1; echo "ANYWHERE (private, Tailscale on the phone must be ON):  ${TS_URL}#token=$GURDY_WEB_TOKEN"; fi
 echo "Ctrl+C stops everything. Agent / robot log: $LOG"
 wait $AGENT_PID

@@ -18,8 +18,8 @@ ollama_prepare "$MODEL" || exit 1    # starts Ollama if needed, exact model chec
 for m in $(curl -s "localhost:$PORT/api/ps" | python3 -c "import sys,json;print(' '.join(x['name'] for x in json.load(sys.stdin).get('models',[])))" 2>/dev/null); do
   case "$m" in "$MODEL"|"$MODEL":*) ;; *) curl -s "localhost:$PORT/api/generate" -d "{\"model\":\"$m\",\"keep_alive\":0}" >/dev/null ;; esac
 done
-if [ "$VOICE" = true ]; then   # the agent runs headless in the sim container and serves text on gurdy_agent:8765 (compose network); the voice container talks to it
-  docker compose run --rm -T --name gurdy_agent -e OLLAMA_URL -e MODEL -e GUI -e MEMORY -e DETECTOR_LOG -v "$HOME/.gurdy:/home/ubuntu/.gurdy" sim bash -c '
+if [ "$VOICE" = true ]; then   # the agent runs headless in the sim container and serves text on gurdy3_agent:8765 (compose network); the voice container talks to it
+  docker compose run --rm -T --name gurdy3_agent -e OLLAMA_URL -e MODEL -e GUI -e MEMORY -e DETECTOR_LOG -v "$HOME/.gurdy:/home/ubuntu/.gurdy" sim bash -c '
     cd ~/gurdy2 && source ros2_ws/install/setup.bash && export PYTHONPATH=$HOME/gurdy2:$HOME/gurdy2/gurdy_core:$HOME/gurdy2/sim_mujoco:$PYTHONPATH
     source scripts/lib_nav_start.sh; mkdir -p /tmp/chat; cp maps/flat_lab.places.yaml /tmp/chat/places.yaml
     trap "stop_nav_stack" EXIT
@@ -30,24 +30,24 @@ if [ "$VOICE" = true ]; then   # the agent runs headless in the sim container an
     sleep 12
     MEMORY_ARGS=""; [ "$MEMORY" = true ] && MEMORY_ARGS="--memory-db /home/ubuntu/.gurdy/memory.db"
     exec python3 -m brain.ros.run_text --ollama "$MODEL" --places /tmp/chat/places.yaml --map-id flat_lab --odom-topic /odom ${MEMORY_ARGS} --serve 8765
-  ' > /tmp/gurdy_agent.log 2>&1 &
+  ' > /tmp/gurdy3_agent.log 2>&1 &
   AGENT_PID=$!
-  trap "docker rm -f gurdy_agent >/dev/null 2>&1" EXIT
-  echo "starting the simulation (about 2.5 minutes; log /tmp/gurdy_agent.log) ..."
+  trap "docker rm -f gurdy3_agent >/dev/null 2>&1" EXIT
+  echo "starting the simulation (about 2.5 minutes; log /tmp/gurdy3_agent.log) ..."
   for _ in $(seq 400); do
-    grep -q "voice server on" /tmp/gurdy_agent.log 2>/dev/null && break
-    grep -q "never became ready" /tmp/gurdy_agent.log 2>/dev/null && { tail -15 /tmp/gurdy_agent.log; exit 1; }
+    grep -q "voice server on" /tmp/gurdy3_agent.log 2>/dev/null && break
+    grep -q "never became ready" /tmp/gurdy3_agent.log 2>/dev/null && { tail -15 /tmp/gurdy3_agent.log; exit 1; }
     # the agent container died (a crash at start-up): do not wait out the 400 s, show why
-    kill -0 $AGENT_PID 2>/dev/null || { echo "the agent container exited before it was ready. Last lines of /tmp/gurdy_agent.log:"; tail -25 /tmp/gurdy_agent.log; exit 1; }
+    kill -0 $AGENT_PID 2>/dev/null || { echo "the agent container exited before it was ready. Last lines of /tmp/gurdy3_agent.log:"; tail -25 /tmp/gurdy3_agent.log; exit 1; }
     sleep 1
   done
-  grep -q "voice server on" /tmp/gurdy_agent.log || { echo "agent did not start in time"; tail -25 /tmp/gurdy_agent.log; exit 1; }
+  grep -q "voice server on" /tmp/gurdy3_agent.log || { echo "agent did not start in time"; tail -25 /tmp/gurdy3_agent.log; exit 1; }
   source scripts/lib_voice.sh
   echo "voice service: $(voice_service)"
-  docker compose run --rm "$(voice_service)" python3 -m brain.voice.cli --mic --remote gurdy_agent:8765 $([ "$VAD" = true ] && echo --vad)
+  docker compose run --rm "$(voice_service)" python3 -m brain.voice.cli --mic --remote gurdy3_agent:8765 $([ "$VAD" = true ] && echo --vad)
   exit 0
 fi
-docker compose run --rm $([ -t 0 ] || echo -T) --name gurdy_agent -e OLLAMA_URL -e MODEL -e GUI -e MEMORY -e DETECTOR_LOG -v "$HOME/.gurdy:/home/ubuntu/.gurdy" sim bash -c '
+docker compose run --rm $([ -t 0 ] || echo -T) --name gurdy3_agent -e OLLAMA_URL -e MODEL -e GUI -e MEMORY -e DETECTOR_LOG -v "$HOME/.gurdy:/home/ubuntu/.gurdy" sim bash -c '
   cd ~/gurdy2 && source ros2_ws/install/setup.bash && export PYTHONPATH=$HOME/gurdy2:$HOME/gurdy2/gurdy_core:$HOME/gurdy2/sim_mujoco:$PYTHONPATH
   source scripts/lib_nav_start.sh; mkdir -p /tmp/chat; cp maps/flat_lab.places.yaml /tmp/chat/places.yaml   # zones the chat adds stay out of git
   trap "stop_nav_stack" EXIT

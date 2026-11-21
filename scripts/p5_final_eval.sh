@@ -42,7 +42,7 @@ export OLLAMA_URL=http://$(hostname -I | cut -d' ' -f1):$PORT
 cat > "$RUN/meta.json" <<JSON
 {"started": "$(date -u +%FT%TZ)", "commit": "$(git rev-parse --short HEAD)", "dirty": $(git status --porcelain | grep -q . && echo true || echo false), "model": "$MODEL", "missions": $N, "attempts_max": $ATTEMPTS, "host": "$(hostname)"}
 JSON
-trap 'docker rm -f gurdy_final_eval >/dev/null 2>&1; log "interrupted / exiting"' EXIT
+trap 'docker rm -f gurdy3_final_eval >/dev/null 2>&1; log "interrupted / exiting"' EXIT
 log "final eval: $N missions, model $MODEL, run dir $RUN"
 
 result_status() { python3 -c "import json,sys;print(json.load(open(sys.argv[1])).get('status','?'))" "$1" 2>/dev/null || echo "unreadable"; }
@@ -56,12 +56,12 @@ run_one() {   # $1 = mission id; returns 0 when a valid result file exists
   echo '{"attempts": 0, "log": []}' > "$RUN/attempts/$id.json"
   for attempt in $(seq "$ATTEMPTS"); do
     rm -f "$out"
-    docker rm -f gurdy_final_eval >/dev/null 2>&1
+    docker rm -f gurdy3_final_eval >/dev/null 2>&1
     curl -s "localhost:$PORT/api/generate" -d "{\"model\":\"$MODEL\",\"keep_alive\":\"30m\"}" >/dev/null   # model resident before the sim takes RAM
     chat="$RUN_REL/logs/$id.attempt$attempt.stack"; mkdir -p "$chat"
     log "$id: attempt $attempt/$ATTEMPTS (limit ${limit}s sim, wall limit ${wall}s)"
     t_att=$SECONDS
-    timeout -k 30 "$wall" docker compose run --rm -T --name gurdy_final_eval -e OLLAMA_URL -e MODEL -e ID="$id" -e OUT="$out" -e CHAT="$chat" sim bash -c '
+    timeout -k 30 "$wall" docker compose run --rm -T --name gurdy3_final_eval -e OLLAMA_URL -e MODEL -e ID="$id" -e OUT="$out" -e CHAT="$chat" sim bash -c '
       cd ~/gurdy2 && source ros2_ws/install/setup.bash && export PYTHONPATH=$HOME/gurdy2:$HOME/gurdy2/gurdy_core:$HOME/gurdy2/sim_mujoco:$PYTHONPATH
       source scripts/lib_nav_start.sh; mkdir -p "$CHAT"; cp maps/flat_lab.places.yaml "$CHAT/places.yaml"
       trap "stop_nav_stack" EXIT
@@ -74,7 +74,7 @@ run_one() {   # $1 = mission id; returns 0 when a valid result file exists
       exit ${PIPESTATUS[0]}
     ' > "$RUN/logs/$id.attempt$attempt.log" 2>&1
     rc=$?
-    docker rm -f gurdy_final_eval >/dev/null 2>&1                  # also kills the stack when `timeout` only stopped the docker client
+    docker rm -f gurdy3_final_eval >/dev/null 2>&1                  # also kills the stack when `timeout` only stopped the docker client
     if [ "$rc" = 124 ] || { [ "$((SECONDS - t_att))" -ge "$((wall - 2))" ] && [ ! -f "$out" ]; }; then walled=$((walled + 1)); log "$id: attempt $attempt hit the wall limit (${wall}s): container removed"; fi
     st=none; [ -f "$out" ] && st=$(result_status "$out")
     python3 - "$RUN/attempts/$id.json" "$attempt" "$rc" "$st" <<'PY'

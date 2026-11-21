@@ -61,7 +61,7 @@ ROS nodes in the sim image after `colcon build --symlink-install --packages-up-t
 
 ## Gazebo test commands (later, when the GPU is free; one heavy workload at a time)
 ```bash
-cd ~/projects/gurdy2 && docker ps        # must be empty
+cd ~/projects/gurdy3 && docker ps        # must be empty
 # 0. unit tests anywhere:  docker compose run --rm brain python3 -m pytest -q brain/tests/test_ros_backend.py
 # 1. flat_lab + Nav2 localization on the saved GT map + detector (policy controller), headless. Arguments checked against sim.launch.py / phase4_semantic_run.sh.
 docker compose run -d --rm --name gurdy_agent sim bash -c 'cd ~/gurdy2 && source ros2_ws/install/setup.bash && source scripts/lib_nav_start.sh && mkdir -p /tmp/p56 && \

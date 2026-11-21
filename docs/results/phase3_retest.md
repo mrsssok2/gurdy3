@@ -6,7 +6,7 @@ smoother deadband 0, collision_monitor input `cmd_vel_min`, goal tolerance xy 0.
 
 ## 0. Preconditions
 ```bash
-cd ~/projects/gurdy2
+cd ~/projects/gurdy3
 docker ps                                   # must be empty (training finished: `docker ps -a | grep gurdy_train`, log tail shows "wall time")
 docker compose run --rm sim bash -c 'cd ~/gurdy2/ros2_ws && colcon build --symlink-install --parallel-workers 2 2>&1 | tail -3'
 docker compose run --rm sim bash -c 'cd ~/gurdy2 && python3 -m pytest -q ros2_ws/src/gurdy_navigation/test && (cd gurdy_core && python3 -m pytest -q tests/test_rl_command.py)'

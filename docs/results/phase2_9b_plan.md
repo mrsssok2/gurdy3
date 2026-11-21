@@ -9,7 +9,7 @@ tests `rl/tests/test_dr.py` (3 new) pass.
 
 ## Start tonight (nothing else may run: `docker ps` empty)
 ```bash
-cd ~/projects/gurdy2 && docker ps
+cd ~/projects/gurdy3 && docker ps
 mkdir -p rl/runs/terrain_dr2
 docker compose run -d --rm --name gurdy_train rl bash -c 'exec python3 rl/train.py \
   --config rl/configs/terrain_dr2.yaml --name terrain_dr2 \

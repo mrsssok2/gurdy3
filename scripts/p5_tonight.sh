@@ -3,7 +3,7 @@
 #   1. wait until brain/data/full/status.txt says DONE and `docker ps` is empty
 #   2. re-render the system prompt of the SFT data (compact tool block; old JSON prompt kept as system_json.txt)
 #   3. base Qwen3-1.7B on the 100-command set with the compact prompt (fair baseline) -> docs/results/data/phase5/eval_base_compact_qwen3-1.7b.json
-#   4. start the full SFT run (2 epochs, compact prompt) detached in container gurdy2-sft; sft.py resumes from brain/runs/sft_v1 on its own
+#   4. start the full SFT run (2 epochs, compact prompt) detached in container gurdy3-sft; sft.py resumes from brain/runs/sft_v1 on its own
 # Start:   nohup scripts/p5_tonight.sh > brain/runs/tonight.log 2>&1 &        Watch: tail -f brain/runs/tonight.log
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -16,7 +16,7 @@ say() { echo "[$(date -u +%H:%M:%S)] $*"; }
 die() { say "FAILED: $*"; exit 1; }
 
 # ---- already training or finished? (re-run safety)
-if docker ps --format '{{.Names}}' | grep -qx gurdy2-sft; then say "gurdy2-sft is already running - nothing to do"; exit 0; fi
+if docker ps --format '{{.Names}}' | grep -qx gurdy3-sft; then say "gurdy3-sft is already running - nothing to do"; exit 0; fi
 if grep -q '^DONE' brain/runs/sft_v1/status.txt 2>/dev/null; then say "SFT already finished (brain/runs/sft_v1/status.txt)"; exit 0; fi
 
 # ---- 1. wait
@@ -57,6 +57,6 @@ fi
 
 # ---- 4. SFT (p5_sft.sh re-checks DONE + empty docker ps; --out sft_v1 resumes from its last checkpoint)
 [ -z "$(docker ps -q)" ] || die "docker ps not empty before SFT: $(docker ps --format '{{.Names}}' | tr '\n' ' ')"
-docker rm -f gurdy2-sft >/dev/null 2>&1
+docker rm -f gurdy3-sft >/dev/null 2>&1
 scripts/p5_sft.sh --epochs 2 || die "p5_sft.sh"
-say "SFT started. Monitor: cat brain/runs/sft_v1/status.txt ; docker logs --tail 5 gurdy2-sft"
+say "SFT started. Monitor: cat brain/runs/sft_v1/status.txt ; docker logs --tail 5 gurdy3-sft"
