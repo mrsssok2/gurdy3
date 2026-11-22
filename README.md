@@ -142,3 +142,11 @@ Without the LLM: `docker compose up sim` starts the walking robot in Gazebo (tel
 ## Status (2026-11-19)
 
 Phases 0–4 and the Phase 5 core (LLM brain, 27-mission Gazebo evaluation) are done. Phase 7 (mission-control web app, voice in the browser, private remote access) is done except deploying the public demo. Phase 6 (robot incident graph) is paused after step 1; Phases 8–9 are not started. See [ROADMAP.md](ROADMAP.md) and [CLAUDE.md](CLAUDE.md).
+
+
+## Status (2026-11-19)
+
+ **Project under Development - continuation of gurdy2 with 4 rooms and VISION LANGUAGE NAVIGATION SYSTEM AND MUCH MORE ......** 
+
+
+
