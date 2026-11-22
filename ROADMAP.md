@@ -2,7 +2,7 @@
 
 **Gurdy 3.0 plan (decided 2026-11-21).** Gurdy 2.0 (github.com/mrsssok2/gurdy2, frozen at commit 4c7d047c490efefdce13526f18f7db52b700e327) is the baseline; its roadmap is kept below unchanged as history.
 Gurdy 3.0 = in this order:
-- [ ] 1. **4-room world + held-out eval**: a larger Gazebo world with 4 rooms, plus an evaluation set of missions / layouts / phrasings never used for tuning (compare against the 2.0 numbers)
+- [x] 1. **4-room world + held-out eval** (2026-11-22): `lab4` world (self-mapped, 16/16 doorway goals; `docs/results/lab4_world.md`) + 32-mission held-out suite committed before evaluation; 3 runs: mean 80 % (75-84 %), 0 falls, 0 real false claims (`docs/results/phase5_heldout_lab4.md`). Weak spot: object-search phrasings 5/15; no-go routing has no keepout filter
 - [ ] 2. **Demo video** of the 4-room world (voice + navigation + object finding)
 - [ ] 3. **Phase 6 — Robot Incident Graph** (resumes at step 2, see Phase 6 below)
 - [ ] 4. **Extras** (after 1–3): Phase 5b VLN, 5.5 DPO, 5.10 VLM, YOLO retraining, Phase 8 drone, Phase 10 arm (mobile manipulation)

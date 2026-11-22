@@ -119,5 +119,5 @@ unreachable 9/9, alerts 9/9, stop 8/9, honesty 12/15 (3 = the scorer artefact), 
 | `l4_where_am_i` | 3/3 | none (see scorer artefact above) | Scorer defect, not an agent failure. |
 
 Reading: the held-out failures are concentrated in **object-search phrasings** (objects 5/15): the planner picks the wrong tool (`where_is`, `explore`) or an invented argument for requests that are not
-phrased like the training data; navigation to the new rooms (C, D, Delta), multi-room trips, ambiguity questions, refusals, honesty, alerts and e-stops all pass (60 of 66 attempts excluding objects). The bigger world did not cause any of the
+phrased like the training data; navigation to the new rooms (C, D, Delta), multi-room trips, ambiguity questions, refusals, honesty, alerts and e-stops mostly pass (72 of 81 attempts outside the objects category; 3 of the 9 misses are the `where_am_i` scorer artefact). The bigger world did not cause any of the
 failures above except possibly the red-barrel timeout; the no-go route failure is a known backend gap. Not tested: voice input, a second world beyond lab4, LLM sampling variance (temperature 0).
