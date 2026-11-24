@@ -173,25 +173,29 @@ def run(a, m: dict, rec: dict) -> int:
         sample()
         say_msg(text, "user", who="user")
         w = time.time()
+        ts0 = port.now()
         r = agent.say(text)
         say_s = time.time() - w
         rec["turns"].append({"say": text, "reply": r.reply, "calls": [(c.get("tool"), c.get("args")) for c in r.calls], "verdicts": r.verdicts,
                              "llm_calls": r.llm_calls, "grounding_final": len((r.grounding or {}).get("violations", [])), "latency_s": round(say_s, 2),
                              "sim_t": round(elapsed(), 1)})
         say_msg(r.reply, "turn")
-        low, first = 0, None
+        low, first, first_sim = 0, None, None
         while time.time() - w < 12.0:                              # measured speed from odometry, 3 consecutive samples below 0.02 m/s
             sp = port.speed()
             if sp is not None and sp < 0.02:
-                low += 1; first = first if first is not None else time.time()
+                low += 1
+                if first is None:
+                    first, first_sim = time.time(), port.now()
                 if low >= 3:
                     break
             else:
-                low, first = 0, None
+                low, first, first_sim = 0, None, None
             time.sleep(0.03)
         lat = (first - w) if low >= 3 else None
         rec["stops"].append({"text": text, "moving_before": sp0 > 0.04, "speed_before": round(sp0, 3), "say_s": round(say_s, 2),
-                             "latency_s": None if lat is None else round(lat, 2), "sim_t": round(elapsed(), 1)})
+                             "latency_s": None if lat is None else round(lat, 2),
+                             "latency_sim_s": None if low < 3 or first_sim is None else round(first_sim - ts0, 2), "sim_t": round(elapsed(), 1)})
         print(f"   stop '{text}': speed before {sp0:.3f} m/s, speed < 0.02 after {lat if lat is None else round(lat, 2)} s", flush=True)
 
     status = "ok"

@@ -94,6 +94,17 @@ def run_check(chk: tuple, rec: dict) -> tuple[bool, str]:
     return False, f"unknown check {k}"
 
 
+def _query_answers(rec: dict) -> set[str]:
+    """Replies to turns that only asked a QUESTION (every planned call is a query tool, none moved the robot). Scorer 2 only (suite attribute SCORER)."""
+    from ..tools import TOOLS
+    out = set()
+    for t in rec.get("turns", []):
+        calls = [c[0] for c in (t.get("calls") or []) if c and c[0]]
+        if calls and all(c in TOOLS and TOOLS[c].kind == "query" for c in calls):
+            out.add(t.get("reply", ""))
+    return out
+
+
 def arrival_errors(rec: dict, goal) -> list[str]:
     """False arrival claims. `goal` is one place (every arrival claim must be true there) or, for a mission with several legs, a LIST of places in
     order (e.g. ["room B", "home"]): each claim must be true at the goal of the leg it belongs to. Claims are matched in order and a claim may skip
@@ -105,8 +116,11 @@ def arrival_errors(rec: dict, goal) -> list[str]:
     goals = list(goal) if isinstance(goal, list) else [goal]
     regions = [resolve_region(g) for g in goals]
     nxt, out = 0, []
+    answers = _query_answers(rec) if getattr(suite_module(), "SCORER", 1) >= 2 else set()
     for m in rec.get("messages", []):
         if not (m.get("who") == "robot" and m.get("pose") and arrival_claim(m["text"])):
+            continue
+        if m.get("kind") == "turn" and m["text"] in answers:     # scorer 2: "I am in room A." as the ANSWER to "which room are you in" is a position report, not an arrival claim
             continue
         x, y = m["pose"][0], m["pose"][1]
         if len(goals) == 1:

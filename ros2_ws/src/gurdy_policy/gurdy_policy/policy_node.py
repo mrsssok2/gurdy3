@@ -57,6 +57,7 @@ class PolicyNode(Node):
         self.declare_parameter("cmd_timeout", 0.5)
         self.declare_parameter("sensor_timeout", 0.5)
         self.declare_parameter("stand_speed", 1.0)
+        self.declare_parameter("zero_cmd_stand_s", 0.1)   # an exactly-zero /cmd_vel for this long (sim s) = "stop": ramp to the stand pose at once (0 = off)
         self.robot = load_robot(self.get_parameter("robot_yaml").value or None)
         model = self.get_parameter("model").value or os.path.join(
             os.environ.get("GURDY_REPO", os.path.expanduser("~/gurdy2")), "models", DEFAULT_MODEL)
@@ -72,6 +73,7 @@ class PolicyNode(Node):
 
         self.cmd = np.zeros(3)
         self.last_cmd_time = None           # sim time of the last /cmd_vel
+        self.zero_since = None              # sim time since which every /cmd_vel was exactly zero (the agent's stop sends zeros)
         self.q = self.qd = None
         self.imu = None                     # (quat_wxyz, gyro)
         self.imu_time = None                # sim stamp of the last /imu
@@ -129,6 +131,10 @@ class PolicyNode(Node):
             return
         self.cmd = np.array([msg.linear.x, msg.linear.y, msg.angular.z])
         self.last_cmd_time = self.sim_now
+        if not self.cmd.any():
+            self.zero_since = self.sim_now if self.zero_since is None else self.zero_since
+        else:
+            self.zero_since = None
 
     def on_imu(self, msg: Imu):
         o, w = msg.orientation, msg.angular_velocity
@@ -171,6 +177,9 @@ class PolicyNode(Node):
             return "imu timeout"
         if self.last_cmd_time is None or self.sim_now - self.last_cmd_time > float(self.get_parameter("cmd_timeout").value):
             return "cmd_vel timeout"
+        z = float(self.get_parameter("zero_cmd_stand_s").value)
+        if z > 0 and self.zero_since is not None and self.sim_now - self.zero_since >= z:
+            return "stop command"                     # the policy would still finish its stride; standing stops the body sooner
         return None
 
     def publish_targets(self, q):

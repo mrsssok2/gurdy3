@@ -145,3 +145,19 @@ def test_estop_goes_to_stand_ignores_cmd_and_releases(node, mode):
     assert node.status.startswith("stand") if mode == "policy" else node.status == "tripod"   # policy: stands until a fresh /cmd_vel; tripod: zero command
     run(node, t, 1.0, (0.08, 0.0, 0.0))
     assert node.status == mode
+
+
+def test_exact_zero_command_stands_at_once_and_a_new_command_walks_again(node):
+    t = run(node, 0.0, 2.0, (0.1, 0.0, 0.0))
+    assert node.status == "policy"
+    t = run(node, t, 0.3, (0.0, 0.0, 0.0))                         # the agent's "stop": zeros, well inside cmd_timeout (0.5 s)
+    assert node.status == "stand:stop command"
+    t = run(node, t, 0.2, (0.09, 0.0, 0.0))                        # the next command (Nav2, min-speed lifted) starts from rest
+    assert node.status == "policy"
+
+
+def test_single_zero_glitch_does_not_stop_the_walk(node):
+    t = run(node, 0.0, 2.0, (0.1, 0.0, 0.0))
+    feed(node, t, (0.0, 0.0, 0.0))
+    t = run(node, t + 0.01, 0.3, (0.1, 0.0, 0.0))
+    assert node.status == "policy"
