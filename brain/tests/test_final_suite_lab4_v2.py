@@ -60,8 +60,11 @@ if __name__ == "__main__":
 class Scorer2(unittest.TestCase):
     def test_position_report_is_not_an_arrival_claim(self):
         import os
-        os.environ["GURDY_FINAL_SUITE"] = "final_suite_lab4_v2"
+        from unittest import mock
         from brain.eval import final_checks as fc
+        patcher = mock.patch.dict(os.environ, {"GURDY_FINAL_SUITE": "final_suite_lab4_v2"})
+        patcher.start()
+        self.addCleanup(patcher.stop)
         rec = {"messages": [{"who": "robot", "kind": "turn", "text": "I am in room A.", "pose": [0.0, 0.0]},
                             {"who": "robot", "kind": "pump", "text": "I'm in room B.", "pose": [4.0, 0.0]}],
                "turns": [{"say": "tell me which room you're in", "reply": "I am in room A.", "calls": [["where_am_i", {}]]}]}
