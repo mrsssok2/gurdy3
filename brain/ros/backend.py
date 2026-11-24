@@ -44,6 +44,7 @@ class RosBackend:
         self.places_file = Path(places_file) if places_file else None
         self.places: dict[str, dict] = {}          # name -> {x, y, kind, rect?}
         self.zones: list[dict] = []
+        self.zones_version = 0           # bumped when a zone is added / removed: running navigation steps re-check their path
         self.task: _Task | None = None
         self.next_task = 1
         self.events: list[dict] = []
@@ -175,14 +176,23 @@ class RosBackend:
             return None, fail("AMBIGUOUS", f"I know of {len(m)} objects matching {name}.", candidates=[self._obj(t) for t in m])
         return m[0], None
 
+    @staticmethod
+    def _zone_has(z: dict, x: float, y: float) -> bool:
+        """A zone made from a room is the room's rectangle (a disc around the centre let the planner cut through the corners and doorways of the
+        room: held-out lab4 `l4_nogo_c_route`); a zone around an object is a disc."""
+        if z.get("rect"):
+            x0, y0, x1, y1 = z["rect"]
+            return x0 <= x <= x1 and y0 <= y <= y1
+        return math.hypot(x - z["x"], y - z["y"]) <= z["r"]
+
     def _in_zone(self, x: float, y: float) -> bool:
-        return any(math.hypot(x - z["x"], y - z["y"]) <= z["r"] for z in self.zones)
+        return any(self._zone_has(z, x, y) for z in self.zones)
 
     def _path_crosses_zone(self, path: dict) -> bool:
         return any(self._in_zone(px, py) for px, py in path.get("points", []))
 
     def _zone_ids(self, x: float, y: float) -> set:
-        return {z["id"] for z in self.zones if math.hypot(x - z["x"], y - z["y"]) <= z["r"]}
+        return {z["id"] for z in self.zones if self._zone_has(z, x, y)}
 
     def _walk_zone_hit(self, direction: str, distance_m: float) -> dict | None:
         """The straight walk from the current pose (5 cm samples) enters a no-go zone? Leaving the zone the robot already
@@ -198,10 +208,11 @@ class RosBackend:
             d = min(k * 0.05, distance_m)
             px, py = x0 + ux * d, y0 + uy * d
             for z in self.zones:
-                r = math.hypot(px - z["x"], py - z["y"])
-                if r <= z["r"]:
-                    if z["id"] in inside0 and r >= math.hypot(x0 + ux * max(d - 0.05, 0) - z["x"], y0 + uy * max(d - 0.05, 0) - z["y"]) - 1e-9:
-                        continue          # walking out of the zone we are in
+                if self._zone_has(z, px, py):
+                    if z["id"] in inside0:
+                        qx, qy = x0 + ux * max(d - 0.05, 0), y0 + uy * max(d - 0.05, 0)
+                        if self._zone_has(z, qx, qy) and (z.get("rect") or math.hypot(px - z["x"], py - z["y"]) >= math.hypot(qx - z["x"], qy - z["y"]) - 1e-9):
+                            continue      # walking out of (or inside) the zone we are in
                     return z
         return None
 
@@ -251,11 +262,35 @@ class RosBackend:
                 continue
             if self._path_crosses_zone(path):
                 zone_hit = True
-                continue
+                path = self._detour(goal, pose)           # the planner's way leads through a zone: another way round, through a room that is allowed
+                if path is None:
+                    continue
             return goal, face, info, path
         if zone_hit:
             return fail("IN_NO_GO_ZONE", "The target or the way to it is inside a no-go zone.", target=info)
         return fail("NO_PATH", "There is no path to the target.", target=info)
+
+    def _detour(self, goal, pose) -> dict | None:
+        """The direct plan crosses a no-go zone: look for an intermediate room centre such that robot -> via and via -> goal both avoid every zone
+        (the world is a ring of rooms: A-B-D-C-A with C forbidden still reaches D through B). Returns a path dict with `via` waypoints, or None.
+        At most 4 candidates (each costs two plan requests), nearest to the goal first."""
+        cands = []
+        for n, v in self.places.items():
+            if v.get("kind") != "room" or self._in_zone(v["x"], v["y"]):
+                continue
+            via = self._place_goals(v)[0]
+            if math.hypot(via[0] - goal[0], via[1] - goal[1]) < 0.5 or math.hypot(via[0] - pose[0], via[1] - pose[1]) < 0.5:
+                continue
+            cands.append((math.hypot(via[0] - goal[0], via[1] - goal[1]) + math.hypot(via[0] - pose[0], via[1] - pose[1]), via))
+        for _, via in sorted(cands)[:4]:
+            p1 = self.p.compute_path(*via)
+            if p1 is None or self._path_crosses_zone(p1):
+                continue
+            p2 = self.p.compute_path(*goal, start=via)
+            if p2 is None or self._path_crosses_zone(p2):
+                continue
+            return {"length_m": p1["length_m"] + p2["length_m"], "points": p1["points"] + p2["points"], "via": [via]}
+        return None
 
     CLEAR_M = 0.9      # a goal needs this much free space around it: costmap inflation is 0.55 m and a goal squeezed between two objects makes MPPI give up
 
@@ -367,7 +402,56 @@ class RosBackend:
         elif s["kind"] in ("rel", "rotate"):
             self.p.send_cmd(0.0, 0.0, 0.0)
 
+    def _nav_zone_guard(self, t: _Task, s: dict, pose) -> bool:
+        """No-go zones are enforced for the WHOLE walk, not only when it starts (held-out lab4 `l4_nogo_c_route`: the plan was checked once, the robot
+        then walked through the forbidden room). (1) a step whose path was never checked (sweeps, patrols) is planned and checked before it starts;
+        (2) every tick: the robot must not be in a zone it was not in when the step started; (3) a zone added or removed while the step runs makes
+        the rest of the path be checked again. A path through a zone is re-routed through an allowed room when there is one, otherwise the mission
+        stops and says why. -> True when the step was replaced / the task finished (the caller returns)."""
+        ids = self._zone_ids(pose[0], pose[1])
+        if s.get("zv") is None:
+            s["zv"], s["zones0"] = self.zones_version, ids
+            if not s.get("checked") and not s["started"]:
+                return self._recheck_nav(t, s, pose)
+        if s["zv"] != self.zones_version:
+            s["zv"], s["zones0"] = self.zones_version, ids            # standing in a zone that was just added is not "entering" it
+            if s["started"]:
+                return self._recheck_nav(t, s, pose)
+        if ids - s["zones0"]:
+            self._cancel_step(t)
+            self._emit("path_blocked", "warning", "I stopped at the edge of a no-go zone.", src="zone_guard", task_id=t.id)
+            self._finish(t, "no_go_zone")
+            return True
+        return False
+
+    def _recheck_nav(self, t: _Task, s: dict, pose) -> bool:
+        goal = (s["x"], s["y"])
+        if self._in_zone(*goal):
+            path, det = {"points": [goal]}, None
+        else:
+            path = self.p.compute_path(*goal)
+            det = None
+        if path is not None and not self._path_crosses_zone(path):
+            s["checked"] = True
+            return False
+        if path is not None and not self._in_zone(*goal):
+            det = self._detour(goal, pose)
+        self._cancel_step(t)
+        if det is not None:                                           # another way round: waypoints first, then this step again
+            fresh = {k: v for k, v in s.items() if k in ("kind", "x", "y", "yaw", "name", "optional", "length_m")}
+            t.steps[:0] = self._nav_steps(goal, None, det, s.get("name"))[:-1] + [{**fresh, "checked": True}]
+            t.cur = None
+            return True
+        if s.get("optional") and not s.get("started"):                # a sweep / patrol stop inside or behind a zone: leave it out
+            self._next(t, {"place": s.get("name"), "reached": False})
+            return True
+        self._emit("path_blocked", "warning", "The way there leads through a no-go zone.", src="zone_guard", task_id=t.id)
+        self._finish(t, "no_go_zone")
+        return True
+
     def _step_nav(self, t: _Task, s: dict, pose) -> None:
+        if self._nav_zone_guard(t, s, pose):
+            return
         if not s["started"]:
             s["h"] = self.p.nav_send(s["x"], s["y"], s.get("yaw"))
             s["started"] = True
@@ -377,7 +461,7 @@ class RosBackend:
         st = self.p.nav_state(s["h"])
         s["recoveries"] = st.get("recoveries", 0)
         if st["state"] == NAV_OK:
-            self._next(t, {"place": s.get("name"), "reached": True})
+            self._next(t, None if s.get("via") else {"place": s.get("name"), "reached": True})
         elif st["state"] == NAV_ABORTED and t.tool in ("go_to", "return_home", "inspect") and not s.get("optional") and \
                 (ce := self._close_enough(s.get("name"), (s["x"], s["y"]), pose))[0]:
             t.close_enough, t.inside = True, ce[1]               # Nav2 gave up inside the room / within 1 m of the goal: that is arrival
@@ -447,7 +531,11 @@ class RosBackend:
         """Go to every room (or the one named place) that is not inside a no-go zone and look all around there. Used by `find` (object not in
         memory) and by `explore` when the explorer has nothing left to explore (an already mapped area): the robot still goes and looks."""
         steps: list[dict] = []
-        for n, v in self.places.items():
+        pose = self._pose()
+        items = list(self.places.items())
+        if only is None and pose is not None:          # nearest room first: the robot standing in room D looks in room D before it walks off to room A
+            items.sort(key=lambda kv: math.hypot(kv[1]["x"] - pose[0], kv[1]["y"] - pose[1]))
+        for n, v in items:
             if only is not None:
                 if _norm(n) != _norm(only):
                     continue
@@ -512,8 +600,10 @@ class RosBackend:
         return final
 
     def _nav_steps(self, goal, face, path=None, name=None) -> list[dict]:
-        steps = [{"kind": "nav", "x": goal[0], "y": goal[1], "yaw": math.atan2(face[1] - goal[1], face[0] - goal[0]) if face else None,
-                  "length_m": path["length_m"] if path else None, "name": name}]
+        steps = [{"kind": "nav", "x": v[0], "y": v[1], "yaw": None, "length_m": None, "name": None, "via": True, "checked": True}
+                 for v in (path or {}).get("via", [])]            # a detour round a no-go zone: waypoints first
+        steps.append({"kind": "nav", "x": goal[0], "y": goal[1], "yaw": math.atan2(face[1] - goal[1], face[0] - goal[0]) if face else None,
+                      "length_m": path["length_m"] if path else None, "name": name, "checked": path is not None})
         return steps
 
     # ================================================================ motion
@@ -854,15 +944,20 @@ class RosBackend:
                     return fail("UNKNOWN_PLACE", f"I do not know a place called '{place}'.", known_places=list(self.places))
                 v = self.places[names[_norm(place)]]
                 x, y, name = v["x"], v["y"], names[_norm(place)]
+                rect = v.get("rect")
             elif around_object_id is not None:
                 tr = next((t for t in self._tracks() if t["id"] == around_object_id), None)
                 if tr is None:
                     return fail("NOT_SEEN", f"No object with id {around_object_id} is known.")
                 x, y, name = tr["x"], tr["y"], f"around #{around_object_id}"
+                rect = None
             else:
                 return fail("INVALID_ARGS", "give place or around_object_id")
-            self.zones.append({"id": 1 + max((z["id"] for z in self.zones), default=0), "name": name,
-                               "x": round(x, 2), "y": round(y, 2), "r": radius_m})
+            zone = {"id": 1 + max((z["id"] for z in self.zones), default=0), "name": name, "x": round(x, 2), "y": round(y, 2), "r": radius_m}
+            if rect:
+                zone["rect"] = [float(c) for c in rect]            # a room: the whole room (see _zone_has)
+            self.zones.append(zone)
+            self.zones_version += 1
             self._save_places()
             return ok(zones=[dict(z) for z in self.zones])
         keep = [z for z in self.zones if not ((place and _norm(z["name"]) == _norm(place))
@@ -870,6 +965,7 @@ class RosBackend:
         if len(keep) == len(self.zones):
             return fail("UNKNOWN_PLACE", "No such no-go zone.")
         self.zones = keep
+        self.zones_version += 1
         self._save_places()
         return ok(zones=[dict(z) for z in self.zones])
 

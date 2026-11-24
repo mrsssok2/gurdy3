@@ -26,6 +26,24 @@ def normalize(text: str) -> str:
     return _ROOM_PHON.sub(sub, text)
 
 
+_BARE_WORD = re.compile(rf"(?<![\w-])(?<!room )(?<!room, )({_WORDS})(?![\w-])(?:\s+room\b)?", re.I)
+_BARE_LETTER = re.compile(r"\b((?:go|head|walk|move|navigate|drive|come|take me|bring me|run|proceed|travel)(?:\s+\w+){0,2}?\s+(?:to|into|towards?)|\bto|\binto)\s+(?:the\s+)?([b-dB-D])(?=\s*(?:$|[.,!?;]|\b(?:and|then|please|now|first|next|after)\b))", re.I)
+
+
+def bare_rooms(text: str) -> str:
+    """Room names win over everything else (the object fuzzy matcher turned "go to Charlie" into "Did you mean chair?"):
+    a NATO word without the word "room" ("go to Charlie", "Charlie", "then Delta") becomes "room C"; a lone letter B / C / D right after
+    to / into / towards ("go to c") too. The letter "A" alone is an article, so it is only read as a room inside "room A" / "Alpha".
+    The whole utterance being just a room name ("charlie", "room c", "C") becomes a go-to command."""
+    t = text.strip()
+    m = _ANSWER.match(t)
+    if m and (m.group(1) or t.lower().startswith("room") or (m.group(2) and m.group(2).lower() in "bcd" and len(t.strip(" .!?")) == 1)):
+        letter = _WORD2LETTER[m.group(1).lower()] if m.group(1) else m.group(2).upper()
+        return f"go to room {letter}"
+    out = _BARE_WORD.sub(lambda mm: "room " + _WORD2LETTER[mm.group(1).lower()], text)
+    return _BARE_LETTER.sub(lambda mm: f"{mm.group(1)} room {mm.group(2).upper()}", out)
+
+
 def answer_letter(text: str) -> str | None:
     """The whole utterance is a room answer: "B", "bravo", "room Delta", "D as in dog" -> "B" / "D"; anything else -> None."""
     m = _ANSWER.match(text.strip())

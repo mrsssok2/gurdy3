@@ -181,13 +181,14 @@ class FakePort:
         if self.goals[h]["state"] == NAV_RUNNING:
             self.goals[h]["state"] = NAV_CANCELED
 
-    def compute_path(self, x, y):
+    def compute_path(self, x, y, start=None):
         self.plan_requests += 1
         if self._near(self.unreachable, x, y):
             return None
+        x0, y0 = (self.x, self.y) if start is None else start
         n = 10
-        pts = [(self.x + (x - self.x) * i / n, self.y + (y - self.y) * i / n) for i in range(n + 1)]
-        return {"length_m": math.hypot(x - self.x, y - self.y), "points": pts}
+        pts = [(x0 + (x - x0) * i / n, y0 + (y - y0) * i / n) for i in range(n + 1)]
+        return {"length_m": math.hypot(x - x0, y - y0), "points": pts}
 
     def explore_available(self):
         return self.explore_ok

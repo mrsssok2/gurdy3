@@ -25,6 +25,7 @@ from .fuzzy import suggest_object, suggest_place, suggest_verb
 from .guard import _is_state_change, guard_plan, normalize_call, unknown_noun
 from .llm import LLM, LLMUnavailable
 from .refs import resolve_other
+from .routing import route_plan
 from . import rooms
 from .answer_clock import AnswerClock
 from .safety import ConfirmationGate, is_clear_no, is_clear_yes, SafetyChecker, Verdict
@@ -125,6 +126,8 @@ class Agent:
                     self.layer.call("stop")
                 text = re.sub(r"\broom [A-Z]\b", f"room {ch}", rr["utterance"], count=1)
         text = rooms.normalize(text)
+        if not is_estop_phrase(text) and self.gate.pending is None and self.pending_fix is None:
+            text = rooms.bare_rooms(text)                    # room names beat the object fuzzy matcher: "go to Charlie" -> "go to room C"
         places = self.layer.backend.known_places()
         if not is_estop_phrase(text):
             q = rooms.missing_letter_question(text, places)
@@ -453,6 +456,11 @@ class Agent:
                 out = {**out, "calls": [c for c in out["calls"] if (c["tool"], repr(c.get("args", {}))) not in skip]}
                 if not out["calls"]:
                     return {"reply_parts": [], "llm_calls": n, "next": "finish"}
+            routed = route_plan(s["utterance"], list(out["calls"]), self.layer.backend.known_places())
+            if routed.reply is not None:             # an argument naming a place the robot does not know: say so, never guess
+                return {"reply_parts": [routed.reply], "llm_calls": n, "next": "finish",
+                        "verdicts": s["verdicts"] + [{"outcome": "none", "rule": routed.rule}]}
+            out = {**out, "calls": routed.calls}
             g = guard_plan(s["utterance"], list(out["calls"]), self.layer.focus, self._recall_classes)
             if g.reply is not None:
                 outcome = "refuse" if g.rule == "unknown_tool" else "none"

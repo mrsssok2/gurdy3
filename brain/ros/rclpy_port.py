@@ -269,12 +269,14 @@ class RclpyPort:
         if g["gh"] is None or g["state"] == NAV_RUNNING:
             g["state"] = NAV_CANCELED
 
-    def compute_path(self, x, y):
+    def compute_path(self, x, y, start=None):
         if not self._plan.server_is_ready():
             return None
         goal = ComputePathToPose.Goal()
         goal.goal = self._pose_msg(x, y, None)
-        goal.use_start = False
+        goal.use_start = start is not None                 # default: from the robot's current pose
+        if start is not None:
+            goal.start = self._pose_msg(start[0], start[1], None)
         gh = self._wait(self._plan.send_goal_async(goal), 3.0)
         if gh is None or not gh.accepted:
             return None

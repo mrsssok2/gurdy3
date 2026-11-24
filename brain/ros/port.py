@@ -33,7 +33,7 @@ class RosPort(Protocol):
     def nav_send(self, x: float, y: float, yaw: float | None) -> int | None: ...    # navigate_to_pose -> handle
     def nav_state(self, handle: int) -> dict[str, Any]: ...       # {state, distance_remaining, recoveries}
     def nav_cancel(self, handle: int) -> None: ...
-    def compute_path(self, x: float, y: float) -> dict | None: ...  # compute_path_to_pose -> {length_m, points} | None
+    def compute_path(self, x: float, y: float, start: tuple[float, float] | None = None) -> dict | None: ...  # compute_path_to_pose (from `start`, default the robot pose) -> {length_m, points} | None
     # ---- exploration (the `explore` action of frontier_explorer_node, serve_action:=true)
     def explore_available(self) -> bool: ...
     def explore_start(self, max_time_s: float, area_rect: list[float] | None) -> int | None: ...   # rect = [x0, y0, x1, y1] map frame

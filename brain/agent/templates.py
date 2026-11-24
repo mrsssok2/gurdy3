@@ -217,6 +217,8 @@ def failure_text(tool: str, reason: str, args: dict | None = None, d: dict | Non
         return f"I ran out of time trying to {_DOING.get(tool, 'finish that')}."
     if reason in ("stuck", "no_progress"):
         return f"I got stuck and couldn't {_DOING.get(tool, 'finish that')}."
+    if reason == "no_go_zone":
+        return f"I stopped{(' going to' + where) if where else ''} because the way there leads through a no-go zone."
     if reason == "fall":
         return "I fell over, so I stopped."
     if reason in ("leg_failure", "leg_failed"):
