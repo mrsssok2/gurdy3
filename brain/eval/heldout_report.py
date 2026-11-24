@@ -40,11 +40,13 @@ def run_stats(recs: dict, suite) -> dict:
     succ = sum(1 for v in vs.values() if v and v["success"])
     infra = [k for k, v in vs.items() if v is None or v.get("infra_failure")]
     valid = n - len(infra)
-    lat = []
+    lat, lat_sim = [], []
     for r in recs.values():
         for s in (r or {}).get("stops", []):
             if s.get("moving_before") and s.get("latency_s") is not None:
                 lat.append(s["latency_s"])
+                if s.get("latency_sim_s") is not None:
+                    lat_sim.append(s["latency_sim_s"])
     cats: dict[str, list] = {}
     for m in suite.SUITE:
         v = vs[m["id"]]
@@ -57,7 +59,7 @@ def run_stats(recs: dict, suite) -> dict:
             "wrong_claims": sum(int((v or {}).get("wrong_claims", 0)) for v in vs.values()),
             "wrong_claim_missions": [k for k, v in vs.items() if v and v.get("wrong_claims")],
             "grounding": sum(int((v or {}).get("grounding_violations", 0)) for v in vs.values()),
-            "stop_latencies": lat, "by_category": {k: tuple(v) for k, v in cats.items()},
+            "stop_latencies": lat, "stop_latencies_sim": lat_sim, "by_category": {k: tuple(v) for k, v in cats.items()},
             "sim_s": round(sum((r or {}).get("sim_s", 0.0) for r in recs.values()), 0), "path_m": round(sum((r or {}).get("path_m", 0.0) for r in recs.values()), 1)}
 
 
@@ -91,6 +93,9 @@ def render(runs: list[tuple[str, dict]], suite, baseline: dict | None) -> str:
     L.append("")
     if lat_all:
         L.append(f"Stop latency (wall s from the word 'stop' to measured speed < 0.02 m/s, only stops that began while moving): n = {len(lat_all)}, median {statistics.median(lat_all):.2f}, mean {statistics.mean(lat_all):.2f}, min {min(lat_all):.2f}, max {max(lat_all):.2f}.")
+        sim_all = [x for s in stats for x in s.get("stop_latencies_sim", [])]
+        if sim_all:
+            L.append(f"The same stops in SIM seconds (wall latency / real-time factor): n = {len(sim_all)}, median {statistics.median(sim_all):.2f}, mean {statistics.mean(sim_all):.2f}, min {min(sim_all):.2f}, max {max(sim_all):.2f}.")
     else:
         L.append("Stop latency: no measurable stop.")
     L.append("")
