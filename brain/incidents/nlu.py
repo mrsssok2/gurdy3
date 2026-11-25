@@ -18,7 +18,7 @@ _EARLIER = re.compile(r"\b(earlier|before|previously|last\s+time|a\s+(?:while|bi
 _WHY_TASK = re.compile(r"\bwhy\b.*\b(?:the|that|your)\s+(?:last\s+)?(?:mission|patrol|task|walk|search)\b.*\b(?:fail|stop|abort|cancel)", re.I)
 _UNCHECKED = re.compile(r"\b(?:which|what)\s+(?:rooms?|areas?|places?)\b.*\b(?:haven'?t|have\s+not|hasn'?t|has\s+not|didn'?t|did\s+not|not\s+been|not)\s+(?:you\s+)?(?:been\s+)?(?:checked|visited|looked|inspected|patrolled|covered|been|seen|in)\b", re.I)
 _LAST_VISIT = re.compile(r"\bwhen\s+(?:did\s+you|were\s+you|was\s+the\s+last\s+time\s+you)\s+(?:last\s+)?(?:check|visit|inspect|patrol|be\s+in|been\s+in|in|were\s+in)\b|\bwhen\s+were\s+you\s+last\s+in\b", re.I)
-_AWAY = re.compile(r"\bwhile\s+i\s+was\s+(?:away|gone|out|not\s+here)\b|\bwhat\s+did\s+i\s+miss\b|\bsince\s+i\s+(?:left|went\s+away)\b|\bsince\s+earlier\b", re.I)
+_AWAY = re.compile(r"\bwhile\s+i\s+was\s+(?:away|gone|out|not\s+here)\b|\bwhat\s+did\s+i\s+miss\b|\bsince\s+i\s+(?:left|went\s+away)\b|\bsince\s+earlier\b|\b(?:the\s+way|as|how|like)\s+i\s+left\b|\bbefore\s+i\s+(?:left|went)\b|\bsince\s+i\s+(?:stepped|went|walked)\s+(?:out|away)\b", re.I)
 _LAST_SEEN = re.compile(r"\bwhen\s+(?:did|have)\s+you\s+(?:last\s+|most\s+recently\s+)?(?:see|seen|spot|spotted|notice|noticed|find|found)\b|"
                         r"\bwhen\s+(?:was|were)\s+(?:the\s+)?[\w\s]{1,30}?\s+(?:last\s+)?(?:seen|spotted)\b|\blast\s+time\s+you\s+(?:saw|spotted|noticed|found)\b", re.I)
 _HISTORY = re.compile(r"\b(?:has|have|had)\s+(?:the\s+|my\s+)?[\w\s]{1,30}?\s+(?:been\s+)?(?:moved|move|gone|disappeared|shifted|changed)\b|"
@@ -35,6 +35,13 @@ def _num(tok: str) -> float | None:
     if tok.isdigit():
         return float(tok)
     return float(_NUMW[tok]) if tok in _NUMW else None
+
+
+# Vague relative time. DOCUMENTED DEFAULT: "a while / recently / lately / for a bit / of late" = the last VAGUE_S seconds (10 minutes). No time word at all = the tool's
+# own default (what changed: today; not checked: 1 hour). Used by parse_since AND parse_threshold, so every routing path (exact patterns and the classifier) agrees.
+VAGUE_S = 600.0
+_VAGUE = re.compile(r"\b(?:in|for|after)\s+a\s+(?:while|bit|little\s+while|short\s+while|few\s+minutes)\b|\b(?:recently|lately|of\s+late|these\s+days|for\s+ages|in\s+ages|"
+                    r"for\s+some\s+time|a\s+(?:bit|while)\s+ago|just\s+now|a\s+moment\s+ago)\b", re.I)
 
 
 def parse_since(text: str) -> str | None:
@@ -58,6 +65,8 @@ def parse_since(text: str) -> str | None:
         return f"ago:{int((_num(m.group(1)) or 1) * _UNIT_S[m.group(2)] + 0)}"
     if re.search(r"\btoday\b|\bearlier\b|\bso\s+far\b|\bthis\s+morning\b", t):
         return "today"
+    if _VAGUE.search(t):
+        return f"ago:{int(VAGUE_S)}"
     return None
 
 
@@ -67,6 +76,8 @@ def parse_threshold(text: str) -> float | None:
         return (_num(m.group(1)) or 1) * _UNIT_S[m.group(2)]
     if re.search(r"\b(?:for|in|over)\s+(?:the\s+)?(?:last\s+|past\s+)?(?:an?\s+)?hour\b", t):
         return 3600.0
+    if _VAGUE.search(t):
+        return VAGUE_S
     return None
 
 
@@ -109,17 +120,21 @@ def _check_room(room: str | None, known: list[str]) -> dict | None:
 # threshold), all validated by the tool layer's schema; the answer is always a template over the query result, never raw memory.
 _MOTION = re.compile(r"^\s*(?:please\s+)?(?:go|walk|drive|head|navigate|come|turn|rotate|patrol|explore|find|search|look\s+for|bring|fetch|follow|stop|halt|wait|stand|sit|"
                      r"return|move\s+(?:to|forward|back|left|right)|set|add|remove|clear|save|take\s+me|run|start|begin|resume|cancel)\b", re.I)
-_C_CHANGE = re.compile(r"\b(?:relocat\w*|reposition\w*|transferr?\w*|touch\w*|chang\w*|differ\w*|new|moved?|moving|shift\w*|displac\w*|missing|gone|vanish\w*|disappear\w*|taken|removed?|rearrang\w*|swapp\w*|"
+_C_CHANGE = re.compile(r"\b(?:relocat\w*|reposition\w*|transferr?\w*|touch\w*|chang\w*|differ\w*|new|surpris\w*|disturb\w*|tamper\w*|untouched|undisturbed|unchanged|intact|amiss|news|moved?|moving|shift\w*|displac\w*|missing|gone|vanish\w*|disappear\w*|taken|removed?|rearrang\w*|swapp\w*|"
                        r"stay(?:ed)?\s+put|unusual|odd|strange|out\s+of\s+place|compar\w*|diff|went\s+missing|go\s+missing|got\s+moved)\b", re.I)
 _C_LAST = re.compile(r"\blast\s+(?:time|saw|seen|spotted|noticed|sighting)|\b(?:laid|set|put)\s+eyes\b|\beyes\s+on\b|\bmost\s+recent(?:ly)?\b|\blatest\s+sighting|"
                      r"\b(?:seen|spotted|noticed|saw)\b.*\b(?:recently|lately|today|earlier|ago)\b|\bhow\s+long\s+ago\b.*\b(?:see|saw|seen|spot)", re.I)
 _C_HIST = re.compile(r"\bend(?:ed)?\s+up\b|\bstay(?:ed)?\s+(?:put|in\s+place|there|where)\b|\bsame\s+(?:place|spot)\b|\bstill\s+(?:in|at|where|there|here)\b|\bwhere\s+(?:it|they|he|she)\s+was\b|"
-                     r"\banymore\b|\bwhere\s+.*\b(?:before|originally|first|used\s+to)\b|\bmoved?\b|\bshift\w*\b", re.I)
+                     r"\banymore\b|\bwhere\s+(?:i|you)\s+(?:left|put|saw)\s+(?:it|them)\b|\bin\s+(?:its|their)\s+(?:place|spot)\b|\bwhere\s+.*\b(?:before|originally|first|used\s+to)\b|\bmoved?\b|\bshift\w*\b", re.I)
 _C_TIME = re.compile(r"\bhappen\w*|\bevents?\b|\bsummary\b|\bsummari[sz]e\b|\brecap\b|\blog\b|\btimeline\b|\bwent\s+on\b|\bbeen\s+up\s+to\b|\bhistory\b|\bdid\s+you\s+do\b|\bactivity\b", re.I)
 _C_UNCH = re.compile(r"\bneglect\w*|\bunvisited\b|\bunchecked\b|\buninspected\b|(?:\bhaven'?t|\bhave\s+not|\bhasn'?t|\bnot\b|\bnever\b|\blongest|\bneglect\w*|\boverdue|\bstale|\bignor\w*).*\b(?:check\w*|visit\w*|look\w*|inspect\w*|patrol\w*|cover\w*|been\s+(?:in|to)|seen|surveyed)\b|"
                      r"\bwhich\s+(?:room|area|place)s?\b.*\b(?:last|longest|oldest|while|ages)\b", re.I)
 _EXISTS = re.compile(r"\b(?:is|are)\s+there\s+(?:a|an|any)?\s*(?:room|area)\s+([a-z])\b|\bdo\s+you\s+(?:have|know)\s+(?:a\s+)?room\s+([a-z])\b|\bdoes\s+room\s+([a-z])\s+exist\b", re.I)
-_FIRST = re.compile(r"\b(?:first\s+time|at\s+the\s+(?:start|beginning)|when\s+you\s+(?:started|began|first)|originally|to\s+begin\s+with|at\s+first)\b", re.I)
+_STATE = re.compile(r"\b(?:the\s+way|as|how)\s+i\s+left\b|\bsame\s+as\b|\bas\s+(?:it|they)\s+was\b|\blike\s+(?:before|it\s+was)\b|\bversus\b|\bvs\b|\bcompared?\b|"
+                    r"\banything\s+(?:off|wrong|odd|suspicious|amiss)\b|\bhow\s+(?:it|things)\s+(?:was|were|looked)\b", re.I)
+_VISIT = re.compile(r"\b(?:when|what\s+time|how\s+long)\b.*\b(?:you|were|was)\b.*\b(?:in|at|through|into|visit\w*|enter\w*|pass\w*|check\w*|inspect\w*|been|came|come|stop\w*|drop\w*|went|there)\b|"
+                    r"\blast\s+(?:time|visit)\b.*\b(?:in|at|through|into|visit\w*|enter\w*|pass\w*|check\w*|been)\b|\bwhen\s+were\s+you\b", re.I)
+_FIRST = re.compile(r"\bbefore\b.*\b(?:now|versus|vs|today|currently)\b|\bversus\b|\bvs\b|\bthen\s+and\s+now\b|\b(?:first\s+time|(?:at|with|to|from)\s+the\s+(?:start|beginning)|when\s+you\s+(?:started|began|first)|originally|to\s+begin\s+with|at\s+first)\b", re.I)
 _MOVELIST = re.compile(r"\b(?:which|what|list|name|show)\b.*\b(?:things?|objects?|items?|stuff|ones)\b.*\b(?:moved|changed|shifted|missing|gone|taken|different)\b|\b(?:list|name)\s+(?:what|everything)\b", re.I)
 
 
@@ -155,18 +170,18 @@ def classify(text: str, known_places: list[str]) -> dict | None:
         return {"reply": f"No, there is no room {ch}. My rooms are {_rooms_text(known_places)}."}
     if _C_UNCH.search(t) and not objs:
         thr = parse_threshold(t)
-        if thr is None and re.search(r"\b(?:in\s+a\s+while|lately|for\s+a\s+while|for\s+ages|recently|long)\b", t, re.I):
-            thr = 600.0
         return plan("unchecked_rooms", older_than_s=thr, room=room if re.search(r"\bwhen\b", t, re.I) else None)
     first = since if since else ("session" if _FIRST.search(t) else None)
+    if room and not objs and _VISIT.search(t) and not _C_CHANGE.search(t):
+        return plan("unchecked_rooms", room=room)                  # "when / what time were you last in room B": the last visit
     if objs:
         o = objs[0]
         if _C_LAST.search(t) or (re.search(r"\b(?:when|how\s+long)\b", t, re.I) and re.search(r"\b(?:see|saw|seen|spot\w*|notic\w*)\b", t, re.I)):
             return plan("last_seen", object=o)
-        if _C_HIST.search(t) or _C_CHANGE.search(t):
+        if _C_HIST.search(t) or _C_CHANGE.search(t) or _STATE.search(t):
             return plan("object_history", object=o, since=first)
         return None
-    if _C_CHANGE.search(t) or _MOVELIST.search(t):
+    if _C_CHANGE.search(t) or _STATE.search(t) or _MOVELIST.search(t):
         return plan("what_changed", room=room, since=first)
     if _C_TIME.search(t):
         return plan("timeline", since=first, room=room, limit=10)
@@ -176,8 +191,14 @@ def classify(text: str, known_places: list[str]) -> dict | None:
 def parse(text: str, known_places: list[str]) -> dict | None:
     """{"tool", "args"} for an incident question, {"reply": ...} for one that cannot be answered, None for anything else."""
     plan = _parse_exact(text, known_places) or classify(text, known_places)
-    if plan and plan.get("tool") == "object_history" and re.search(r"\bstill\b|\bstay(?:ed)?\s+(?:put|in\s+place|there|where)\b|\bsame\s+(?:place|spot)\b|\banymore\b|\bwhere\s+(?:it|they)\s+was\b", text, re.I):
-        plan["style"] = {"still": True}                           # a yes / no question about staying: the reply starts with Yes / No accordingly
+    if plan and plan.get("tool") == "object_history":
+        if re.search(r"\bstill\b|\bstay(?:ed)?\s+(?:put|in\s+place|there|where)\b|\bsame\s+(?:place|spot)\b|\banymore\b|\bwhere\s+(?:it|they)\s+was\b|"
+                     r"\bwhere\s+(?:i|you)\s+(?:left|put|saw)\s+(?:it|them)\b|\bin\s+(?:its|their)\s+(?:place|spot)\b", text, re.I):
+            plan["style"] = {"still": True}                       # a yes / no question about staying: answered from the CURRENT graph state, Yes / No first
+            if (rm := _room(" ".join(text.split()))):
+                plan["style"]["room"] = rm
+        elif re.search(r"\bwhere\b", text, re.I):
+            plan["style"] = {"where": True}                       # "where did it end up": no Yes / No
     return plan
 
 
@@ -210,7 +231,7 @@ def _parse_exact(text: str, known_places: list[str]) -> dict | None:
     if _LAST_VISIT.search(t) and room:
         return plan("unchecked_rooms", room=room)
     if _AWAY.search(t):
-        return plan("what_changed", room=room, since="away") if _CHANGED.search(t) else plan("timeline", since="away", room=room, limit=10)
+        return plan("what_changed", room=room, since="away") if (_CHANGED.search(t) or _C_CHANGE.search(t) or _STATE.search(t)) else plan("timeline", since="away", room=room, limit=10)
     if _LAST_SEEN.search(t) and objs:
         return plan("last_seen", object=objs[0])
     if _HISTORY.search(t) and objs:

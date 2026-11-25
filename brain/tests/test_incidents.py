@@ -637,6 +637,93 @@ class TestRobustRouting(unittest.TestCase):
         self.assertIn("red box", ag.say("what changed since the start?").reply)
 
 
+class TestPhase6cRouting(unittest.TestCase):
+    """Fix 2 (state / comparison / surprise / time-of-visit phrasings), fix 4 (still there / where I left it from the CURRENT graph state), fix 5 (relative time)."""
+
+    def p(self, text):
+        return nlu.parse(text, LAB4)
+
+    def test_room_state_and_visit_phrasings(self):
+        cases = {
+            "has room D been disturbed?": ("what_changed", {"room": "room D"}),
+            "anything off in room C?": ("what_changed", {"room": "room C"}),
+            "is room B as I left it": ("what_changed", {"room": "room B", "since": "away"}),
+            "how does room A compare with the start": ("what_changed", {"room": "room A", "since": "session"}),
+            "any surprises in room A?": ("what_changed", {"room": "room A"}),
+            "what time did you last come through room C": ("unchecked_rooms", {"room": "room C"}),
+            "when were you last in room D": ("unchecked_rooms", {"room": "room D"}),
+            "when did you last stop by room A?": ("unchecked_rooms", {"room": "room A"}),
+            "how long since you went into room B": ("unchecked_rooms", {"room": "room B"}),
+        }
+        for text, (tool, args) in cases.items():
+            r = self.p(text)
+            self.assertIsNotNone(r, text)
+            self.assertEqual(r["tool"], tool, text)
+            for k, v in args.items():
+                self.assertEqual(r["args"].get(k), v, text)
+
+    def test_relative_time_on_every_path(self):
+        self.assertEqual(nlu.VAGUE_S, 600.0)
+        for text in ("which rooms haven't you checked in a while", "which rooms have you not looked at lately", "which rooms haven't you visited for a bit",
+                     "which areas have you neglected recently", "rooms you have not inspected for ages"):
+            r = self.p(text)
+            self.assertEqual((r["tool"], r["args"].get("older_than_s")), ("unchecked_rooms", 600.0), text)
+        self.assertEqual(self.p("anything new lately")["args"]["since"], "ago:600")
+        self.assertEqual(self.p("did the red box move recently")["args"]["since"], "ago:600")
+        self.assertEqual(self.p("what happened in the last 20 minutes")["args"]["since"], "ago:1200")           # an explicit time wins
+        self.assertNotIn("older_than_s", self.p("which rooms have you not checked")["args"])                     # no time word: the tool default (1 hour)
+
+    def test_still_questions_use_the_current_graph_state(self):
+        rig = TestWhatChangedSemantics().scenario()       # red box A -> B, yellow box B -> A, green barrel removed, blue box untouched
+        ag = Agent(ToolLayer(rig.ib), KeywordLLM(rig.ib.known_places))
+        r = ag.say("is the red box still in room A?").reply
+        self.assertTrue(r.startswith("No."), r)
+        self.assertIn("moved from room A to room B", r)
+        r = ag.say("is the green barrel where I left it?").reply
+        self.assertTrue(r.startswith("No."), r)
+        self.assertIn("not there when I checked", r)
+        self.assertNotRegex(r, r"\d metres")                                       # never the stale remembered location
+        r = ag.say("is the yellow box still in room A?").reply                    # it moved INTO room A and has stayed there
+        self.assertTrue(r.startswith("No.") or r.startswith("Partly") or r.startswith("Yes."), r)
+        r = ag.say("is the yellow box still where I left it?").reply
+        self.assertRegex(r, r"moved from room B to room A")
+
+    def test_untouched_object_is_still_there_with_its_latest_sighting(self):
+        rig = Rig()
+        rig.patrol("room A", "room B", "room A")
+        ag = Agent(ToolLayer(rig.ib), KeywordLLM(rig.ib.known_places))
+        r = ag.say("is the red box still where I left it?").reply
+        self.assertTrue(r.startswith("Yes."), r)
+        self.assertIn("in room A", r)
+        self.assertRegex(r, r"last saw it at \d\d:\d\d")
+
+    def test_where_question_has_no_yes_prefix(self):
+        rig = TestWhatChangedSemantics().scenario()
+        ag = Agent(ToolLayer(rig.ib), KeywordLLM(rig.ib.known_places))
+        r = ag.say("where did the red box end up?").reply
+        self.assertFalse(r.startswith("Yes"), r)
+        self.assertIn("room B", r)
+
+
+class TestRoomIsNeverAnUnknownNoun(unittest.TestCase):
+    def test_guard_and_pre_check(self):
+        from brain.agent.guard import guard_plan, unknown_noun
+        for w in ("room", "rooms", "room A", "room D", "Alpha", "delta", "room Charlie", "B"):
+            r = guard_plan("what is in there", [{"tool": "where_is", "args": {"object": {"class": w}}}])
+            self.assertEqual(r.rule, "room_not_object", w)
+            self.assertNotIn("don't know what", r.reply)
+            self.assertIsNone(unknown_noun(f"what is in {w}", LAB4), w)
+        r = guard_plan("where is the bicycle", [{"tool": "where_is", "args": {"object": {"class": "bicycle"}}}])
+        self.assertEqual(r.rule, "unknown_object")                              # real unknown objects are still refused
+
+    def test_planner_that_calls_an_object_tool_with_room_gets_no_unknown_noun_reply(self):
+        rig = Rig()
+        llm = ScriptedLLM([[{"tool": "where_is", "args": {"object": {"class": "room"}}}]])
+        ag = Agent(ToolLayer(rig.ib), llm)
+        r = ag.say("hmm, anything odd with the place we started in")
+        self.assertNotIn("don't know what a room", r.reply)
+
+
 class TestUnknownRooms(unittest.TestCase):
     def test_unknown_room_lists_the_rooms_of_the_current_map(self):
         from brain.agent import rooms

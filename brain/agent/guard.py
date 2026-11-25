@@ -121,6 +121,15 @@ def mentions_class(text: str, cls: str) -> bool:
                for t in toks)
 
 
+_ROOM_WORDS = {"room", "rooms", "area", "areas", "alpha", "bravo", "charlie", "delta"}
+
+
+def _is_room_word(w: str) -> bool:
+    """'room', 'room B', 'B', 'Alpha' ... : names of rooms are places, never unknown object nouns."""
+    t = w.strip().lower().replace("_", " ")
+    return t in _ROOM_WORDS or bool(re.fullmatch(r"(?:room\s+)?[a-h]|room\s+(?:alpha|bravo|charlie|delta)", t))
+
+
 def unknown_noun(text: str, known_places: list[str] | None = None) -> str | None:
     """The first noun in `text` that is neither an object class nor a known place, or None. Pre-LLM check."""
     low = text.lower()
@@ -130,6 +139,8 @@ def unknown_noun(text: str, known_places: list[str] | None = None) -> str | None
     if has_save_cue(text):
         return None
     for i, t in enumerate(toks):
+        if _is_room_word(t):
+            continue
         if t in PRE_CHECK_NOUNS and t not in known and not any(t in k.split() for k in known):
             return t
     for noun in PRE_CHECK_NOUNS:
@@ -184,6 +195,9 @@ def guard_plan(utterance: str, calls: list[dict], focus: dict | None = None, rec
     for c in calls:
         for ref in _object_refs(c):
             cls = ref.get("class")
+            if cls is not None and cls not in _CLASSES and _is_room_word(str(cls)):
+                return GuardResult([], reply="That sounds like a question about a room. Which room do you mean? Please name one, for example room A.",
+                                   rule="room_not_object", changed=True)      # a room is never an unknown object
             if cls is not None and cls not in _CLASSES:
                 noun = str(cls).replace("_", " ")
                 say = noun if noun.lower() in utterance.lower() else "that"

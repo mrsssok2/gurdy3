@@ -219,15 +219,24 @@ def object_history(store: IncidentStore, now: float, object: dict, since: str | 
     if not ids:
         return ok(found=False, object=pretty(object.get("class"), object.get("color")), events=[], moved=False)
     evs: list[dict] = []
+    items: list[dict] = []
     for nid in ids:
+        mine: list[dict] = []
         for g in _group(store, nid):
-            evs += store.events(since_wall=win[0], object_id=g, etypes=["object_seen", "object_moved", "object_missing"])
-    evs = [e for e in sorted(evs, key=lambda e: (e["wall_t"], e["id"])) if not e["data"].get("superseded")]
+            mine += store.events(since_wall=win[0], object_id=g, etypes=["object_seen", "object_moved", "object_missing"])
+        mine = [e for e in sorted(mine, key=lambda e: (e["wall_t"], e["id"])) if not e["data"].get("superseded")]
+        evs += mine
+        nd = store.node(nid)
+        every = [e for g in _group(store, nid) for e in store.events(object_id=g, etypes=["object_seen", "object_moved"])]
+        t = max([e["wall_t"] for e in every] + [nd["wall_t"] or 0])
+        items.append({"object": pretty(nd["cls"], nd["color"]), "room": nd["room"], "state": nd["state"], "last_clock": clock_text(t), "last_ago_text": ago_text(now - t),
+                      "moves": [fmt_event(e, now) for e in mine if e["etype"] == "object_moved"], "sightings": sum(1 for e in mine if e["etype"] == "object_seen")})
+    evs = sorted(evs, key=lambda e: (e["wall_t"], e["id"]))
     moves = [fmt_event(e, now) for e in evs if e["etype"] == "object_moved"]
     n = store.node(ids[0])
     return ok(found=True, object=pretty(n["cls"], n["color"]), since_text=win[1], events=[fmt_event(e, now) for e in evs][-12:], moved=bool(moves), moves=moves,
               sightings=sum(1 for e in evs if e["etype"] == "object_seen"), current_room=n["room"], state=n["state"],
-              first_seen_clock=clock_text(evs[0]["wall_t"]) if evs else None, copies=len(ids))
+              first_seen_clock=clock_text(evs[0]["wall_t"]) if evs else None, copies=len(ids), items=items)
 
 
 # ---------------------------------------------------------------- timeline

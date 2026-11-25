@@ -83,14 +83,40 @@ def _last_seen(d: dict, a: dict) -> str:
     return f"I know of {len(ms)} of them. I last saw " + _list([one(m) for m in ms], "more") + "."
 
 
+def _still(d: dict, a: dict) -> str:
+    """'Is X still where it was / still in room D?' answered from the CURRENT graph state of every matching object: a move, the missing flag, or the latest sighting."""
+    room, items = a.get("room"), list(d["items"])
+    if room:
+        items = [i for i in items if i["room"] == room or any((m.get("from") or {}).get("room") == room for m in i["moves"])]
+        if not items:
+            return f"I have no record of a {d['object'].split()[-1]} in {room}."
+    parts, good = [], []
+    for i in items:
+        name = i["object"]
+        if i["moves"]:
+            parts.append(_moved_text(i["moves"][-1]))
+            good.append(False)
+        elif i["state"] == "missing":
+            parts.append(f"the {name} was not there when I checked; I last saw it {('in ' + i['room'] + ' ') if i['room'] else ''}at {i['last_clock']} ({i['last_ago_text']})")
+            good.append(False)
+        else:
+            here = f"in {i['room']}" if i["room"] else "where I last recorded it"
+            parts.append(f"the {name} is {here}; I last saw it at {i['last_clock']} ({i['last_ago_text']})")
+            good.append(not room or i["room"] == room)
+    head = "Yes" if good and all(good) else "No" if not any(good) else "Partly"
+    return f"{head}. {_cap(_list(parts))}."
+
+
 def _history(d: dict, a: dict) -> str:
     if not d["found"]:
         return f"I have no record of a {d['object']}."
+    if a.get("still") and d.get("items"):
+        return _still(d, a)
     obj, still = d["object"], bool(a.get("still"))
     if d["moved"]:
         ms = d["moves"]
         text = _list([_moved_text(m) for m in ms])
-        return f"{'No' if still else 'Yes'}. {_cap(text)}."
+        return f"{_cap(text)}." if a.get("where") else f"{'No' if still else 'Yes'}. {_cap(text)}."
     seen = d["sightings"]
     missing = d["state"] == "missing"
     state = " It is currently marked missing: it was not there when I checked." if missing else ""
