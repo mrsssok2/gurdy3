@@ -115,6 +115,7 @@ def test_sweep_step_into_a_zone_room_is_left_out(tmp_path):
 def test_walk_with_a_zone_is_cut_into_short_legs_along_the_checked_route():
     from brain.ros.backend import RosBackend
     b = RosBackend.__new__(RosBackend)
+    b.p = type('P', (), {'map_cell': staticmethod(lambda x, y: 'free')})()
     b.zones = [{"id": 1, "x": 0.0, "y": 4.0, "r": 1.0, "rect": [-2.0, 2.0, 2.0, 6.0]}]
     pts = [(0.025 * i, 0.0) for i in range(321)]              # a straight 8 m plan
     path = {"length_m": 8.0, "points": pts}
@@ -125,3 +126,17 @@ def test_walk_with_a_zone_is_cut_into_short_legs_along_the_checked_route():
     b.zones = []
     assert b._waypoints(path) == []                           # no zone: one goal, as before
     assert len(b._nav_steps((8.0, 0.0), None, path, "room X")) == 1
+
+
+def test_waypoints_skip_doorways_and_walls():
+    from brain.ros.backend import RosBackend
+    b = RosBackend.__new__(RosBackend)
+    # a wall with a 1 m gap at x = 4: occupied for |y| > 0.5 on the line x = 4
+    b.p = type('P', (), {'map_cell': staticmethod(lambda x, y: 'occupied' if abs(x - 4.0) < 0.05 and abs(y) > 0.5 else 'free')})()
+    b.zones = [{"id": 1, "x": 0.0, "y": 4.0, "r": 1.0, "rect": [-2.0, 2.0, 2.0, 6.0]}]
+    path = {"length_m": 8.0, "points": [(0.025 * i, 0.0) for i in range(321)]}
+    xs = [round(x, 1) for x, _ in b._waypoints(path)]
+    assert 4.0 not in xs and xs             # the doorway (x = 4) is not a waypoint, the next free point along the plan is
+    steps = b._nav_steps((8.0, 0.0), None, path, "room X")
+    assert steps[0]["length_m"] == 0.0 and steps[-1]["length_m"] == 8.0
+    assert b._estimate(steps, (0.0, 0.0))["distance_m"] == 8.0

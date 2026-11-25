@@ -382,7 +382,7 @@ class RosBackend:
         d = 0.0
         for s in steps:
             if s["kind"] == "nav":
-                d += s.get("length_m") or math.hypot(s["x"] - pose[0], s["y"] - pose[1])
+                d += s["length_m"] if s.get("length_m") is not None else math.hypot(s["x"] - pose[0], s["y"] - pose[1])
         return {"distance_m": round(d, 2), "duration_s": round(d / 0.10, 1)}
 
     def _run_task(self, t: _Task) -> None:
@@ -686,14 +686,26 @@ class RosBackend:
         for p in pts[1:]:
             acc += math.hypot(p[0] - last[0], p[1] - last[1])
             last = p
-            if acc >= self.WAYPOINT_M and math.hypot(p[0] - end[0], p[1] - end[1]) >= 0.75 * self.WAYPOINT_M and not self._in_zone(*p):
+            if acc >= self.WAYPOINT_M and math.hypot(p[0] - end[0], p[1] - end[1]) >= 0.75 * self.WAYPOINT_M and not self._in_zone(*p) \
+                    and self._open_space(*p):
                 out.append((p[0], p[1]))
                 acc = 0.0
         return out
 
+    INFLATION_M = 0.55      # Nav2 inflation radius: a waypoint inside it (a doorway) is refused by the controller within a second
+
+    def _open_space(self, x: float, y: float) -> bool:
+        """No occupied map cell within the inflation radius: a leg may end here (doorways, wall corners and object gaps are not waypoints)."""
+        if self.p.map_cell(x, y) == "occupied":
+            return False
+        return not any(self.p.map_cell(x + self.INFLATION_M * math.cos(a), y + self.INFLATION_M * math.sin(a)) == "occupied"
+                       for a in (k * math.pi / 6 for k in range(12)))
+
     def _nav_steps(self, goal, face, path=None, name=None) -> list[dict]:
         legs = self._waypoints(path) or [tuple(v) for v in (path or {}).get("via", [])]      # waypoints first (a detour round a no-go zone, or legs)
-        steps = [{"kind": "nav", "x": v[0], "y": v[1], "yaw": None, "length_m": None, "name": None, "via": True, "checked": True} for v in legs]
+        legged = bool(self._waypoints(path))       # legs share the plan's length: the leg steps count 0 m, the last step the whole way (estimate)
+        steps = [{"kind": "nav", "x": v[0], "y": v[1], "yaw": None, "length_m": 0.0 if legged else None, "name": None, "via": True, "checked": True}
+                 for v in legs]
         steps.append({"kind": "nav", "x": goal[0], "y": goal[1], "yaw": math.atan2(face[1] - goal[1], face[0] - goal[0]) if face else None,
                       "length_m": path["length_m"] if path else None, "name": name, "checked": path is not None})
         return steps
