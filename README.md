@@ -33,10 +33,39 @@ v1 and v2 are different mission sets, so the scores are not a like-for-like comp
 
 Offline command tests did not drop (94 % / 95 % / 75 %), and the brain test suite passes (800+ tests).
 
-### Incident graph: memory over time (in progress)
-Gurdy records timestamped events (objects seen, moved or missing, rooms visited, stops, no-go zones, alerts) in a SQLite temporal graph and answers questions such as *"What changed in room C?"* and *"When did you last see the toolbox?"*. The web app has a Timeline panel and arrows for moved objects.
+### Incident graph: memory over time (Phase 6)
+Gurdy records timestamped events (objects seen, moved or missing, rooms visited, stops, no-go zones, alerts) in a SQLite temporal graph (`brain/incidents`) and answers questions about them, for example *"What changed in room C?"* and *"When did you last see the toolbox?"*. The web app has a Timeline panel, a What-changed button and arrows for moved objects. Design: `docs/phase6_incident_graph.md`.
 
-In a scripted test (2 objects moved, 1 removed), the graph found both moves in the right rooms and the removal, with false reports cut from 16 to 1 after fixing a sim-time/wall-clock bug. Question answering is still being improved.
+**The 6 incident tools** (hidden from the planner prompt; answers are deterministic):
+| tool | answers |
+|---|---|
+| `what_changed` | what moved, went missing or appeared, whole map or one room |
+| `last_seen` | when and where an object was last seen |
+| `object_history` | whether an object moved, and its story |
+| `timeline` | what happened in a time window |
+| `incident_why` | why the robot stopped (user stop, e-stop, blocked path ...) |
+| `unchecked_rooms` | which rooms were not visited for a while, or when a room was last visited |
+
+**LLM tool picker** (`brain/incidents/picker.py`): exact patterns run first, then the picker, then a cue-word classifier, then the planner.
+- *Constrained JSON:* a cheap pre-filter passes likely incident questions to a few-shot prompt that asks the local model for one JSON object `{tool, room, about, still}`.
+- *Validation:* the tool must be one of the six, else `none`. The room and the object come from the user's own words (never from the model) and the room must be on the map. Time windows and thresholds are parsed from the user's words.
+- *Fallback:* server down, bad JSON or an invalid value means no pick, and the older keyword routing continues.
+- *Templated answers:* the model only chooses the tool. Every reply is a template filled from the query result, so it cannot invent facts.
+- On the picker dev set (66 phrasings, looked at while building) `gurdy-sft-400` scores 58/66, and 0 of its 16 non-incident negatives was routed to an incident tool.
+
+**Results** (offline replay on the recorded graph of one live Gazebo run, `gurdy-sft-400`; details in `docs/results/phase6e_blind.md`):
+| question set (20 each) | picker off | picker on |
+|---|---|---|
+| blind_v1 (questions written by the user, committed before any run) | 14/20 | **15/20** |
+| v4 (written by the router's author) | 4/20 | **12/20** |
+
+On blind_v1 the five non-incident questions ("is room Q real?", "go to room C", "what do you see right now?", "how many legs do you have?", "stop") passed 5/5: no incident tool was called for the four negatives and room Q got an honest "there is no room Q". Offline command tests did not change (94 % / 95 % / 75 %), and the brain test suite passes (845 passed, 3 skipped).
+
+**Honest limits**
+- On the blind set the picker adds only +1 (14 to 15); on v4 it added +8. v4 was written by the author of the router, so it is not independent.
+- Failures on blind_v1: "any rooms you skipped?" and "tell me the story of the red box" go to the wrong tool, "missing for more than five minutes" is read as a room-age threshold, one answer lists a false "mannequin is back" (graph noise), and one check was too strict (my scoring error, left as run).
+- The graph still produces false "missing" / "back" reports (4 in the last live run). Phase 6e added a debounce (the spot must be in clear view for at least 4 s; "back" needs two sightings), but it is validated only by unit tests: the replay reuses the old recorder's events and cannot show it. It has not been run live yet.
+- Replay numbers come from one graph and temperature 0, so the 3 runs were identical and say nothing about variance. 20 questions means one question is 5 points. The picker has not been run live in Gazebo.
 
 ### Start in the lab4 world
 ```bash
