@@ -2,7 +2,7 @@
 
 **Gurdy 3.0 lives in `~/projects/gurdy3` (github.com/mrsssok2/gurdy3). Gurdy 2.0 (`~/projects/gurdy2`, frozen at 4c7d047) must stay untouched; never edit it.**
 3.0 plan (2026-11-21): 4-room world + held-out eval, demo video, Phase 6 Incident Graph, then Extras (VLN, DPO, VLM, YOLO retrain, drone, arm) — see ROADMAP.md.
-Status 2026-11-22: lab4 world + map + doorway check done, held-out eval done (80 % mean over 3 runs, agent unchanged; failures + root causes in docs/results/phase5_heldout_lab4.md). Next: demo video, then Phase 6.
+Status 2026-11-22: lab4 world + map + doorway check done, held-out eval done (80 % mean over 3 runs, agent unchanged; failures + root causes in docs/results/phase5_heldout_lab4.md). Next: demo video, then Phase 6. 2026-11-25: v2 fixes (room names, search routing, whole-walk no-go checks, stop latency) + new lab4 v2 suite: 88 % mean (84-91 %), 0 falls, flat_lab 27/27 (`docs/results/phase5_heldout_lab4_v2.md`).
 Coexistence: Docker images stay `gurdy2/*` (reused, never rebuilt/duplicated), Ollama models shared; compose project `gurdy3`, containers `gurdy3-*`/`gurdy3_*`, Pages `mrsssok2.github.io/gurdy3`.
 `~/gurdy2` / `/home/ubuntu/gurdy2` in scripts and Dockerfiles is the IN-CONTAINER mount point baked into the images — leave it. Run only one stack at a time (same ports). The text below is the 2.0 history/baseline.
 
