@@ -20,7 +20,7 @@ Earlier reports are unchanged. Everything here is offline (no Gazebo); the one G
 ## o15 regression (ood_v1 75 % -> 72.5 %): NOT our bug
 `how many boxes have you found so far` failed in 3 of 3 runs after the Gazebo evaluations, also on the 6b code (commit 5b75e73, which had scored 75 %) checked out today, so the code did not change it. After **restarting the
 project's Ollama server** ood_v1 is 75.0 % again in 2 of 2 runs, with the same model files. Conclusion: server state (a long-lived llama.cpp process that served the long incident evaluations) changed the model's output for this
-borderline case at temperature 0; cause inside Ollama not investigated. Practice: restart Ollama before offline evaluations. Offline sets after the 6d code (fresh Ollama): testset_v1 94 %, v1.1 95 %, ood_v1 75 % (`docs/results/incident_regression_6d/`). Brain suite 837 passed.
+borderline case at temperature 0; cause inside Ollama not investigated. Practice: restart Ollama before offline evaluations. Offline sets after the 6d code (fresh Ollama): testset_v1 94 %, v1.1 95 %, ood_v1 75 % (`docs/results/incident_regression_6d/`). Brain suite 836 passed.
 
 ## Offline replay harness (item 4 of the task text was cut off after "build a harness"; this is my reading of it)
 `python3 -m brain.eval.incident_replay RUN_DIR --suite incident_suite_v4 --picker on|off --llm ollama|keyword`: copies a finished run's `stack/incidents.db`, replays its graph with the clock of the live questions
