@@ -168,8 +168,9 @@ class Agent:
         """Never raises: an internal exception (a node crashed, a backend / database error) becomes a spoken "Something went wrong: ..." reply,
         the traceback goes to stderr (the agent log) and pending questions are dropped so the next turn starts clean."""
         try:
+            steps_before = self.executor.steps
             res = self._say(utterance, stt_confidence, started_at)
-            self._note_command(utterance)
+            self._note_command(utterance, starts_task=self.executor.steps is not steps_before and not is_estop_phrase(utterance))
             return res
         except LLMUnavailable as e:                              # the model server is down / unreachable: a plain sentence, details in the log
             import sys
@@ -193,12 +194,12 @@ class Agent:
             self.pending_fix = self.pending_room = self.followup = None
             return TurnResult(f"Something went wrong: {type(e).__name__}: {e}", [], [{"outcome": "error", "rule": "internal_error"}], 0, {})
 
-    def _note_command(self, utterance: str) -> None:
-        """Tell the incident graph what the user said AFTER the answer (so 'while I was away' means since the PREVIOUS command). Never raises."""
+    def _note_command(self, utterance: str, starts_task: bool = False) -> None:
+        """Tell the incident graph what the user said AFTER the answer (a command that started a mission anchors 'while I was away'; questions never do). Never raises."""
         note = getattr(self.layer.backend, "note_user_command", None)
         if note is not None:
             try:
-                note(utterance)
+                note(utterance, starts_task)
             except Exception as e:                               # noqa: BLE001
                 self.errors.append(f"incident note failed: {e}")
 
@@ -531,7 +532,7 @@ class Agent:
                    "I don't keep a timeline in this session." if res.code == "UNAVAILABLE" else f"I can't answer that: {res.error['message']}")
             return {"reply_parts": [msg], "next": "finish", "calls": calls, "verdicts": verdict, "has_query": False}
         entries = self.layer.log[-1:]
-        template = incident_phrase(tool, res.data, args)
+        template = plan.get("assumed", "") + incident_phrase(tool, res.data, args)
         reply, g = template, {"attempts": 0, "fallback": False, "rejected": [], "violations": []}
         if getattr(self.llm, "phrases_incidents", False):
             # the LLM only PHRASES the answer: it must use values of the query result (grounding check) and mention the facts that carry the answer

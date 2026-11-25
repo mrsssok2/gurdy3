@@ -139,9 +139,10 @@ class IncidentRecorder:
                     self._mark_missing(nid, sim, wall, "reported by the robot's inspection")
 
     # ------------------------------------------------------------------ user + config
-    def user_command(self, text: str, now_sim: float) -> None:
+    def user_command(self, text: str, now_sim: float, starts_task: bool = False) -> None:
+        """`starts_task`: this command made the robot start a mission (the user walked away from it). Only such commands anchor "while I was away"."""
         wall = self.store.wall()
-        eid = self._event("user_command", text.strip()[:200], now_sim, wall, data={"text": text.strip()[:200]})
+        eid = self._event("user_command", text.strip()[:200], now_sim, wall, data={"text": text.strip()[:200], "starts_task": bool(starts_task)})
         self.store.add_edge(eid, self.store.user_id, "issued_by", now_sim, wall)
         self._cmd_wall = wall
 

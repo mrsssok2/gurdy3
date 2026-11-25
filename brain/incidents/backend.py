@@ -2,7 +2,7 @@
 
   poll_events()        records the backend events, then samples the pose and the object records (throttled to one sample per TICK_S of sim time)
   no_go_zone(...)      a successful add / remove becomes no_go_set / no_go_cleared
-  note_user_command()  called by the agent AFTER it answered (so "while I was away" means since the PREVIOUS command)
+  note_user_command()  called by the agent AFTER it answered (`starts_task` marks the commands that anchor "while I was away"; questions never do)
   incident_query()     what_changed / last_seen / object_history / timeline / incident_why / unchecked_rooms for the tool layer
 `MEMORY=false` = a store on ":memory:" (records within the session, nothing survives a restart)."""
 from __future__ import annotations
@@ -78,9 +78,9 @@ class IncidentBackend:
             with self._lock:
                 self.tick()
 
-    def note_user_command(self, text: str) -> None:
+    def note_user_command(self, text: str, starts_task: bool = False) -> None:
         with self._lock:
-            self.recorder.user_command(text, self._inner.now())
+            self.recorder.user_command(text, self._inner.now(), starts_task)
 
     # ------------------------------------------------------------------ queries
     def incident_query(self, name: str, args: dict) -> Result:

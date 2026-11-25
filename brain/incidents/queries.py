@@ -64,7 +64,8 @@ def resolve_since(spec: str | None, store: IncidentStore, now: float, default: s
     if spec == "session":
         return store.started_wall, "since you started me"
     if spec == "away":
-        cmds = store.events(etypes=["user_command"])
+        # anchored to the last command that STARTED a mission (the user left while it ran), else the session start; questions never move it
+        cmds = [c for c in store.events(etypes=["user_command"]) if c["data"].get("starts_task")]
         return (cmds[-1]["wall_t"] if cmds else store.started_wall), "while you were away"
     if m := _CLOCK.match(spec):
         h, mi = int(m.group(1)), int(m.group(2))
@@ -262,6 +263,9 @@ def why(store: IncidentStore, now: float, about: str = "stop", at: str | None = 
     else:
         types = {"stop": ("estop", "stop", "task_failed"), "failure": ("task_failed",), "alert": ("alert",), "last_event": STORY_TYPES}.get(about, STOPLIKE)
         cands = store.events(etypes=types)
+        if about == "stop":
+            # "why did you stop": the stop the user gave (or the e-stop) beats a task failure / timeout; those only count when there was no such stop
+            cands = store.events(etypes=("estop", "stop")) or cands
         if at:
             m = _CLOCK.match(at)
             if not m:

@@ -284,17 +284,25 @@ class TestQueries(unittest.TestCase):
         self.assertTrue(self.rig.q("timeline", since="ago:1", limit=3).data["no_data"] or True)
         self.assertLessEqual(len(self.rig.q("timeline", since="session", limit=3).data["events"]), 3)
 
-    def test_away_window_starts_at_previous_command(self):
+    def test_away_window_anchored_to_task_start_not_questions(self):
         rig = Rig()
         rig.patrol("room A")
-        rig.ib.note_user_command("hello")
+        rig.ib.note_user_command("patrol rooms A and B", starts_task=True)
+        anchor = rig.store.events(etypes=["user_command"])[0]["wall_t"]
         rig.mb.remove_object(RED)
         rig.patrol("room B", "room A", "room A")
+        for _ in range(3):                                                 # questions in a row must not reset the window
+            rig.drive(5)
+            rig.ib.note_user_command("what changed?", starts_task=False)
+        self.assertEqual(queries.resolve_since("away", rig.store, rig.store.wall())[0], anchor)
         d = rig.q("timeline", since="away", limit=50).data
         self.assertTrue(d["events"])
-        self.assertTrue(all(e["wall_t"] >= T0 + 1 for e in d["events"]))
-        cmd_t = rig.store.events(etypes=["user_command"])[0]["wall_t"]
-        self.assertTrue(all(e["wall_t"] >= cmd_t for e in d["events"]))
+        self.assertTrue(all(e["wall_t"] >= anchor for e in d["events"]))
+
+    def test_away_window_without_task_command_is_session_start(self):
+        rig = Rig()
+        rig.ib.note_user_command("hello", starts_task=False)
+        self.assertEqual(queries.resolve_since("away", rig.store, rig.store.wall())[0], rig.store.started_wall)
 
     def test_why_estop_chain(self):
         rig = Rig()
@@ -315,6 +323,20 @@ class TestQueries(unittest.TestCase):
         d = rig.q("incident_why", about="failure").data
         self.assertEqual(d["cause"]["type"], "path_blocked")
         self.assertTrue(d["has_cause"])
+
+    def test_why_stop_prefers_user_stop_over_later_timeout(self):
+        rig = Rig()
+        st = rig.store
+        st.add_event("stop", "Stopped: you told me to stop.", 10.0, T0 + 10)
+        st.add_event("task_failed", "explore timed out.", 50.0, T0 + 50, "warning", data={"tool": "explore", "reason": "timeout"})
+        d = rig.q("incident_why", about="stop").data
+        self.assertEqual(d["event"]["type"], "stop")
+        self.assertEqual(rig.q("incident_why", about="failure").data["event"]["type"], "task_failed")     # asked for the failure: the timeout
+
+    def test_why_stop_falls_back_to_failure_without_user_stop(self):
+        rig = Rig()
+        rig.store.add_event("task_failed", "explore timed out.", 50.0, T0 + 50, "warning", data={"tool": "explore", "reason": "timeout"})
+        self.assertEqual(rig.q("incident_why", about="stop").data["event"]["type"], "task_failed")
 
     def test_why_no_data(self):
         self.assertFalse(Rig().q("incident_why", about="stop").data["found"])
@@ -416,6 +438,26 @@ class TestNlu(unittest.TestCase):
         self.assertEqual(self.p("why did you stop at 10:30")["args"], {"about": "stop", "at": "10:30"})
 
 
+class TestUnknownRooms(unittest.TestCase):
+    def test_edit_distance_and_near_room(self):
+        self.assertEqual(nlu.near_room("what changed in roon B"), ("roon B", "room B"))
+        self.assertIsNone(nlu.near_room("what changed in room B"))
+        self.assertIsNone(nlu.near_room("what changed in the book B"))        # distance 2 is not a near miss
+
+    def test_unknown_room_is_stated_before_any_repair(self):
+        rig = Rig()
+        ag = Agent(ToolLayer(rig.ib), KeywordLLM(rig.ib.known_places))
+        for q in ("What changed in room Y lately?", "When did you check room Y last?", "what changed in room y"):
+            r = ag.say(q).reply
+            self.assertIn("There is no room Y. I know rooms A and B.", r)
+            self.assertNotIn("Did you mean", r)
+
+    def test_near_miss_is_repaired_and_says_what_it_assumed(self):
+        rig = Rig()
+        ag = Agent(ToolLayer(rig.ib), KeywordLLM(rig.ib.known_places))
+        self.assertIn('I took "roon B" as room B.', ag.say("what changed in roon B").reply)
+
+
 class TestAgent(unittest.TestCase):
     def agent(self, rig: Rig, llm=None) -> Agent:
         return Agent(ToolLayer(rig.ib), llm or KeywordLLM(rig.ib.known_places))
@@ -445,17 +487,27 @@ class TestAgent(unittest.TestCase):
         self.assertIn("haven't been in room B since you started me", ag.say("what changed in room B since you started me?").reply)
         self.assertIn("no record", ag.say("has the fire extinguisher moved?").reply)
 
-    def test_while_i_was_away_uses_previous_command(self):
+    def test_while_i_was_away_repeated_questions_keep_the_window(self):
         rig = two_patrols()
         ag = self.agent(rig)
-        ag.say("hello there")                                              # the command BEFORE the question
-        quiet = ag.say("what happened while I was away?")                  # nothing happened since: an honest empty answer
-        self.assertIn("I haven't recorded anything while you were away", quiet.reply)
-        rig.patrol("room A", "room B")                                     # the user is away: the robot patrols
-        r = ag.say("what happened while I was away?")
-        self.assertIn(":", r.reply)
-        self.assertIn("Entered room B", r.reply)
-        self.assertNotIn("hello there", r.reply)
+        first = ag.say("did anything change while I was away?")
+        for _ in range(3):
+            again = ag.say("did anything change while I was away?")
+            self.assertEqual(again.reply, first.reply)                     # the same window each time
+        self.assertTrue(any(rig.store.events(etypes=["user_command"])) and not any(
+            c["data"].get("starts_task") for c in rig.store.events(etypes=["user_command"])))
+
+    def test_since_earlier_is_the_away_window(self):
+        self.assertEqual(nlu.parse_since("what changed since earlier?"), "away")
+
+    def test_motion_command_anchors_the_away_window(self):
+        rig = Rig()
+        ag = self.agent(rig)
+        ag.say("go to room A")
+        cmds = rig.store.events(etypes=["user_command"])
+        self.assertTrue(cmds[-1]["data"]["starts_task"])
+        ag.say("what changed?")
+        self.assertFalse(rig.store.events(etypes=["user_command"])[-1]["data"]["starts_task"])
 
     def test_user_commands_are_recorded_after_the_answer(self):
         rig = Rig()

@@ -18,7 +18,7 @@ _EARLIER = re.compile(r"\b(earlier|before|previously|last\s+time|a\s+(?:while|bi
 _WHY_TASK = re.compile(r"\bwhy\b.*\b(?:the|that|your)\s+(?:last\s+)?(?:mission|patrol|task|walk|search)\b.*\b(?:fail|stop|abort|cancel)", re.I)
 _UNCHECKED = re.compile(r"\b(?:which|what)\s+(?:rooms?|areas?|places?)\b.*\b(?:haven'?t|have\s+not|hasn'?t|has\s+not|didn'?t|did\s+not|not\s+been|not)\s+(?:you\s+)?(?:been\s+)?(?:checked|visited|looked|inspected|patrolled|covered|been|seen|in)\b", re.I)
 _LAST_VISIT = re.compile(r"\bwhen\s+(?:did\s+you|were\s+you|was\s+the\s+last\s+time\s+you)\s+(?:last\s+)?(?:check|visit|inspect|patrol|be\s+in|been\s+in|in|were\s+in)\b|\bwhen\s+were\s+you\s+last\s+in\b", re.I)
-_AWAY = re.compile(r"\bwhile\s+i\s+was\s+(?:away|gone|out|not\s+here)\b|\bwhat\s+did\s+i\s+miss\b|\bsince\s+i\s+(?:left|went\s+away)\b", re.I)
+_AWAY = re.compile(r"\bwhile\s+i\s+was\s+(?:away|gone|out|not\s+here)\b|\bwhat\s+did\s+i\s+miss\b|\bsince\s+i\s+(?:left|went\s+away)\b|\bsince\s+earlier\b", re.I)
 _LAST_SEEN = re.compile(r"\bwhen\s+(?:did|have)\s+you\s+(?:last\s+|most\s+recently\s+)?(?:see|seen|spot|spotted|notice|noticed|find|found)\b|"
                         r"\bwhen\s+(?:was|were)\s+(?:the\s+)?[\w\s]{1,30}?\s+(?:last\s+)?(?:seen|spotted)\b|\blast\s+time\s+you\s+(?:saw|spotted|noticed|found)\b", re.I)
 _HISTORY = re.compile(r"\b(?:has|have|had)\s+(?:the\s+|my\s+)?[\w\s]{1,30}?\s+(?:been\s+)?(?:moved|move|gone|disappeared|shifted|changed)\b|"
@@ -70,6 +70,28 @@ def parse_threshold(text: str) -> float | None:
     return None
 
 
+def _edit1(a: str, b: str) -> bool:
+    """Levenshtein distance exactly 1 (one substitution, insertion or deletion)."""
+    if a == b or abs(len(a) - len(b)) > 1:
+        return False
+    if len(a) == len(b):
+        return sum(x != y for x, y in zip(a, b)) == 1
+    a, b = (a, b) if len(a) < len(b) else (b, a)
+    return any(b[:i] + b[i + 1:] == a for i in range(len(b)))
+
+
+_NEAR_ROOM = re.compile(r"\b([a-z]{3,5})\s+([a-z])\b", re.I)
+
+
+def near_room(text: str) -> tuple[str, str] | None:
+    """("roon B", "room B"): a misspelt "room" (edit distance 1) followed by a letter. The caller says what it assumed."""
+    for m in _NEAR_ROOM.finditer(text):
+        w = m.group(1).lower()
+        if w != "room" and _edit1(w, "room") and m.group(2).upper() == m.group(2):
+            return m.group(0), f"room {m.group(2).upper()}"
+    return None
+
+
 def _room(text: str) -> str | None:
     m = _ROOM.search(text)
     return f"room {m.group(1).upper()}" if m else None
@@ -87,11 +109,18 @@ def parse(text: str, known_places: list[str]) -> dict | None:
     """{"tool", "args"} for an incident question, {"reply": ...} for one that cannot be answered, None for anything else."""
     t = " ".join(text.split())
     room, objs, since = _room(t), named_objects(t), parse_since(t)
+    assumed = None
+    if room is None and (nr := near_room(t)):
+        heard, room = nr
+        assumed = f"I took \"{heard}\" as {room}. "
 
     def plan(tool: str, **args: Any) -> dict:
         if (bad := _check_room(room, known_places)) and room and tool in ("what_changed", "timeline", "unchecked_rooms"):
             return bad
-        return {"tool": tool, "args": {k: v for k, v in args.items() if v is not None}}
+        out: dict = {"tool": tool, "args": {k: v for k, v in args.items() if v is not None}}
+        if assumed and "room" in out["args"]:
+            out["assumed"] = assumed
+        return out
 
     if (_WHY_STOP.search(t) and _EARLIER.search(t)) or _WHY_TASK.search(t):
         about = "failure" if re.search(r"\b(?:fail|mission|patrol|task|search|walk)\w*\b", t, re.I) and not re.search(r"\bstop", t, re.I) else "stop"
