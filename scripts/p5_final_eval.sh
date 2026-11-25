@@ -40,13 +40,12 @@ for d in "$HOME" /mnt/c; do
   free=$(df -BG --output=avail "$d" 2>/dev/null | tail -1 | tr -dc 0-9)
   [ -n "$free" ] && [ "$free" -lt 5 ] && { log "less than 5 GB free on $d ($free GB): refusing to start (a full disk crashed WSL before)"; exit 1; }
 done
-if ! curl -sf "localhost:$PORT/api/tags" >/dev/null; then
-  log "starting Ollama on :$PORT"
-  OLLAMA_HOST=0.0.0.0:$PORT OLLAMA_MODELS=$HOME/ollama_models LD_LIBRARY_PATH=/usr/lib/wsl/lib nohup "$HOME/ollama/bin/ollama" serve > /tmp/ollama_gurdy.log 2>&1 &
-  for _ in $(seq 30); do curl -sf "localhost:$PORT/api/tags" >/dev/null && break; sleep 1; done
-fi
-curl -s "localhost:$PORT/api/tags" | grep -q "\"$MODEL" || { log "model $MODEL not in Ollama"; exit 1; }
-export OLLAMA_URL=http://$(hostname -I | cut -d' ' -f1):$PORT
+# start Ollama if none answers, check the EXACT model, and pick an address a container can really reach (probed from a throwaway container;
+# `hostname -I` alone was refused from containers on 2026-11-19, see scripts/lib_ollama.sh). Exports OLLAMA_URL.
+. scripts/lib_ollama.sh
+ollama_prepare "$MODEL" > "$RUN/ollama_prepare.log" 2>&1 || { cat "$RUN/ollama_prepare.log"; log "no usable Ollama for $MODEL"; exit 1; }   # no pipe: it must export OLLAMA_URL into THIS shell
+cat "$RUN/ollama_prepare.log" >> "$RUN/run.log"
+[ -n "${OLLAMA_URL:-}" ] || { log "OLLAMA_URL not set"; exit 1; }
 cat > "$RUN/meta.json" <<JSON
 {"started": "$(date -u +%FT%TZ)", "commit": "$(git rev-parse --short HEAD)", "dirty": $(git status --porcelain | grep -q . && echo true || echo false), "model": "$MODEL", "missions": $N, "attempts_max": $ATTEMPTS, "host": "$(hostname)"}
 JSON

@@ -29,6 +29,8 @@ class WallTimeout(unittest.TestCase):
         stub(bindir, "docker", f'''case "$1" in
   ps) exit 0 ;;
   rm) exit 0 ;;
+  run) echo ok ;;          # the address probe (scripts/lib_ollama.sh) runs a throwaway container: it "reaches" Ollama
+  image) exit 0 ;;
   compose) {compose_body} ;;
 esac''')
         stub(bindir, "curl", 'echo \'{"models":[{"name":"gurdy-sft-400"}]}\'')
