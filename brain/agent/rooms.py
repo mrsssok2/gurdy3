@@ -4,6 +4,7 @@ Pure strings: used by Agent.say before anything else (planner, guard, fuzzy matc
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass, field
 
 NATO = {"A": "Alpha", "B": "Bravo", "C": "Charlie", "D": "Delta", "E": "Echo", "F": "Foxtrot", "G": "Golf", "H": "Hotel"}
 _WORD2LETTER = {w.lower(): k for k, w in NATO.items()} | {"alfa": "A", "charly": "C"}
@@ -42,6 +43,37 @@ def bare_rooms(text: str) -> str:
         return f"go to room {letter}"
     out = _BARE_WORD.sub(lambda mm: "room " + _WORD2LETTER[mm.group(1).lower()], text)
     return _BARE_LETTER.sub(lambda mm: f"{mm.group(1)} room {mm.group(2).upper()}", out)
+
+
+# "that room" / "the other room" / "another room" with no letter: which room is only known from the conversation
+_REF = re.compile(r"\b(?:(?P<that>that|this|the same)\s+room|(?P<other>(?:that|the|an)\s+other\s+room|another\s+room|other\s+room))\b(?!\s*,?\s*(?:[a-h]\b|" + _WORDS + r"\b))", re.I)
+
+
+@dataclass
+class RoomRef:
+    text: str | None = None            # resolved: the utterance with "room X" in its place
+    question: str | None = None        # ask which room
+    template: str | None = None        # the utterance with a bare "room" in its place (the answer's letter completes it)
+    letters: list[str] = field(default_factory=list)
+    rule: str = ""
+
+
+def room_reference(text: str, places: list[str], last_room: str | None) -> RoomRef | None:
+    """None = no such reference. `last_room`: the letter of the room the conversation talked about last (None = no earlier room).
+    "that room"        -> the last room; none yet -> ask (listing the rooms).
+    "the other room"   -> the single known room that is not the last one; several (or no earlier room) -> ask, listing the candidates."""
+    m = _REF.search(text)
+    letters = known_letters(places)
+    if not m or not letters:
+        return None
+    other = bool(m.group("other"))
+    cand = [l for l in letters if not (other and last_room and l == last_room)]
+    if not other and last_room in letters:
+        return RoomRef(text=text[:m.start()] + f"room {last_room}" + text[m.end():], rule="room_ref_that")
+    if other and last_room and len(cand) == 1:
+        return RoomRef(text=text[:m.start()] + f"room {cand[0]}" + text[m.end():], rule="room_ref_other")
+    template = text[:m.start()] + "room" + text[m.end():]
+    return RoomRef(question=f"Which room: {listing(cand)}?", template=template, letters=cand, rule="room_ref_ask")
 
 
 def answer_letter(text: str) -> str | None:

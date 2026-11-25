@@ -29,7 +29,7 @@ from .routing import route_plan
 from . import rooms
 from .answer_clock import AnswerClock
 from .safety import ConfirmationGate, is_clear_no, is_clear_yes, SafetyChecker, Verdict
-from .stopwords import is_estop_phrase, is_unsafe_request     # noqa: F401  (re-exported: the e-stop text rules live in stopwords.py)
+from .stopwords import is_estop_phrase, is_stop_why, is_unsafe_request     # noqa: F401  (re-exported: the e-stop text rules live in stopwords.py)
 
 MAX_LLM_CALLS = 4
 SYSTEM_PROMPT = ("You are Gurdy, a hexapod robot. Turn the user's request into tool calls, or ask / refuse. "
@@ -84,6 +84,8 @@ class Agent:
         self.followup: dict | None = None        # {utterance, log_start, done}: plan the rest of the request once the mission is done
         self.pending_room: dict | None = None   # "Which room: A, B or D?" waiting for a letter: {template, expires_at}
         self.recent_room: dict | None = None    # last command that named a room: {utterance, t}; "no, Delta" corrects it
+        self.last_stop: dict | None = None      # why the robot last stood still: {reason, at (wall), command?, tool?} (stop explanation)
+        self.last_room: str | None = None       # letter of the room the conversation talked about last ("that room", "the other room")
         self.pending_fix: dict | None = None    # "Did you mean room B?" waiting for a yes: {options: {name: corrected text}, expires_at}
         self.graph = self._build()
 
@@ -129,6 +131,14 @@ class Agent:
         if not is_estop_phrase(text) and self.gate.pending is None and self.pending_fix is None:
             text = rooms.bare_rooms(text)                    # room names beat the object fuzzy matcher: "go to Charlie" -> "go to room C"
         places = self.layer.backend.known_places()
+        if not is_estop_phrase(text) and self.gate.pending is None:
+            ref = rooms.room_reference(text, places, self.last_room)
+            if ref is not None and ref.text is not None:
+                text = ref.text                                  # "that room" after room B -> "room B"
+            elif ref is not None:                                # no earlier room (or several candidates): ask, never guess
+                self.pending_room = {"template": ref.template, "asked_at": self.clock.stamp()}
+                self.layer.call("ask_user", {"question": ref.question, "options": [f"room {l}" for l in ref.letters][:6]})
+                return TurnResult(ref.question, [], [{"outcome": "clarify", "rule": ref.rule}], 0, {})
         if not is_estop_phrase(text):
             q = rooms.missing_letter_question(text, places)
             if q:
@@ -140,6 +150,7 @@ class Agent:
                 return TurnResult(msg, [], [{"outcome": "none", "rule": "unknown_room"}], 0, {})
         if rooms.mentioned_letters(text):
             self.recent_room = {"utterance": text, "t": self.clock.stamp()}
+            self.last_room = rooms.mentioned_letters(text)[-1]
         return text
 
     def answer_hint(self) -> str | None:
@@ -286,6 +297,7 @@ class Agent:
         out: list[str] = []
         mission_failed = any(e["type"] == "mission_failed" for e in evs)
         now = self.clock.wall()
+        self._note_stops(evs)
         for e in evs:
             t = e["type"]
             if t == "mission_failed":
@@ -304,6 +316,47 @@ class Agent:
                 if t == "task_failed":
                     self._failure_at = now
         return out
+
+    # ---- the last reason the robot stood still ("why are you standing still?"), kept in state, never read back from a tool name
+    _STOP_REASONS = {"reached": "goal_reached", "done": "goal_reached", "blocked": "blocked", "no_go_zone": "no_go", "timeout": "timeout",
+                     "estop": "estop", "cancelled": "cancelled", "failed": "failed", "unreachable": "blocked"}
+
+    def _note_stops(self, evs: list[dict]) -> None:
+        now = self.clock.wall()
+        for e in evs:
+            t, d = e.get("type"), e.get("data", {}) or {}
+            if t == "estop" and "engaged" in str(e.get("text", "")):
+                self.last_stop = {"reason": "estop", "at": now}
+            elif t in ("task_finished", "task_failed") and d.get("tool") not in ("rotate",):
+                reason = self._STOP_REASONS.get(str(d.get("stopped_reason", "done" if t == "task_finished" else "failed")), "failed")
+                ls = self.last_stop
+                if reason == "cancelled" and ls and ls["reason"] in ("user_stop", "estop") and now - ls["at"] < 10.0:
+                    continue                             # the backend's bookkeeping of the stop the user just asked for
+                self.last_stop = {"reason": reason, "at": now, "tool": d.get("tool")}
+
+    def _stop_explanation(self) -> str | None:
+        """None = no stop on record (let the planner / `why` tool answer) or the robot is working right now."""
+        ls = self.last_stop
+        if ls is None or self.executor.active:
+            return None
+        ago = max(0, int(self.clock.wall() - ls["at"]))
+        when = f"{ago} second{'s' if ago != 1 else ''} ago" if ago < 120 else f"{ago // 60} minutes ago"
+        r = ls["reason"]
+        if r == "user_stop":
+            return f'You asked me to stop ("{ls["command"].rstrip(" .!")}"), {when}.'
+        if r == "estop":
+            return f"The emergency stop was engaged, {when}, so I stopped."
+        if r == "goal_reached":
+            return f"I stopped because I reached my goal, {when}."
+        if r == "blocked":
+            return f"I stopped because the way was blocked, {when}."
+        if r == "no_go":
+            return f"I stopped because the way leads through a no-go zone, {when}."
+        if r == "timeout":
+            return f"I stopped because the task ran out of time, {when}."
+        if r == "cancelled":
+            return f"The task was cancelled, {when}."
+        return f"I stopped because the task failed, {when}."
 
     # ---- re-plan after a failed mission step (one LLM call, safety-checked like any plan)
     def _on_mission_failed(self, ev: dict) -> list[str]:
@@ -398,9 +451,12 @@ class Agent:
             ev = self.executor.cancel()
             self.gate.clear()
             res = self.layer.call("stop")
+            self.last_stop = {"reason": "user_stop", "at": self.clock.wall(), "command": text.strip()}
             return {"reply_parts": ["Stopped."], "next": "finish", "events": ev, "has_query": False,
                     "calls": [{"tool": "stop", "args": {}}], "verdicts": [{"outcome": "allow", "rule": "estop_fast_path"}]} \
                 if res.ok else {"reply_parts": ["I could not stop."], "next": "finish"}
+        if is_stop_why(text) and (why := self._stop_explanation()):
+            return {"reply_parts": [why], "next": "finish", "verdicts": [{"outcome": "none", "rule": "stop_explanation"}]}
         if is_unsafe_request(text):
             return {"reply_parts": ["I will not do that."], "next": "finish",
                     "verdicts": [{"outcome": "refuse", "rule": "unsafe_request"}]}

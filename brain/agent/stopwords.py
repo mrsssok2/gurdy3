@@ -56,3 +56,16 @@ def is_estop_phrase(text: str) -> bool:
         return True
     return (fuzzy_stop(t) and not _NOT_A_COMMAND.search(t) and not is_unsafe_request(t)
             and not re.search(r"\b(don'?t|do not|never|until)\b", t, re.I))
+
+
+# "why are you standing still" / "what made you stop": a question about the last stop, answered from the agent's own stop record
+_STOP_WHY = re.compile(
+    r"^\W*(?:(?:hey|so|ok|okay|and|but|tell me)\W+)*(?:"
+    r"(?:why|how come)\b.*\b(?:stop(?:ped)?|stand(?:ing)?(?:\s+still)?|stood|halt(?:ed)?|freez\w*|froze|not\s+moving|(?:aren'?t|are\s+not)\s+you\s+(?:moving|walking|going)|(?:are|did|do)(?:n'?t)?\s+you\s+(?:still|idle|waiting)|still\s+here)"
+    r"|what\W+(?:made|stopped|caused|got|is\s+stopping)\s+(?:you|the\s+robot)\b"
+    r"|what(?:'s|\s+is|\s+was)\s+the\s+reason\s+(?:you|for)\b.*\b(?:stop|stand|halt|still)"
+    r")", re.I)
+
+
+def is_stop_why(text: str) -> bool:
+    return bool(_STOP_WHY.search(text)) and not is_estop_phrase(text)
