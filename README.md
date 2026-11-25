@@ -1,12 +1,12 @@
 # Gurdy 3.0
 
-Builds on Gurdy 2.0 (github.com/mrsssok2/gurdy2, frozen at commit 4c7d047c490efefdce13526f18f7db52b700e327). The **Gurdy 3.0 results** come first below; the rest of this page is the Gurdy 2.0 baseline.
+Builds on Gurdy 2.0 (github.com/mrsssok2/gurdy2, frozen at commit 4c7d047c490efefdce13526f18f7db52b700e327). The Gurdy 3.0 results are below. (The long Gurdy 2.0 write-up that used to follow was removed from this page in an earlier edit; the 2.0 state is the frozen commit above and `docs/results/`.)
 
 **Try the live demo: [mrsssok2.github.io/gurdy3](https://mrsssok2.github.io/gurdy3/) - runs in your browser, voice included.** Press *Connect to my robot* on that page to drive your own robot over Tailscale.
 
-**What it does:** a six-legged robot in simulation that you can talk to in plain English, typed or spoken (Whisper on the GPU, ~0.3 s per command, 3.7 % word error rate). It walks with a learned (reinforcement-learning) gait, maps and explores a building on its own, recognises objects by name, and plans missions with a fine-tuned LLM running locally.
-**What it proves:** the whole stack runs offline on one 6 GB laptop GPU. Measured: the learned gait tracks commands more accurately and uses less energy than a classic gait, the robot mapped 99 % of a lab, found 11/11 objects, and the fine-tuned LLM scored 94 % vs 59 % for the base model on 100 commands, with no hallucinated replies reaching the user.
-**What did not work:** it is simulation only, 75.0 % on unseen casual phrasing (`ood_v1`, 3 runs after an Ollama restart), and leg-failure adaptation missed its target (see Known limitations).
+**What it does:** a six-legged robot in simulation that you can talk to in plain English, typed or spoken (Whisper on the GPU, 0.27 s mean per clip, 3.7 % word error rate on 43 read-aloud clips). It walks with a learned (reinforcement-learning) gait, maps and explores a building on its own, recognises objects by name, and plans missions with a fine-tuned LLM running locally.
+**What it proves:** the whole stack runs offline on one 6 GB laptop GPU. Measured: on flat ground the learned gait (selected terrain policy) tracks commands with 11.2 % error vs 15.9 % for the classic tripod gait and uses less energy (cost of transport 5.76 vs 7.35), the robot mapped 99.1 % of the lab interior on its own (98.5 % with leg odometry), mapped 11/11 test objects (with 7 false tracks, mostly a table and a cylinder labelled `box`), and the fine-tuned LLM scored 94 % vs 59 % for the base model on 100 commands (`v1.1`), with 0 grounding violations in the final replies of the 27-mission Gazebo run.
+**What did not work:** it is simulation only, 75.0 % on unseen casual phrasing (`ood_v1`, 3 runs after an Ollama restart), and leg-failure adaptation missed its target: after a leg failure the adapted policy tracks with 76 % (limp) / 50 % (locked) error against 38 % / 37 % for the open-loop tripod gait, so it was not deployed (`docs/results/exp_B_leg_failure.md`). More limits: section "Honest limits of the 3.0 results" below.
 
 ## What's new in Gurdy 3.0
 
