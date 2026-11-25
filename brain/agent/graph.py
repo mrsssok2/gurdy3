@@ -494,7 +494,7 @@ class Agent:
         speed_note: list[str] = []
         clean, fast = untrusted.speed_request(text)
         if fast and self.gate.pending is None:
-            text, speed_note = clean, [untrusted.speed_note(float(self.safety.cfg.get("max_speed_mps", untrusted.MAX_SPEED_MPS)))]
+            text, speed_note = clean, [untrusted.speed_note(untrusted.configured_max_speed())]
             s = {**s, "utterance": text}
         if self.gate.pending is None and (inc := self._incident_route(text)) is not None:
             return inc

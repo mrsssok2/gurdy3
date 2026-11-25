@@ -105,7 +105,7 @@ def test_speed_requests_are_clamped_and_said(text, rest):
 def test_speed_reply_says_the_limit_and_the_command_still_runs():
     agent, llm = mk(plans=[walk(1.0)])
     r = agent.say("Walk forward 1 meter at 10 m/s")
-    assert "can't go that fast" in r.reply and "0.1 metres per second" in r.reply and r.reply.startswith("Walking forward 1 metres")
+    assert "can't go that fast" in r.reply and "0.15 metres per second" in r.reply and r.reply.startswith("Walking forward 1 metres")
     assert "10" not in llm.plan_calls[0]["utterance"]          # the planner never sees the number
     assert u.speed_request("walk forward 1 meter")[1] is False and u.speed_request("go to room B")[1] is False
 
@@ -203,3 +203,21 @@ def test_unknown_find_target_is_named_not_guessed():
     assert "unicorn" in r.reply and not llm.plan_calls
     from brain.agent.guard import unknown_find_target as f
     assert all(f(t, ["room A"]) is None for t in ["find the red box", "find the traffic cone", "find my way home", "look for the fire extinguisher", "find the exit"])
+
+
+def test_speed_clamp_reads_the_configured_robot_limit(tmp_path):
+    import yaml
+    real = yaml.safe_load(open(u.ROBOT_YAML))["command_limits"]["vx"]
+    assert u.configured_max_speed() == real
+    f = tmp_path / "robot.yaml"
+    f.write_text("command_limits: {vx: 0.4, vy: 0.1, wz: 0.6}\n")
+    assert u.configured_max_speed(f) == 0.4
+    assert u.configured_max_speed(tmp_path / "missing.yaml") == u.MAX_SPEED_MPS          # not shipped -> fallback, never a crash
+    from brain.agent import untrusted
+    old = untrusted.ROBOT_YAML
+    try:
+        untrusted.ROBOT_YAML = f                                     # the agent's reply follows the file
+        agent, _ = mk(plans=[walk(1.0)])
+        assert "0.4 metres per second" in agent.say("Walk forward 1 meter at 10 m/s").reply
+    finally:
+        untrusted.ROBOT_YAML = old

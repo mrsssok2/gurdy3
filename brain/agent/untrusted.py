@@ -17,8 +17,21 @@ Pure regex, no LLM, no heavy imports, no state. All of it runs BEFORE the planne
 from __future__ import annotations
 
 import re
+from pathlib import Path
 
-MAX_SPEED_MPS = 0.10          # nominal walking speed of the robot (mock + policy); the one speed there is. safety.yaml `max_speed_mps` overrides in the agent.
+MAX_SPEED_MPS = 0.15          # FALLBACK only (= robot.yaml command_limits.vx); `configured_max_speed()` reads the real value
+ROBOT_YAML = Path(__file__).resolve().parents[2] / "ros2_ws" / "src" / "gurdy_description" / "config" / "robot.yaml"
+
+
+def configured_max_speed(path: Path | None = None) -> float:
+    """The robot's maximum forward walking speed: `command_limits.vx` of robot.yaml (single source of truth for geometry and limits).
+    Falls back to MAX_SPEED_MPS when the file is not shipped (static demo bundle) or has no such key."""
+    try:
+        import yaml
+        v = yaml.safe_load(open(path or ROBOT_YAML))["command_limits"]["vx"]
+        return float(v) if float(v) > 0 else MAX_SPEED_MPS
+    except Exception:                                    # noqa: BLE001
+        return MAX_SPEED_MPS
 
 # ------------------------------------------------------------------------------------------------ a) spoofed / injected framing
 _SPOOF = [
