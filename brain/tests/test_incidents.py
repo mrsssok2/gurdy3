@@ -438,6 +438,67 @@ class TestNlu(unittest.TestCase):
         self.assertEqual(self.p("why did you stop at 10:30")["args"], {"about": "stop", "at": "10:30"})
 
 
+class TestGhostSightings(unittest.TestCase):
+    """The first incident evaluation logged a removed toolbox as 'seen' every minute for 20 minutes: the detector's track was stale (sim last_seen fixed), but
+    wall_seen = wall - age mixed a SIM age with the wall clock, so at RTF 0.4 a stale track looked newer by 0.6 s per second."""
+
+    def rig(self):
+        from brain.incidents.recorder import IncidentRecorder
+        self.wall = [T0]
+        store = IncidentStore(":memory:", "lab", lambda: self.wall[0])
+        return store, IncidentRecorder(store, is_room=lambda n: n.startswith("room"))
+
+    def step(self, rec, sim, rate, pose, records):
+        self.wall[0] = T0 + sim / rate
+        rec.observe_pose({"x": pose[0], "y": pose[1], "heading_deg": pose[2], "place": "room D"}, sim)
+        rec.observe_objects(records, sim)
+
+    @staticmethod
+    def tb(seen_sim, now_sim, hits=20, x=3.0, y=2.0):
+        return {"id": 7, "class": "toolbox", "color": "red", "x": x, "y": y, "place": "room D", "age_s": now_sim - seen_sim, "score": 0.93, "hits": hits}
+
+    def seen_events(self, store):
+        return [e for e in store.events(etypes=["object_seen"])]
+
+    def test_stale_track_at_slow_rtf_is_not_seen_again(self):
+        store, rec = self.rig()
+        for sim in range(0, 40, 1):                                   # looking at it, tracked, hits grow
+            self.step(rec, float(sim), 0.4, (0.0, 2.0, 0.0), [self.tb(sim, sim, hits=10 + 2 * sim)])
+        n0 = len(self.seen_events(store))
+        for sim in range(40, 1200, 5):                                # the robot walks away; the track is never refreshed (last_seen stays 39)
+            self.step(rec, float(sim), 0.4, (-8.0, 2.0, 180.0), [self.tb(39, sim, hits=88)])
+        self.assertEqual(len(self.seen_events(store)), n0)
+        self.assertLess(max(e["wall_t"] for e in self.seen_events(store)), T0 + 40 / 0.4 + 1)      # last sighting = the real one, in wall time
+
+    def test_single_stray_frame_does_not_refresh_last_seen(self):
+        store, rec = self.rig()
+        for sim in range(0, 30):
+            self.step(rec, float(sim), 1.0, (0.0, 2.0, 0.0), [self.tb(sim, sim, hits=10 + 2 * sim)])
+        n0, last = len(self.seen_events(store)), rec._objs[next(iter(rec._objs))]["last_wall"]
+        base = rec._objs[next(iter(rec._objs))]["hits"]
+        self.step(rec, 200.0, 1.0, (0.0, 2.0, 0.0), [self.tb(199.5, 200.0, hits=base + 1)])    # one frame: +1 hit
+        self.assertEqual(rec._objs[next(iter(rec._objs))]["last_wall"], last)
+        self.assertEqual(len(self.seen_events(store)), n0)
+        self.assertGreaterEqual(rec.rejected_sightings, 1)
+        self.step(rec, 210.0, 1.0, (0.0, 2.0, 0.0), [self.tb(209.5, 210.0, hits=base + 6)])    # several new frames: a real re-sighting
+        self.assertGreater(rec._objs[next(iter(rec._objs))]["last_wall"], last)
+
+    def test_sighting_outside_the_camera_view_is_rejected(self):
+        store, rec = self.rig()
+        for sim in range(0, 30):
+            self.step(rec, float(sim), 1.0, (0.0, 2.0, 0.0), [self.tb(sim, sim, hits=10 + 2 * sim)])
+        last = rec._objs[next(iter(rec._objs))]["last_wall"]
+        self.step(rec, 100.0, 1.0, (-8.0, 2.0, 180.0), [self.tb(100.0, 100.0, hits=200)])      # claims a fresh sighting from 11 m away, facing away
+        self.assertEqual(rec._objs[next(iter(rec._objs))]["last_wall"], last)
+        self.assertGreaterEqual(rec.rejected_sightings, 1)
+
+    def test_clock_conversion_is_exact_at_any_rtf(self):
+        store, rec = self.rig()
+        for sim in range(0, 100):
+            self.step(rec, float(sim), 0.5, (0.0, 2.0, 0.0), [])
+        self.assertAlmostEqual(rec._wall_at(40.0, 99.0, self.wall[0]), T0 + 80.0, places=6)
+
+
 class TestUnknownRooms(unittest.TestCase):
     def test_edit_distance_and_near_room(self):
         self.assertEqual(nlu.near_room("what changed in roon B"), ("roon B", "room B"))

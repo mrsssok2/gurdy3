@@ -159,7 +159,7 @@ class RosBackend:
         return {"id": tr["id"], "class": tr["class"], "color": tr.get("color") or "", "x": round(tr["x"], 2),
                 "y": round(tr["y"], 2), "distance_m": round(math.hypot(tr["x"] - x, tr["y"] - y), 2),
                 "bearing_deg": round(b, 1), "bearing_word": bearing_word(b), "place": self._place_at(tr["x"], tr["y"]),
-                "last_seen_age_s": round(self.now() - tr.get("last_seen", self.now()), 1), "score": tr.get("score")}
+                "last_seen_age_s": round(self.now() - tr.get("last_seen", self.now()), 1), "score": tr.get("score"), "hits": tr.get("hits")}
 
     def _match(self, ref: dict, in_place: str | None = None) -> list[dict]:
         """Seen objects of that class / colour, nearest first. `in_place`: only those standing INSIDE that place ("find the cone in room D":

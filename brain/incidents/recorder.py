@@ -31,6 +31,10 @@ MIN_VISIT_S = 20.0      # the robot must stay this long in a room before an unse
 VIEW_M = 3.0            # an expected object counts as "looked at" when a pose of the visit was within this range ...
 VIEW_HALF_DEG = 40.0    # ... and the object was within +- this angle of the heading (conservative: the camera is ~90 degrees wide)
 CHECK_EVERY_S = 10.0    # while inside a room, re-run the missing check this often (sim seconds)
+SEEN_RANGE_M = 5.0      # a sighting must lie within this range of the robot's pose at the time it was made ...
+SEEN_HALF_DEG = 55.0    # ... and within +- this angle of the heading (the camera is ~90 degrees wide, plus a margin): else it is not recorded
+MIN_NEW_HITS = 3        # a re-sighting of a known object needs this many new detector hits since the last accepted one (one stray frame cannot refresh "last seen")
+POSE_HISTORY_S = 180.0  # sim seconds of pose history kept for the in-view check
 TICK_S = 0.5            # minimum sim time between two object / pose observations
 
 ALERT_TYPES = {"leg_failure": "leg", "battery_low": "battery", "battery_critical": "battery", "fall": "fall", "stuck": "stuck"}
@@ -60,6 +64,9 @@ class IncidentRecorder:
         self._last_tick = -1e9
         self._ev_cache: dict[str, int] = {}           # etype -> latest event id (for caused_by links)
         self._cmd_wall: float | None = None
+        self._clock: list[tuple[float, float]] = []   # (sim, wall) pairs seen so far: converts a sim time in the past to wall time (RTF is not 1)
+        self._poses: list[tuple[float, float, float, float]] = []      # (sim, x, y, heading_deg)
+        self.rejected_sightings = 0                   # sightings dropped by the in-view / consistency checks (diagnostics)
         self._load()
         sid = store.add_event("session_start", "Recording started.", 0.0, store.wall())
         self._ev_cache["session_start"] = sid
@@ -80,6 +87,37 @@ class IncidentRecorder:
                                data={"first_wall": o["first_wall"], "first_event": o.get("first_event")})
 
     # ------------------------------------------------------------------ helpers
+    def _note_clock(self, sim: float, wall: float) -> None:
+        if not self._clock or sim > self._clock[-1][0]:
+            self._clock.append((sim, wall))
+            if len(self._clock) > 20000:
+                del self._clock[:5000]
+
+    def _wall_at(self, sim: float, now_sim: float, now_wall: float) -> float:
+        """Wall time of a sim time in the past: interpolated from the (sim, wall) pairs seen, NOT now_wall - (now_sim - sim) (that is only right at RTF 1: with
+        RTF 0.4 a track that is never seen again looked 'seen again' every minute, found in the first incident evaluation)."""
+        import bisect
+        c = self._clock
+        if not c or sim >= c[-1][0]:
+            return now_wall - (now_sim - sim)
+        if sim <= c[0][0]:
+            return c[0][1] - (c[0][0] - sim)
+        i = bisect.bisect_left(c, (sim, -1e18))
+        (s0, w0), (s1, w1) = c[i - 1], c[i]
+        return w0 + (w1 - w0) * (sim - s0) / (s1 - s0) if s1 > s0 else w1
+
+    def _in_view(self, sim: float, x: float, y: float) -> bool:
+        """The object lies inside the camera cone at the pose nearest in time to its sighting (no pose near that time = cannot judge = accept)."""
+        near = [p for p in self._poses if abs(p[0] - sim) <= 2.0]
+        if not near:
+            return True
+        _, px, py, hdg = min(near, key=lambda p: abs(p[0] - sim))
+        d = math.hypot(x - px, y - py)
+        if d <= 0.3:
+            return True
+        b = (math.degrees(math.atan2(y - py, x - px)) - hdg + 180) % 360 - 180
+        return d <= SEEN_RANGE_M and abs(b) <= SEEN_HALF_DEG
+
     def _event(self, etype: str, text: str, sim_t: float, wall_t: float | None = None, severity: str = "info", cause: str | None = None,
                **kw: Any) -> int:
         eid = self.store.add_event(etype, text, sim_t, wall_t, severity, **kw)
@@ -157,6 +195,11 @@ class IncidentRecorder:
         wall = self.store.wall()
         room = self._room_of(pose.get("place"))
         x, y, hdg = pose.get("x"), pose.get("y"), pose.get("heading_deg", 0.0)
+        self._note_clock(now_sim, wall)
+        if x is not None:
+            self._poses.append((now_sim, x, y, hdg or 0.0))
+            while self._poses and self._poses[0][0] < now_sim - POSE_HISTORY_S:
+                self._poses.pop(0)
         v = self._visit
         if v is not None and room != v.room:
             self._close_visit(now_sim, wall)
@@ -218,7 +261,8 @@ class IncidentRecorder:
             if r.get("state") == "missing" or r.get("x") is None:
                 continue
             age = float(r.get("age_s", r.get("last_seen_age_s", 0.0)) or 0.0)
-            self._observe_one(r, now_sim - age, wall - age)
+            self._note_clock(now_sim, wall)
+            self._observe_one(r, now_sim - age, self._wall_at(now_sim - age, now_sim, wall))
 
     def _observe_one(self, r: dict, sim_seen: float, wall_seen: float) -> None:
         bid, cls, color = r.get("id"), r["class"], (r.get("color") or "")
@@ -229,10 +273,25 @@ class IncidentRecorder:
             if nid is not None:
                 self._by_bid[bid] = nid
         if nid is None:
-            return self._new_object(bid, cls, color, x, y, room, sim_seen, wall_seen, r.get("score"))
+            if not self._in_view(sim_seen, x, y):
+                self.rejected_sightings += 1
+                return
+            self._new_object(bid, cls, color, x, y, room, sim_seen, wall_seen, r.get("score"))
+            if r.get("hits") is not None and self._by_bid.get(bid) in self._objs:
+                self._objs[self._by_bid[bid]]["hits"] = r["hits"]
+            return
         o = self._objs[nid]
-        if wall_seen <= o["last_wall"] + 1e-6:
+        if wall_seen <= o["last_wall"] + 1e-6 or sim_seen <= o["last_sim"] + 1e-6:
             return                                                       # nothing newer than what we know (a stale track of a missing object too)
+        hits = r.get("hits")
+        if hits is not None and o.get("hits") is not None and hits - o["hits"] < MIN_NEW_HITS:
+            self.rejected_sightings += 1                                 # a stray frame: not enough new detections to call it a re-sighting
+            return
+        if not self._in_view(sim_seen, x, y):
+            self.rejected_sightings += 1                                 # the robot could not have seen it from where it was at that time
+            return
+        if hits is not None:
+            o["hits"] = hits
         moved_d = math.hypot(x - o["x"], y - o["y"])
         if moved_d > MOVE_M:
             self._moved(nid, x, y, room, sim_seen, wall_seen)
