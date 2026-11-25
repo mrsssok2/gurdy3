@@ -19,4 +19,16 @@ The as-run numbers in `phase6_incident_eval.md` are unchanged and nothing was re
    Extra guards as asked: in the camera cone (5 m, +-55 deg) of the pose nearest in time, and >= 3 new detector hits since the last accepted sighting
    (`hits` now in `RosBackend` object records); rejected ones are counted in `recorder.rejected_sightings`. Unit tests (`TestGhostSightings`) reproduce the bug at RTF 0.4 (fail on the old code).
    Open: the real effect on missing flapping is unmeasured until the next Gazebo run. The scorer's colour key for the toolbox ("toolbox" vs "red toolbox") is still not fixed.
-5. **Robust routing**: not done, the instruction was cut off after "even with ...".
+5. **Robust routing** (`brain/incidents/nlu.py`): exact patterns first, then `classify()`, a cue-word classifier (change / different / moved / relocated / missing / taken / last seen / laid eyes /
+   summary / events / not checked / neglected ...) that picks the TOOL and its ARGUMENTS (room, object, window, threshold; validated by the tool layer's schema). Motion verbs never match;
+   "is there a room X" is answered from the map's room list; "still where it was / stay put" questions get a Yes / No start (a moved object = "No."). No LLM picker (the fine-tuned planner is not a
+   classifier; nothing in the 20 + 10 questions needed it), so the only free-text model use left is the planner for non-incident text. Causes found for the old failures: the **LLM rephrasing of
+   incident answers** (q18: dropped "room A checked recently"; q19: no clock time; q14 and q01: one sentence repeated ~100 times; q12: "has been seen ever since") -> incident answers are now the template
+   over the query result only (`GURDY_INCIDENT_LLM_PHRASE=1` re-enables the grounded LLM phrasing). `templates.squash` removes repeated segments and caps any list at 8 ("I recall: ..." dumps).
+   Router vocabulary caveat: the user's 10 new questions were visible while writing the cue lists (generic words only); the router was not run on them before the evaluation.
+6. **Scorer, future runs only**: `incident_score.use_suite("incident_suite_v2")` matches graph events by class with the colour optional (v1 scoring stays exact, committed run not re-scored).
+   x08: the expectation (`none ^yes`) was right, the defect was the history template, which now answers "No." to a "still where ..." question about a moved object; the v1 suite is unchanged.
+7. **Unknown-room list**: the reply lists the rooms of the CURRENT map (`There is no room Y. I know rooms A, B, C and D.`, unit test with the lab4 room names; the earlier "A and B" was the mock world).
+
+Regression after 1-7 (gurdy-sft-400, `docs/results/incident_regression_6b/`): testset_v1 94 %, v1.1 95 %, ood_v1 75 % = unchanged, same failing ids. Brain suite 798 passed, web 117 OK.
+New held-out sets: `brain/eval/incident_suite_v2.py` (20 own + 10 user-written), committed before the run.

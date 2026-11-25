@@ -18,7 +18,11 @@ import time
 import traceback
 from pathlib import Path
 
+import importlib
+import os
+
 from ..eval import incident_suite as S
+S = importlib.import_module("brain.eval." + os.environ.get("INCIDENT_SUITE", "incident_suite"))
 from .readiness import SetupFailed, wait_ready
 
 ROOT = Path(__file__).resolve().parents[2]

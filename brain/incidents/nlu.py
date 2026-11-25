@@ -105,8 +105,83 @@ def _check_room(room: str | None, known: list[str]) -> dict | None:
     return None
 
 
+# ---- second stage: cue-word classifier for phrasings the exact patterns above do not cover. Picks the TOOL and the ARGUMENTS only (object, room, window,
+# threshold), all validated by the tool layer's schema; the answer is always a template over the query result, never raw memory.
+_MOTION = re.compile(r"^\s*(?:please\s+)?(?:go|walk|drive|head|navigate|come|turn|rotate|patrol|explore|find|search|look\s+for|bring|fetch|follow|stop|halt|wait|stand|sit|"
+                     r"return|move\s+(?:to|forward|back|left|right)|set|add|remove|clear|save|take\s+me|run|start|begin|resume|cancel)\b", re.I)
+_C_CHANGE = re.compile(r"\b(?:relocat\w*|reposition\w*|transferr?\w*|touch\w*|chang\w*|differ\w*|new|moved?|moving|shift\w*|displac\w*|missing|gone|vanish\w*|disappear\w*|taken|removed?|rearrang\w*|swapp\w*|"
+                       r"stay(?:ed)?\s+put|unusual|odd|strange|out\s+of\s+place|compar\w*|diff|went\s+missing|go\s+missing|got\s+moved)\b", re.I)
+_C_LAST = re.compile(r"\blast\s+(?:time|saw|seen|spotted|noticed|sighting)|\b(?:laid|set|put)\s+eyes\b|\beyes\s+on\b|\bmost\s+recent(?:ly)?\b|\blatest\s+sighting|"
+                     r"\b(?:seen|spotted|noticed|saw)\b.*\b(?:recently|lately|today|earlier|ago)\b|\bhow\s+long\s+ago\b.*\b(?:see|saw|seen|spot)", re.I)
+_C_HIST = re.compile(r"\bend(?:ed)?\s+up\b|\bstay(?:ed)?\s+(?:put|in\s+place|there|where)\b|\bsame\s+(?:place|spot)\b|\bstill\s+(?:in|at|where|there|here)\b|\bwhere\s+(?:it|they|he|she)\s+was\b|"
+                     r"\banymore\b|\bwhere\s+.*\b(?:before|originally|first|used\s+to)\b|\bmoved?\b|\bshift\w*\b", re.I)
+_C_TIME = re.compile(r"\bhappen\w*|\bevents?\b|\bsummary\b|\bsummari[sz]e\b|\brecap\b|\blog\b|\btimeline\b|\bwent\s+on\b|\bbeen\s+up\s+to\b|\bhistory\b|\bdid\s+you\s+do\b|\bactivity\b", re.I)
+_C_UNCH = re.compile(r"\bneglect\w*|\bunvisited\b|\bunchecked\b|\buninspected\b|(?:\bhaven'?t|\bhave\s+not|\bhasn'?t|\bnot\b|\bnever\b|\blongest|\bneglect\w*|\boverdue|\bstale|\bignor\w*).*\b(?:check\w*|visit\w*|look\w*|inspect\w*|patrol\w*|cover\w*|been\s+(?:in|to)|seen|surveyed)\b|"
+                     r"\bwhich\s+(?:room|area|place)s?\b.*\b(?:last|longest|oldest|while|ages)\b", re.I)
+_EXISTS = re.compile(r"\b(?:is|are)\s+there\s+(?:a|an|any)?\s*(?:room|area)\s+([a-z])\b|\bdo\s+you\s+(?:have|know)\s+(?:a\s+)?room\s+([a-z])\b|\bdoes\s+room\s+([a-z])\s+exist\b", re.I)
+_FIRST = re.compile(r"\b(?:first\s+time|at\s+the\s+(?:start|beginning)|when\s+you\s+(?:started|began|first)|originally|to\s+begin\s+with|at\s+first)\b", re.I)
+_MOVELIST = re.compile(r"\b(?:which|what|list|name|show)\b.*\b(?:things?|objects?|items?|stuff|ones)\b.*\b(?:moved|changed|shifted|missing|gone|taken|different)\b|\b(?:list|name)\s+(?:what|everything)\b", re.I)
+
+
+def _rooms_text(known: list[str]) -> str:
+    letters = sorted(p.split()[-1] for p in known if re.fullmatch(r"room [A-Z]", p))
+    return (letters[0] if len(letters) == 1 else ", ".join(letters[:-1]) + " and " + letters[-1]) if letters else ""
+
+
+def classify(text: str, known_places: list[str]) -> dict | None:
+    """Plan / {"reply"} for an incident-type question the exact patterns missed, None when the text is not about the timeline at all."""
+    t = " ".join(text.split())
+    if _MOTION.search(t):
+        return None
+    room, objs, since = _room(t), named_objects(t), parse_since(t)
+    assumed = None
+    if room is None and (nr := near_room(t)):
+        heard, room = nr
+        assumed = f"I took \"{heard}\" as {room}. "
+
+    def plan(tool: str, **args: Any) -> dict:
+        if room and (bad := _check_room(room, known_places)) and tool in ("what_changed", "timeline", "unchecked_rooms"):
+            return bad
+        out: dict = {"tool": tool, "args": {k: v for k, v in args.items() if v is not None}}
+        if assumed and "room" in out["args"]:
+            out["assumed"] = assumed
+        return out
+
+    if m := _EXISTS.search(t):
+        ch = next(g for g in m.groups() if g).upper()
+        rooms = [p for p in known_places if p.lower().startswith("room")]
+        if f"room {ch}" in rooms:
+            return {"reply": f"Yes, room {ch} is on my map. My rooms are {_rooms_text(known_places)}."}
+        return {"reply": f"No, there is no room {ch}. My rooms are {_rooms_text(known_places)}."}
+    if _C_UNCH.search(t) and not objs:
+        thr = parse_threshold(t)
+        if thr is None and re.search(r"\b(?:in\s+a\s+while|lately|for\s+a\s+while|for\s+ages|recently|long)\b", t, re.I):
+            thr = 600.0
+        return plan("unchecked_rooms", older_than_s=thr, room=room if re.search(r"\bwhen\b", t, re.I) else None)
+    first = since if since else ("session" if _FIRST.search(t) else None)
+    if objs:
+        o = objs[0]
+        if _C_LAST.search(t) or (re.search(r"\b(?:when|how\s+long)\b", t, re.I) and re.search(r"\b(?:see|saw|seen|spot\w*|notic\w*)\b", t, re.I)):
+            return plan("last_seen", object=o)
+        if _C_HIST.search(t) or _C_CHANGE.search(t):
+            return plan("object_history", object=o, since=first)
+        return None
+    if _C_CHANGE.search(t) or _MOVELIST.search(t):
+        return plan("what_changed", room=room, since=first)
+    if _C_TIME.search(t):
+        return plan("timeline", since=first, room=room, limit=10)
+    return None
+
+
 def parse(text: str, known_places: list[str]) -> dict | None:
     """{"tool", "args"} for an incident question, {"reply": ...} for one that cannot be answered, None for anything else."""
+    plan = _parse_exact(text, known_places) or classify(text, known_places)
+    if plan and plan.get("tool") == "object_history" and re.search(r"\bstill\b|\bstay(?:ed)?\s+(?:put|in\s+place|there|where)\b|\bsame\s+(?:place|spot)\b|\banymore\b|\bwhere\s+(?:it|they)\s+was\b", text, re.I):
+        plan["style"] = {"still": True}                           # a yes / no question about staying: the reply starts with Yes / No accordingly
+    return plan
+
+
+def _parse_exact(text: str, known_places: list[str]) -> dict | None:
     t = " ".join(text.split())
     room, objs, since = _room(t), named_objects(t), parse_since(t)
     assumed = None

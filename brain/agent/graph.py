@@ -9,6 +9,7 @@ route -> plan (LLM) -> safety_check -> execute -> observe -> respond (LLM) -> gr
 """
 from __future__ import annotations
 
+import os
 import re
 from dataclasses import dataclass, field
 from typing import Any, TypedDict
@@ -228,7 +229,7 @@ class Agent:
         out = self.graph.invoke(st)
         if out.get("followup"):
             self.followup = {"utterance": out["utterance"], "log_start": self.executor.log_start}
-        return TurnResult(out["reply"], out["calls"], out["verdicts"], out["llm_calls"], out["grounding"], out["events"])
+        return TurnResult(templates.squash(out["reply"]), out["calls"], out["verdicts"], out["llm_calls"], out["grounding"], out["events"])
 
     # ---- speech-recognition repair: unknown place / object close to a known one -> ask, never run it unconfirmed
     def _did_you_mean(self, text: str, conf: float | None) -> "str | TurnResult":
@@ -532,9 +533,11 @@ class Agent:
                    "I don't keep a timeline in this session." if res.code == "UNAVAILABLE" else f"I can't answer that: {res.error['message']}")
             return {"reply_parts": [msg], "next": "finish", "calls": calls, "verdicts": verdict, "has_query": False}
         entries = self.layer.log[-1:]
-        template = plan.get("assumed", "") + incident_phrase(tool, res.data, args)
+        template = plan.get("assumed", "") + incident_phrase(tool, res.data, {**args, **plan.get("style", {})})
         reply, g = template, {"attempts": 0, "fallback": False, "rejected": [], "violations": []}
-        if getattr(self.llm, "phrases_incidents", False):
+        if getattr(self.llm, "phrases_incidents", False) and os.environ.get("GURDY_INCIDENT_LLM_PHRASE") == "1":
+            # OFF by default (Phase 6b): in the first evaluation the model's rephrasing dropped facts ("room A not checked" while standing in it), looped
+            # (one sentence x100) and wrote "has been seen ever since"; the template answer is built from the query result alone.
             # the LLM only PHRASES the answer: it must use values of the query result (grounding check) and mention the facts that carry the answer
             must = incident_must(tool, res.data)
             facts = collect_facts(entries, text)

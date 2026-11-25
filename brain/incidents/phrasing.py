@@ -86,16 +86,22 @@ def _last_seen(d: dict, a: dict) -> str:
 def _history(d: dict, a: dict) -> str:
     if not d["found"]:
         return f"I have no record of a {d['object']}."
-    obj = d["object"]
+    obj, still = d["object"], bool(a.get("still"))
     if d["moved"]:
         ms = d["moves"]
         text = _list([_moved_text(m) for m in ms])
-        return f"Yes. {_cap(text)}."
+        return f"{'No' if still else 'Yes'}. {_cap(text)}."
     seen = d["sightings"]
-    state = f" It is currently marked missing: it was not there when I checked." if d["state"] == "missing" else ""
+    missing = d["state"] == "missing"
+    state = " It is currently marked missing: it was not there when I checked." if missing else ""
     where = f" I last recorded it in {d['current_room']}." if d.get("current_room") else ""
     times = "once" if seen == 1 else f"{seen} times"
-    return f"I haven't recorded the {obj} moving. I have seen it {times} {d['since_text']}.{where}{state}"
+    span = "so far" if d["since_text"] == "ever" else d["since_text"]
+    if still and missing:
+        return f"No. The {obj} was not there when I checked.{where}"
+    if still:
+        return f"Yes. I haven't recorded the {obj} moving; I have seen it {times} {span}.{where}"
+    return f"I haven't recorded the {obj} moving. I have seen it {times} {span}.{where}{state}"
 
 
 def _timeline(d: dict, a: dict) -> str:

@@ -17,6 +17,15 @@ from pathlib import Path
 
 from . import incident_suite as S
 
+
+def use_suite(name: str) -> None:
+    """Score another suite module (`incident_suite` = v1, `incident_suite_v2`). The default stays v1 so the committed run still scores as before."""
+    global S, _COLOUR_FREE
+    import importlib
+    S = importlib.import_module(f"brain.eval.{name}")
+    _COLOUR_FREE = name != "incident_suite"
+
+_COLOUR_FREE = False                # v1 matches (class, colour) exactly (frozen scoring of the committed run); `use_suite("incident_suite_v2")` switches to class + optional colour
 GREY_S = 90.0                       # rooms whose last visit is this close to the threshold may be listed either way
 
 
@@ -24,10 +33,14 @@ GREY_S = 90.0                       # rooms whose last visit is this close to th
 def graph_score(gt: dict, events: list[dict]) -> dict:
     """`events`: the graph's events as dicts (etype, cls, color, room, wall_t, data). Ground truth: gt["ops"] with wall times."""
     out = {"moves": [], "removed": [], "false_reports": []}
-    ops = {(o["cls"], o["color"]): o for o in gt["ops"]}
+    colour_free = _COLOUR_FREE
+
+    def same(o: dict, e: dict) -> bool:
+        """Class must match; the colour only when the ground truth names one (the detector calls the toolbox 'red toolbox')."""
+        return e.get("cls") == o["cls"] and (not colour_free or not o["color"] or (e.get("color") or "") == o["color"]) \
+            and (colour_free or (e.get("color") or "") == o["color"])
     for o in gt["ops"]:
-        key = (o["cls"], o["color"])
-        late = [e for e in events if (e.get("cls"), e.get("color") or "") == key and e["wall_t"] >= o["wall"] - 1.0]
+        late = [e for e in events if same(o, e) and e["wall_t"] >= o["wall"] - 1.0]
         if o["op"] == "move":
             mv = [e for e in late if e["etype"] == "object_moved"]
             right = [e for e in mv if (e["data"].get("from") or {}).get("room") == o["from"][0] and (e["data"].get("to") or {}).get("room") == o["to"][0]]
@@ -41,10 +54,10 @@ def graph_score(gt: dict, events: list[dict]) -> dict:
     for e in events:
         if e["etype"] not in ("object_moved", "object_missing"):
             continue
-        key = (e.get("cls"), e.get("color") or "")
-        if key not in ops:
+        match = next((o for o in gt["ops"] if same(o, e)), None)
+        if match is None:
             out["false_reports"].append({"type": e["etype"], "object": f"{e.get('color') or ''} {e.get('cls')}".strip(), "room": e.get("room")})
-        elif e["etype"] == "object_moved" and e["wall_t"] < ops[key]["wall"] - 1.0:
+        elif e["etype"] == "object_moved" and e["wall_t"] < match["wall"] - 1.0:
             out["false_reports"].append({"type": "moved_before_change", "object": f"{e.get('color') or ''} {e.get('cls')}".strip(), "room": e.get("room")})
     out["moves_found"] = sum(m["found"] for m in out["moves"])
     out["removed_found"] = sum(r["found"] for r in out["removed"])
@@ -199,7 +212,9 @@ def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("result")
     ap.add_argument("--doc")
+    ap.add_argument("--suite", default="incident_suite")
     a = ap.parse_args()
+    use_suite(a.suite)
     result = json.load(open(a.result))
     s = score(result)
     md = report(s, result)

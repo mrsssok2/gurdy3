@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 import tempfile
 import unittest
+import unittest.mock
 
 from brain.agent import Agent
 from brain.agent.grounding import collect_facts, violations
@@ -499,7 +500,81 @@ class TestGhostSightings(unittest.TestCase):
         self.assertAlmostEqual(rec._wall_at(40.0, 99.0, self.wall[0]), T0 + 80.0, places=6)
 
 
+LAB4 = ["home", "room A", "room B", "room C", "room D"]
+
+
+class TestRobustRouting(unittest.TestCase):
+    """Unusual phrasings (not in any eval set) reach the incident tools; the classifier only picks tool + arguments."""
+
+    def p(self, text):
+        return nlu.parse(text, LAB4)
+
+    def test_phrasings_by_tool(self):
+        cases = {
+            "has anything vanished from room C?": ("what_changed", "room C"),
+            "were there any rearrangements in room B lately": ("what_changed", "room B"),
+            "what is different around here compared with this morning": ("what_changed", None),
+            "any chairs missing": ("object_history", None),
+            "how long ago did you notice the red barrel": ("last_seen", None),
+            "when did you most recently spot the yellow box": ("last_seen", None),
+            "did the mannequin stay in place": ("object_history", None),
+            "give me an overview of the events today": ("timeline", None),
+            "what have you been up to": ("timeline", None),
+            "which areas have you neglected": ("unchecked_rooms", None),
+            "what rooms have not been visited for ten minutes": ("unchecked_rooms", None),
+        }
+        for text, (tool, room) in cases.items():
+            r = self.p(text)
+            self.assertIsNotNone(r, text)
+            self.assertEqual(r["tool"], tool, text)
+            if room:
+                self.assertEqual(r["args"].get("room"), room, text)
+
+    def test_commands_and_plain_questions_are_not_captured(self):
+        for text in ("go to room B", "find the red box", "stop", "where is the red box", "what do you see", "walk forward two metres", "patrol the rooms"):
+            self.assertIsNone(self.p(text), text)
+
+    def test_room_existence(self):
+        self.assertIn("Yes, room C is on my map. My rooms are A, B, C and D.", self.p("is there a room C")["reply"])
+        self.assertIn("No, there is no room Y. My rooms are A, B, C and D.", self.p("is there a room Y?")["reply"])
+
+    def test_still_questions_answer_yes_or_no(self):
+        rig = two_patrols()
+        ag = Agent(ToolLayer(rig.ib), KeywordLLM(rig.ib.known_places))
+        self.assertTrue(ag.say("is the red box still where it was?").reply.startswith("No."))
+        self.assertTrue(ag.say("is the green barrel still where it was?").reply.startswith("Yes."))
+
+    def test_squash_removes_repeats_and_caps_lists(self):
+        from brain.agent.templates import squash
+        dump = "I recall: " + "; ".join(["traffic cone in room D", "box in room C", "mannequin in room D"] * 30) + "."
+        out = squash(dump)
+        self.assertLess(len(out), 200)
+        self.assertEqual(out.count("traffic cone"), 1)
+        rep = "The red toolbox is back in room D. " * 40
+        self.assertEqual(squash(rep).count("back in room D"), 1)
+        short = "Nothing changed."
+        self.assertEqual(squash(short), short)
+
+    def test_incident_answers_never_use_the_llm_to_phrase_by_default(self):
+        rig = two_patrols()
+
+        class Phraser(ScriptedLLM):
+            phrases_incidents = True
+            def respond(self, *a, **k):
+                raise AssertionError("the model must not phrase incident answers")
+        ag = Agent(ToolLayer(rig.ib), Phraser([]))
+        self.assertIn("red box", ag.say("what changed since the start?").reply)
+
+
 class TestUnknownRooms(unittest.TestCase):
+    def test_unknown_room_lists_the_rooms_of_the_current_map(self):
+        from brain.agent import rooms
+        self.assertEqual(rooms.unknown_room_message("what changed in room Y", LAB4), "There is no room Y. I know rooms A, B, C and D.")
+        mb = MockBackend(gazebo_flat_lab())
+        mb.known_places = lambda: list(LAB4)                                  # a lab4-like map behind the agent
+        ag = Agent(ToolLayer(mb), KeywordLLM(mb.known_places))
+        self.assertEqual(ag.say("go to room Y").reply, "There is no room Y. I know rooms A, B, C and D.")
+
     def test_edit_distance_and_near_room(self):
         self.assertEqual(nlu.near_room("what changed in roon B"), ("roon B", "room B"))
         self.assertIsNone(nlu.near_room("what changed in room B"))
@@ -583,6 +658,7 @@ class TestAgent(unittest.TestCase):
         r = ag.say("what changed today?")
         self.assertNotEqual(r.verdicts[:1], [{"outcome": "none", "rule": "incident_query"}])
 
+    @unittest.mock.patch.dict(os.environ, {"GURDY_INCIDENT_LLM_PHRASE": "1"})
     def test_llm_phrasing_is_grounded_with_template_fallback(self):
         rig = two_patrols()
 

@@ -269,3 +269,30 @@ def _finished(d: dict, failed: bool = False) -> str | None:
     if failed:
         return failure_text(tool, reason, d=d)
     return "Done."
+
+
+def squash(reply: str, max_items: int = 8) -> str:
+    """Never print the same item over and over, or a whole memory dump: repeated ';' / '.' segments are listed once and a long list is cut with a count
+    (the first incident evaluation printed one sentence ~100 times and 'I recall: ...' with every object memory entry)."""
+    if not reply or len(reply) < 160:
+        return reply
+    head, sep, body = reply.partition(": ")
+    if not sep or ";" not in body:
+        sents = re.split(r"(?<=[.!?])\s+", reply)
+        seen: dict[str, int] = {}
+        out = []
+        for x in sents:
+            k = x.strip().lower()
+            if k in seen:
+                seen[k] += 1
+                continue
+            seen[k] = 1
+            out.append(x)
+        return " ".join(out) if len(out) < len(sents) else reply
+    items = [x.strip() for x in body.rstrip(". ").split(";") if x.strip()]
+    uniq = list(dict.fromkeys(i.lower() and i for i in items))
+    if len(uniq) == len(items) and len(items) <= max_items:
+        return reply
+    shown = uniq[:max_items]
+    more = f"; and {len(uniq) - len(shown)} more" if len(uniq) > len(shown) else ""
+    return f"{head}: {'; '.join(shown)}{more}."
