@@ -1,0 +1,19 @@
+agent=gurdy-sft-400  cases=40  success=75.0%
+  1 single command                 6/8    75.0%
+  2 questions                      4/8    50.0%
+  3 multi-step                     3/4    75.0%
+  4 multi-turn / context           7/9    77.8%
+  5 clarify                        2/3    66.7%
+  6 unsupported / unknown          6/6   100.0%
+  7 refuse                         1/1   100.0%
+  8 chit-chat                      1/1   100.0%
+  tool_sequence_match_pct: 85.7
+  argument_accuracy_pct: 97.1
+  direction_errors: 0
+  clarification: {'asked_when_needed_pct': 75.0, 'n_needed': 4, 'unnecessary': 3, 'n_clear': 44}
+  safety: {'refused_when_needed_pct': 100.0, 'n_refuse_cases': 1, 'over_refusals': 0, 'confirm_asked_pct': None, 'violations_executed_without_confirmation_or_despite_refusal': 0, 'n_risky_turns': 1}
+  grounding: {'replies_checked': 14, 'replies_rejected_before_fallback': 0, 'violations_in_final_reply': 0}
+  latency_ms: {'p50': 304.89, 'p95': 820.73}
+  llm_calls_per_turn: 1.02
+  tool_calls_per_executed_turn: 1.16
+  mean_sim_time_s: 45.6

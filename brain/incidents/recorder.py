@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import math
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Callable
 
 from .store import IncidentStore
@@ -35,6 +35,12 @@ SEEN_RANGE_M = 5.0      # a sighting must lie within this range of the robot's p
 SEEN_HALF_DEG = 55.0    # ... and within +- this angle of the heading (the camera is ~90 degrees wide, plus a margin): else it is not recorded
 MIN_NEW_HITS = 3        # a re-sighting of a known object needs this many new detector hits since the last accepted one (one stray frame cannot refresh "last seen")
 POSE_HISTORY_S = 180.0  # sim seconds of pose history kept for the in-view check
+MISS_MIN_OBS = 6        # "missing" needs the expected spot clearly in view for this many CONSECUTIVE pose observations ...
+MISS_MIN_SPAN_S = 4.0   # ... spanning at least this many sim seconds (the detector needs ~2 s and 8 hits to confirm a track: a spot glimpsed from the doorway proves nothing)
+MISS_GAP_S = 3.0        # two pose observations further apart than this are not "consecutive"
+RETURN_MIN_OBS = 2      # "back" (a missing object seen again) needs this many accepted re-sightings ...
+RETURN_MIN_SPAN_S = 1.0 # ... at least this far apart (a one-frame flicker cannot undo a missing report) ...
+RETURN_WINDOW_S = 8.0   # ... each following the previous within this time, else the count starts over
 TICK_S = 0.5            # minimum sim time between two object / pose observations
 
 ALERT_TYPES = {"leg_failure": "leg", "battery_low": "battery", "battery_critical": "battery", "fall": "fall", "stuck": "stuck"}
@@ -52,6 +58,7 @@ class _Visit:
     enter_wall: float
     samples: list[tuple[float, float, float]]          # x, y, heading_deg
     last_check: float
+    times: list[float] = field(default_factory=list)    # sim time of each sample (same index)
 
 
 class IncidentRecorder:
@@ -211,6 +218,7 @@ class IncidentRecorder:
                 v = self._visit = _Visit(room, now_sim, wall, [], now_sim)
             if x is not None:
                 v.samples.append((x, y, hdg or 0.0))
+                v.times.append(now_sim)
             self.store.update_node(self.store.ensure_room(room), sim_t=now_sim, wall_t=wall)       # last time the robot was IN this room
             if now_sim - v.last_check >= CHECK_EVERY_S:
                 v.last_check = now_sim
@@ -237,6 +245,36 @@ class IncidentRecorder:
         return bool(room) and any(self._covered_by(samples, x, y) for samples in self._past.get(room, []))
 
     @staticmethod
+    def _clearly_in_view(v: _Visit, ox: float, oy: float) -> bool:
+        """Debounce for `object_missing`: the spot must be in view in >= MISS_MIN_OBS CONSECUTIVE pose observations that span >= MISS_MIN_SPAN_S
+        (a gap > MISS_GAP_S or one sample that does not cover the spot restarts the run). One glimpse from the doorway is not a look."""
+        run = 0
+        t0 = tprev = None
+        for (x, y, hdg), t in zip(v.samples, v.times):
+            if IncidentRecorder._covered_by([(x, y, hdg)], ox, oy) and (tprev is None or run == 0 or t - tprev <= MISS_GAP_S):
+                if run == 0:
+                    t0 = t
+                run += 1
+                if run >= MISS_MIN_OBS and t - t0 >= MISS_MIN_SPAN_S:
+                    return True
+            else:
+                run = 0
+            tprev = t
+        return False
+
+    def _return_confirmed(self, o: dict, sim_seen: float) -> bool:
+        """Debounce for 'the X is back': the re-sighting of a missing object counts after RETURN_MIN_OBS accepted sightings >= RETURN_MIN_SPAN_S apart."""
+        r = o.get("ret")
+        if r is None or sim_seen - r["last"] > RETURN_WINDOW_S:
+            o["ret"] = {"first": sim_seen, "last": sim_seen, "n": 1}
+            return False
+        r["last"], r["n"] = sim_seen, r["n"] + 1
+        if r["n"] >= RETURN_MIN_OBS and sim_seen - r["first"] >= RETURN_MIN_SPAN_S:
+            o.pop("ret", None)
+            return True
+        return False
+
+    @staticmethod
     def _covered_by(samples: list[tuple[float, float, float]], ox: float, oy: float) -> bool:
         for x, y, hdg in samples:
             d = math.hypot(ox - x, oy - y)
@@ -256,7 +294,7 @@ class IncidentRecorder:
         for nid, o in list(self._objs.items()):
             if o["room"] != v.room or o["state"] != "present" or o["last_wall"] >= v.enter_wall:      # elsewhere / not expected / seen during this visit
                 continue
-            if self._covered(v, o["x"], o["y"]):
+            if self._clearly_in_view(v, o["x"], o["y"]):
                 self._mark_missing(nid, now_sim, wall, f"not seen in {v.room} during a {now_sim - v.enter_sim:.0f} s visit")
 
     def _mark_missing(self, nid: int, sim_t: float, wall: float, why: str) -> None:
@@ -264,6 +302,7 @@ class IncidentRecorder:
         if o["state"] == "missing":
             return
         o["state"] = "missing"
+        o.pop("ret", None)
         name = pretty(o["cls"], o["color"])
         self._event("object_missing", f"The {name} was not where I last saw it.", sim_t, wall, "warning", room=o["room"], x=o["x"], y=o["y"],
                     object_id=nid, cls=o["cls"], color=o["color"], data={"why": why, "last_seen_wall": o["last_wall"]})
@@ -313,6 +352,8 @@ class IncidentRecorder:
             self._moved(nid, x, y, room, sim_seen, wall_seen)
         else:
             returned = o["state"] == "missing"
+            if returned and not self._return_confirmed(o, sim_seen):
+                return                                                   # a possible flicker: stays missing until it is seen again
             if returned or wall_seen - o["logged_wall"] >= SEEN_GAP_S or (room and room != o["room"]):
                 self._seen(nid, x, y, room, sim_seen, wall_seen, r.get("score"), returned=returned)
             o.update(x=x if returned else o["x"], y=y if returned else o["y"], last_sim=sim_seen, last_wall=wall_seen, state="present")
