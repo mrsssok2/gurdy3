@@ -1,0 +1,3745 @@
+{
+ "gt": {
+  "ops": [
+   {
+    "op": "move",
+    "model": "l4_red_box",
+    "cls": "box",
+    "color": "red",
+    "from": [
+     "room A",
+     -1.2,
+     -1.3
+    ],
+    "to": [
+     "room C",
+     0.6,
+     4.9
+    ],
+    "wall": 1795615023.8699336,
+    "accepted": true,
+    "gz": "data: true",
+    "verified": true,
+    "readback": [
+     0.5999999999999999,
+     4.9,
+     -2.649863323732349e-11
+    ]
+   },
+   {
+    "op": "move",
+    "model": "l4_barrel_red",
+    "cls": "barrel",
+    "color": "red",
+    "from": [
+     "room D",
+     5.1,
+     5.0
+    ],
+    "to": [
+     "room B",
+     4.0,
+     -0.2
+    ],
+    "wall": 1795615027.9186563,
+    "accepted": true,
+    "gz": "data: true",
+    "verified": true,
+    "readback": [
+     4.0,
+     -0.2,
+     -8.294011428837615e-07
+    ]
+   },
+   {
+    "op": "remove",
+    "model": "l4_toolbox",
+    "cls": "toolbox",
+    "color": "",
+    "from": [
+     "room D",
+     3.2,
+     5.3
+    ],
+    "to": null,
+    "wall": 1795615030.6853244,
+    "accepted": true,
+    "gz": "data: true",
+    "verified": true
+   }
+  ],
+  "rounds": {
+   "1": [
+    {
+     "room": "room A",
+     "start": 1795613121.6892536,
+     "end": 1795613258.0266323,
+     "ok": true,
+     "pose_end": [
+      -0.013585496963330668,
+      0.006090662441128833,
+      0.20607150210634473
+     ]
+    },
+    {
+     "room": "room B",
+     "start": 1795613258.0267837,
+     "end": 1795613727.0248692,
+     "ok": true,
+     "pose_end": [
+      3.9396718691699952,
+      0.09575668272014036,
+      0.09354041008481995
+     ]
+    },
+    {
+     "room": "room D",
+     "start": 1795613727.0250993,
+     "end": 1795614409.0912538,
+     "ok": true,
+     "pose_end": [
+      3.9452371206045846,
+      3.9003587137624858,
+      1.6172937388427029
+     ]
+    },
+    {
+     "room": "room C",
+     "start": 1795614409.0915549,
+     "end": 1795614924.9574082,
+     "ok": true,
+     "pose_end": [
+      -0.07956554084691407,
+      4.119002386312504,
+      -2.846400379739881
+     ]
+    }
+   ],
+   "2": [
+    {
+     "room": "room B",
+     "start": 1795615039.0814617,
+     "end": 1795615992.5686448,
+     "ok": true,
+     "pose_end": [
+      4.290362712048963,
+      0.5428902226438614,
+      -1.5299870539958105
+     ]
+    },
+    {
+     "room": "room D",
+     "start": 1795615992.5694005,
+     "end": 1795616604.1201363,
+     "ok": true,
+     "pose_end": [
+      4.03467038543965,
+      3.9622849700909235,
+      2.049470989244871
+     ]
+    },
+    {
+     "room": "room C",
+     "start": 1795616604.1204023,
+     "end": 1795617074.3373497,
+     "ok": true,
+     "pose_end": [
+      0.05933187483215501,
+      4.104936556650721,
+      -2.7696028267383546
+     ]
+    },
+    {
+     "room": "room A",
+     "start": 1795617074.3383257,
+     "end": 1795617303.6339257,
+     "ok": true,
+     "pose_end": [
+      -0.7307847238628904,
+      2.295333493868065,
+      -0.4479956063826918
+     ]
+    }
+   ]
+  },
+  "stop": {
+   "wall": 1795615013.5376844,
+   "text": "stop"
+  },
+  "left": 1795615023.866152,
+  "t_end": 1795618270.6766357
+ },
+ "falls": 0,
+ "started": "2026-11-25T13:25:08Z",
+ "commit": "6bfff18",
+ "model": "gurdy-sft-400",
+ "turns": [
+  {
+   "say": "Were any of the items swapped around while I was gone?",
+   "qid": "p01",
+   "reply": "While you were away: 5 changes. The red barrel moved from room D to room B at 14:00 (48 minutes ago); the red box moved from room A to room C at 14:34 (14 minutes ago); the red toolbox is missing from room D; I looked there at 14:17 (31 minutes ago) and it was not there; a new gray box appeared in room A at 14:33 (15 minutes ago); the red barrel is back in room B at 14:13 (35 minutes ago).",
+   "calls": [
+    [
+     "what_changed",
+     {
+      "since": "away"
+     }
+    ]
+   ],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "incident_query"
+    }
+   ],
+   "llm_calls": 0,
+   "grounding_final": 0,
+   "latency_s": 0.01,
+   "wall": 1795618120.3557878,
+   "started_motion": false
+  },
+  {
+   "say": "Has the contents of room C been altered?",
+   "qid": "p02",
+   "reply": "Today, in room C: 1 change. The red box moved from room A to room C at 14:34 (14 minutes ago).",
+   "calls": [
+    [
+     "what_changed",
+     {
+      "room": "room C"
+     }
+    ]
+   ],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "incident_query"
+    }
+   ],
+   "llm_calls": 0,
+   "grounding_final": 0,
+   "latency_s": 3.71,
+   "wall": 1795618122.5755424,
+   "started_motion": false
+  },
+  {
+   "say": "Something feels off in room D, is it?",
+   "qid": "p03",
+   "reply": "At 13:56 (52 minutes ago): I stopped because you told me to. I have no recorded cause for it.",
+   "calls": [
+    [
+     "incident_why",
+     {
+      "about": "stop"
+     }
+    ]
+   ],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "incident_query"
+    }
+   ],
+   "llm_calls": 0,
+   "grounding_final": 0,
+   "latency_s": 0.22,
+   "wall": 1795618145.3374681,
+   "started_motion": false
+  },
+  {
+   "say": "Has room A lost anything since the start?",
+   "qid": "p04",
+   "reply": "Since you started me, in room A: 2 changes. The red box moved from room A to room C at 14:34 (14 minutes ago); a new gray box appeared in room A at 14:33 (15 minutes ago).",
+   "calls": [
+    [
+     "what_changed",
+     {
+      "room": "room A",
+      "since": "session"
+     }
+    ]
+   ],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "incident_query"
+    }
+   ],
+   "llm_calls": 0,
+   "grounding_final": 0,
+   "latency_s": 0.2,
+   "wall": 1795618147.7661,
+   "started_motion": false
+  },
+  {
+   "say": "Did anything go astray?",
+   "qid": "p05",
+   "reply": "Today: 6 changes. The red barrel moved from room D to room B at 14:00 (49 minutes ago); the red box moved from room A to room C at 14:34 (15 minutes ago); the gray traffic cone is missing from room B; I looked there at 13:30 (1 hour ago) and it was not there; the red toolbox is missing from room D; I looked there at 14:17 (32 minutes ago) and it was not there; a new gray box appeared in room A at 14:33 (16 minutes ago); the red barrel is back in room B at 14:13 (36 minutes ago).",
+   "calls": [
+    [
+     "what_changed",
+     {}
+    ]
+   ],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "incident_query"
+    }
+   ],
+   "llm_calls": 0,
+   "grounding_final": 0,
+   "latency_s": 0.2,
+   "wall": 1795618164.1299229,
+   "started_motion": false
+  },
+  {
+   "say": "Give me the differences between now and when you began.",
+   "qid": "p06",
+   "reply": "Here is what happened today (the latest 10 of 43): 14:23 Done. 14:27 Entered room C. 14:31 Done. 14:33 Saw a new gray box in room A. 14:33 The path is blocked. 14:34 The red box moved from room A to room C. 14:35 I am not making progress. 14:35 I had to stop exploring: my path is blocked. 14:35 Entered room A. 14:36 The red box was not where I last saw it.",
+   "calls": [
+    [
+     "timeline",
+     {
+      "limit": 10
+     }
+    ]
+   ],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "incident_query"
+    }
+   ],
+   "llm_calls": 0,
+   "grounding_final": 0,
+   "latency_s": 0.19,
+   "wall": 1795618167.0564644,
+   "started_motion": false
+  },
+  {
+   "say": "At what time did you last have the toolbox in sight?",
+   "qid": "p07",
+   "reply": "I last saw the red toolbox in room D at 13:49 (1 hour ago), but it was not there when I checked later.",
+   "calls": [
+    [
+     "last_seen",
+     {
+      "object": {
+       "class": "toolbox"
+      }
+     }
+    ]
+   ],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "incident_query"
+    }
+   ],
+   "llm_calls": 0,
+   "grounding_final": 0,
+   "latency_s": 0.2,
+   "wall": 1795618170.1482089,
+   "started_motion": false
+  },
+  {
+   "say": "Where did the red box show up most recently?",
+   "qid": "p08",
+   "reply": "I last saw the red box in room C at 14:34 (15 minutes ago).",
+   "calls": [
+    [
+     "last_seen",
+     {
+      "object": {
+       "class": "box",
+       "color": "red"
+      }
+     }
+    ]
+   ],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "incident_query"
+    }
+   ],
+   "llm_calls": 0,
+   "grounding_final": 0,
+   "latency_s": 0.21,
+   "wall": 1795618173.2792504,
+   "started_motion": false
+  },
+  {
+   "say": "How long has the mannequin been out of your view?",
+   "qid": "p09",
+   "reply": "I have checked every room less than an hour ago.",
+   "calls": [
+    [
+     "unchecked_rooms",
+     {}
+    ]
+   ],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "incident_query"
+    }
+   ],
+   "llm_calls": 0,
+   "grounding_final": 0,
+   "latency_s": 0.2,
+   "wall": 1795618176.4181118,
+   "started_motion": false
+  },
+  {
+   "say": "When was a ladder last on your camera?",
+   "qid": "p10",
+   "reply": "I can't do that. I don't know what a ladder is, and I have not seen one.",
+   "calls": [],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "unknown_noun"
+    }
+   ],
+   "llm_calls": 0,
+   "grounding_final": 0,
+   "latency_s": 0.2,
+   "wall": 1795618179.2563577,
+   "started_motion": false
+  },
+  {
+   "say": "Has the red barrel stayed in room D?",
+   "qid": "p11",
+   "reply": "No. The red barrel moved from room D to room B at 14:00 (49 minutes ago).",
+   "calls": [
+    [
+     "object_history",
+     {
+      "object": {
+       "class": "barrel",
+       "color": "red"
+      }
+     }
+    ]
+   ],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "incident_query"
+    }
+   ],
+   "llm_calls": 0,
+   "grounding_final": 0,
+   "latency_s": 0.21,
+   "wall": 1795618190.3141532,
+   "started_motion": false
+  },
+  {
+   "say": "Was the blue barrel ever shoved somewhere else?",
+   "qid": "p12",
+   "reply": "I haven't recorded the blue barrel moving. I have seen it 26 times so far. I last recorded it in room B.",
+   "calls": [
+    [
+     "object_history",
+     {
+      "object": {
+       "class": "barrel",
+       "color": "blue"
+      }
+     }
+    ]
+   ],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "incident_query"
+    }
+   ],
+   "llm_calls": 0,
+   "grounding_final": 0,
+   "latency_s": 0.21,
+   "wall": 1795618204.2525034,
+   "started_motion": false
+  },
+  {
+   "say": "Is the red box in the spot where it began?",
+   "qid": "p13",
+   "reply": "No. The red box moved from room A to room C at 14:34 (15 minutes ago).",
+   "calls": [
+    [
+     "object_history",
+     {
+      "object": {
+       "class": "box",
+       "color": "red"
+      }
+     }
+    ]
+   ],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "incident_query"
+    }
+   ],
+   "llm_calls": 0,
+   "grounding_final": 0,
+   "latency_s": 0.2,
+   "wall": 1795618206.6061203,
+   "started_motion": false
+  },
+  {
+   "say": "Did the toolbox vanish?",
+   "qid": "p14",
+   "reply": "Today: 6 changes. The red barrel moved from room D to room B at 14:00 (50 minutes ago); the red box moved from room A to room C at 14:34 (15 minutes ago); the gray traffic cone is missing from room B; I looked there at 13:30 (1 hour ago) and it was not there; the red toolbox is missing from room D; I looked there at 14:17 (32 minutes ago) and it was not there; a new gray box appeared in room A at 14:33 (16 minutes ago); the red barrel is back in room B at 14:13 (37 minutes ago).",
+   "calls": [
+    [
+     "what_changed",
+     {}
+    ]
+   ],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "incident_query"
+    }
+   ],
+   "llm_calls": 0,
+   "grounding_final": 0,
+   "latency_s": 0.21,
+   "wall": 1795618209.7660494,
+   "started_motion": false
+  },
+  {
+   "say": "Bring me up to date on what's been going on in room C.",
+   "qid": "p15",
+   "reply": "I can tell you what changed in room C, when I was last there, or what happened there. Which of those do you want?",
+   "calls": [],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "room_not_object"
+    }
+   ],
+   "llm_calls": 1,
+   "grounding_final": 0,
+   "latency_s": 3.78,
+   "wall": 1795618212.659368,
+   "started_motion": false
+  },
+  {
+   "say": "What have you been busy with since I gave you that first order?",
+   "qid": "p16",
+   "reply": "Here is what happened today (the latest 10 of 43): 14:23 Done. 14:27 Entered room C. 14:31 Done. 14:33 Saw a new gray box in room A. 14:33 The path is blocked. 14:34 The red box moved from room A to room C. 14:35 I am not making progress. 14:35 I had to stop exploring: my path is blocked. 14:35 Entered room A. 14:36 The red box was not where I last saw it.",
+   "calls": [
+    [
+     "timeline",
+     {
+      "limit": 10
+     }
+    ]
+   ],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "incident_query"
+    }
+   ],
+   "llm_calls": 0,
+   "grounding_final": 0,
+   "latency_s": 3.62,
+   "wall": 1795618215.5259957,
+   "started_motion": false
+  },
+  {
+   "say": "What led to you coming to a halt after my command?",
+   "qid": "p17",
+   "reply": "At 13:56 (53 minutes ago): I stopped because you told me to. I have no recorded cause for it.",
+   "calls": [
+    [
+     "incident_why",
+     {
+      "about": "stop"
+     }
+    ]
+   ],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "incident_query"
+    }
+   ],
+   "llm_calls": 0,
+   "grounding_final": 0,
+   "latency_s": 0.2,
+   "wall": 1795618217.9931605,
+   "started_motion": false
+  },
+  {
+   "say": "Which rooms have you left alone for over ten minutes?",
+   "qid": "p18",
+   "reply": "Not checked for 10 minutes: room B (last at 14:16, 34 minutes ago); room C (last at 14:35, 15 minutes ago); room D (last at 14:27, 23 minutes ago). Checked recently: room A.",
+   "calls": [
+    [
+     "unchecked_rooms",
+     {
+      "older_than_s": 600.0
+     }
+    ]
+   ],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "incident_query"
+    }
+   ],
+   "llm_calls": 0,
+   "grounding_final": 0,
+   "latency_s": 0.19,
+   "wall": 1795618220.3889132,
+   "started_motion": false
+  },
+  {
+   "say": "When did you last look in on room B?",
+   "qid": "p19",
+   "reply": "I was last in room B at 14:16 (34 minutes ago).",
+   "calls": [
+    [
+     "unchecked_rooms",
+     {
+      "room": "room B"
+     }
+    ]
+   ],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "incident_query"
+    }
+   ],
+   "llm_calls": 0,
+   "grounding_final": 0,
+   "latency_s": 0.2,
+   "wall": 1795618222.9866753,
+   "started_motion": false
+  },
+  {
+   "say": "Does a room H exist on your map?",
+   "qid": "p20",
+   "reply": "There is no room H. I know rooms A, B, C and D.",
+   "calls": [],
+   "verdicts": [
+    {
+     "outcome": "none",
+     "rule": "unknown_room"
+    }
+   ],
+   "llm_calls": 0,
+   "grounding_final": 0,
+   "latency_s": 0.0,
+   "wall": 1795618225.7790108,
+   "started_motion": false
+  }
+ ],
+ "graph_events": [
+  {
+   "etype": "session_start",
+   "label": "Recording started.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795613121.4302785,
+   "sim_t": 0.0,
+   "data": {}
+  },
+  {
+   "etype": "task_started",
+   "label": "explore started.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795613121.9083598,
+   "sim_t": 12.48,
+   "data": {
+    "tool": "explore",
+    "task_id": 1
+   }
+  },
+  {
+   "etype": "room_visited",
+   "label": "Entered room A.",
+   "cls": null,
+   "color": "",
+   "room": "room A",
+   "wall_t": 1795613122.064025,
+   "sim_t": 12.544,
+   "data": {}
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw a new red fire extinguisher in room C.",
+   "cls": "fire_extinguisher",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795613197.7404764,
+   "sim_t": 34.193,
+   "data": {
+    "confidence": 0.879,
+    "first": true,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw a new red box in room A.",
+   "cls": "box",
+   "color": "red",
+   "room": "room A",
+   "wall_t": 1795613229.7803478,
+   "sim_t": 44.988,
+   "data": {
+    "confidence": 0.946,
+    "first": true,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "task_finished",
+   "label": "Done.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795613257.8946943,
+   "sim_t": 55.22,
+   "data": {
+    "tool": "explore",
+    "reason": "done",
+    "task_id": 1,
+    "distance_m": null
+   }
+  },
+  {
+   "etype": "task_started",
+   "label": "explore started.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795613258.1937852,
+   "sim_t": 55.27,
+   "data": {
+    "tool": "explore",
+    "task_id": 2
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw a new gray traffic cone in room B.",
+   "cls": "traffic_cone",
+   "color": "gray",
+   "room": "room B",
+   "wall_t": 1795613266.17808,
+   "sim_t": 58.454,
+   "data": {
+    "confidence": 0.774,
+    "first": true,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red fire extinguisher in room C.",
+   "cls": "fire_extinguisher",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795613342.19424,
+   "sim_t": 86.607,
+   "data": {
+    "confidence": 0.878,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw a new white traffic cone in room A.",
+   "cls": "traffic_cone",
+   "color": "white",
+   "room": "room A",
+   "wall_t": 1795613358.7732515,
+   "sim_t": 91.965,
+   "data": {
+    "confidence": 0.955,
+    "first": true,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "room_left",
+   "label": "Left room A.",
+   "cls": null,
+   "color": "",
+   "room": "room A",
+   "wall_t": 1795613373.6218596,
+   "sim_t": 98.275,
+   "data": {
+    "stayed_s": 85.7
+   }
+  },
+  {
+   "etype": "room_visited",
+   "label": "Entered room B.",
+   "cls": null,
+   "color": "",
+   "room": "room B",
+   "wall_t": 1795613373.6218596,
+   "sim_t": 98.275,
+   "data": {}
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw a new blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795613373.8365128,
+   "sim_t": 98.37299999999999,
+   "data": {
+    "confidence": 0.953,
+    "first": true,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw a new blue box in room B.",
+   "cls": "box",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795613382.8811233,
+   "sim_t": 101.633,
+   "data": {
+    "confidence": 0.863,
+    "first": true,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_missing",
+   "label": "The gray traffic cone was not where I last saw it.",
+   "cls": "traffic_cone",
+   "color": "gray",
+   "room": "room B",
+   "wall_t": 1795613432.2940588,
+   "sim_t": 118.732,
+   "data": {
+    "why": "not seen in room B during a 20 s visit",
+    "last_seen_wall": 1795613284.3667674
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795613453.3106408,
+   "sim_t": 125.546,
+   "data": {
+    "confidence": 0.954,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue box in room B.",
+   "cls": "box",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795613462.3044765,
+   "sim_t": 128.225,
+   "data": {
+    "confidence": 0.863,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795613523.1896677,
+   "sim_t": 145.193,
+   "data": {
+    "confidence": 0.957,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue box in room B.",
+   "cls": "box",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795613593.4996207,
+   "sim_t": 169.201,
+   "data": {
+    "confidence": 0.893,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795613629.166597,
+   "sim_t": 177.046,
+   "data": {
+    "confidence": 0.96,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue box in room B.",
+   "cls": "box",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795613709.3037336,
+   "sim_t": 198.624,
+   "data": {
+    "confidence": 0.899,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "task_finished",
+   "label": "Done.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795613726.9381397,
+   "sim_t": 204.77,
+   "data": {
+    "tool": "explore",
+    "reason": "done",
+    "task_id": 2,
+    "distance_m": null
+   }
+  },
+  {
+   "etype": "task_started",
+   "label": "explore started.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795613727.2761552,
+   "sim_t": 204.79,
+   "data": {
+    "tool": "explore",
+    "task_id": 3
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795613769.2505374,
+   "sim_t": 218.698,
+   "data": {
+    "confidence": 0.959,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw a new red toolbox in room D.",
+   "cls": "toolbox",
+   "color": "red",
+   "room": "room D",
+   "wall_t": 1795613823.748225,
+   "sim_t": 237.314,
+   "data": {
+    "confidence": 0.889,
+    "first": true,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw a new red barrel in room D.",
+   "cls": "barrel",
+   "color": "red",
+   "room": "room D",
+   "wall_t": 1795613827.6136978,
+   "sim_t": 238.959,
+   "data": {
+    "confidence": 0.954,
+    "first": true,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795613836.7443333,
+   "sim_t": 242.388,
+   "data": {
+    "confidence": 0.956,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue box in room B.",
+   "cls": "box",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795613854.707473,
+   "sim_t": 247.741,
+   "data": {
+    "confidence": 0.905,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795613898.5112035,
+   "sim_t": 261.769,
+   "data": {
+    "confidence": 0.958,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue box in room B.",
+   "cls": "box",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795613920.42788,
+   "sim_t": 267.463,
+   "data": {
+    "confidence": 0.895,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795613959.0707061,
+   "sim_t": 278.252,
+   "data": {
+    "confidence": 0.96,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red barrel in room D.",
+   "cls": "barrel",
+   "color": "red",
+   "room": "room D",
+   "wall_t": 1795613979.9138594,
+   "sim_t": 284.10699999999997,
+   "data": {
+    "confidence": 0.95,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw a new white traffic cone in room D.",
+   "cls": "traffic_cone",
+   "color": "white",
+   "room": "room D",
+   "wall_t": 1795613981.1565914,
+   "sim_t": 284.631,
+   "data": {
+    "confidence": 0.927,
+    "first": true,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red toolbox in room D.",
+   "cls": "toolbox",
+   "color": "red",
+   "room": "room D",
+   "wall_t": 1795613987.5072012,
+   "sim_t": 286.781,
+   "data": {
+    "confidence": 0.89,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795614019.8313074,
+   "sim_t": 294.97,
+   "data": {
+    "confidence": 0.96,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue box in room B.",
+   "cls": "box",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795614033.9267473,
+   "sim_t": 298.689,
+   "data": {
+    "confidence": 0.897,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795614081.8190765,
+   "sim_t": 312.857,
+   "data": {
+    "confidence": 0.962,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red barrel in room D.",
+   "cls": "barrel",
+   "color": "red",
+   "room": "room D",
+   "wall_t": 1795614094.7399843,
+   "sim_t": 316.30199999999996,
+   "data": {
+    "confidence": 0.951,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the white traffic cone in room D.",
+   "cls": "traffic_cone",
+   "color": "white",
+   "room": "room D",
+   "wall_t": 1795614098.3273847,
+   "sim_t": 317.35499999999996,
+   "data": {
+    "confidence": 0.911,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red toolbox in room D.",
+   "cls": "toolbox",
+   "color": "red",
+   "room": "room D",
+   "wall_t": 1795614103.836116,
+   "sim_t": 318.949,
+   "data": {
+    "confidence": 0.901,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw a new gray mannequin in room D.",
+   "cls": "mannequin",
+   "color": "gray",
+   "room": "room D",
+   "wall_t": 1795614115.9829986,
+   "sim_t": 323.295,
+   "data": {
+    "confidence": 0.956,
+    "first": true,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "room_left",
+   "label": "Left room B.",
+   "cls": null,
+   "color": "",
+   "room": "room B",
+   "wall_t": 1795614152.1206062,
+   "sim_t": 336.762,
+   "data": {
+    "stayed_s": 238.5
+   }
+  },
+  {
+   "etype": "room_visited",
+   "label": "Entered room D.",
+   "cls": null,
+   "color": "",
+   "room": "room D",
+   "wall_t": 1795614152.1206062,
+   "sim_t": 336.762,
+   "data": {}
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red barrel in room D.",
+   "cls": "barrel",
+   "color": "red",
+   "room": "room D",
+   "wall_t": 1795614162.7381797,
+   "sim_t": 340.241,
+   "data": {
+    "confidence": 0.941,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red toolbox in room D.",
+   "cls": "toolbox",
+   "color": "red",
+   "room": "room D",
+   "wall_t": 1795614166.1524682,
+   "sim_t": 341.566,
+   "data": {
+    "confidence": 0.909,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the white traffic cone in room D.",
+   "cls": "traffic_cone",
+   "color": "white",
+   "room": "room D",
+   "wall_t": 1795614177.9702613,
+   "sim_t": 345.78999999999996,
+   "data": {
+    "confidence": 0.924,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red toolbox in room D.",
+   "cls": "toolbox",
+   "color": "red",
+   "room": "room D",
+   "wall_t": 1795614227.5611172,
+   "sim_t": 360.596,
+   "data": {
+    "confidence": 0.911,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the gray mannequin in room D.",
+   "cls": "mannequin",
+   "color": "gray",
+   "room": "room D",
+   "wall_t": 1795614236.9320714,
+   "sim_t": 363.037,
+   "data": {
+    "confidence": 0.957,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red toolbox in room D.",
+   "cls": "toolbox",
+   "color": "red",
+   "room": "room D",
+   "wall_t": 1795614287.6207764,
+   "sim_t": 377.913,
+   "data": {
+    "confidence": 0.916,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red barrel in room D.",
+   "cls": "barrel",
+   "color": "red",
+   "room": "room D",
+   "wall_t": 1795614298.8978803,
+   "sim_t": 380.856,
+   "data": {
+    "confidence": 0.949,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the gray mannequin in room D.",
+   "cls": "mannequin",
+   "color": "gray",
+   "room": "room D",
+   "wall_t": 1795614353.0106227,
+   "sim_t": 397.327,
+   "data": {
+    "confidence": 0.957,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795614361.8092372,
+   "sim_t": 399.904,
+   "data": {
+    "confidence": 0.961,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the white traffic cone in room D.",
+   "cls": "traffic_cone",
+   "color": "white",
+   "room": "room D",
+   "wall_t": 1795614384.1364334,
+   "sim_t": 407.0,
+   "data": {
+    "confidence": 0.94,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red barrel in room D.",
+   "cls": "barrel",
+   "color": "red",
+   "room": "room D",
+   "wall_t": 1795614397.9939477,
+   "sim_t": 411.83000000000004,
+   "data": {
+    "confidence": 0.951,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red toolbox in room D.",
+   "cls": "toolbox",
+   "color": "red",
+   "room": "room D",
+   "wall_t": 1795614408.770846,
+   "sim_t": 416.381,
+   "data": {
+    "confidence": 0.916,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "task_finished",
+   "label": "Done.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795614408.9564097,
+   "sim_t": 416.47,
+   "data": {
+    "tool": "explore",
+    "reason": "done",
+    "task_id": 3,
+    "distance_m": null
+   }
+  },
+  {
+   "etype": "task_started",
+   "label": "explore started.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795614409.271853,
+   "sim_t": 416.54,
+   "data": {
+    "tool": "explore",
+    "task_id": 4
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the gray mannequin in room D.",
+   "cls": "mannequin",
+   "color": "gray",
+   "room": "room D",
+   "wall_t": 1795614481.6655748,
+   "sim_t": 439.48199999999997,
+   "data": {
+    "confidence": 0.957,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795614495.7472327,
+   "sim_t": 444.384,
+   "data": {
+    "confidence": 0.947,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red fire extinguisher in room C.",
+   "cls": "fire_extinguisher",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795614522.9937418,
+   "sim_t": 452.073,
+   "data": {
+    "confidence": 0.872,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw a new yellow box in room C.",
+   "cls": "box",
+   "color": "yellow",
+   "room": "room C",
+   "wall_t": 1795614534.842565,
+   "sim_t": 456.663,
+   "data": {
+    "confidence": 0.886,
+    "first": true,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red toolbox in room D.",
+   "cls": "toolbox",
+   "color": "red",
+   "room": "room D",
+   "wall_t": 1795614551.0129108,
+   "sim_t": 462.607,
+   "data": {
+    "confidence": 0.928,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red fire extinguisher in room C.",
+   "cls": "fire_extinguisher",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795614587.4371445,
+   "sim_t": 474.193,
+   "data": {
+    "confidence": 0.863,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the gray mannequin in room D.",
+   "cls": "mannequin",
+   "color": "gray",
+   "room": "room D",
+   "wall_t": 1795614608.3317866,
+   "sim_t": 479.792,
+   "data": {
+    "confidence": 0.95,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795614614.0644197,
+   "sim_t": 481.16200000000003,
+   "data": {
+    "confidence": 0.947,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the yellow box in room C.",
+   "cls": "box",
+   "color": "yellow",
+   "room": "room C",
+   "wall_t": 1795614639.568495,
+   "sim_t": 488.367,
+   "data": {
+    "confidence": 0.843,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "room_left",
+   "label": "Left room D.",
+   "cls": null,
+   "color": "",
+   "room": "room D",
+   "wall_t": 1795614645.8813343,
+   "sim_t": 489.958,
+   "data": {
+    "stayed_s": 153.2
+   }
+  },
+  {
+   "etype": "room_visited",
+   "label": "Entered room C.",
+   "cls": null,
+   "color": "",
+   "room": "room C",
+   "wall_t": 1795614645.8813343,
+   "sim_t": 489.958,
+   "data": {}
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red fire extinguisher in room C.",
+   "cls": "fire_extinguisher",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795614685.512223,
+   "sim_t": 501.69899999999996,
+   "data": {
+    "confidence": 0.861,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the white traffic cone in room D.",
+   "cls": "traffic_cone",
+   "color": "white",
+   "room": "room D",
+   "wall_t": 1795614711.0886989,
+   "sim_t": 510.739,
+   "data": {
+    "confidence": 0.937,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the gray mannequin in room D.",
+   "cls": "mannequin",
+   "color": "gray",
+   "room": "room D",
+   "wall_t": 1795614711.0886989,
+   "sim_t": 510.739,
+   "data": {
+    "confidence": 0.94,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red barrel in room D.",
+   "cls": "barrel",
+   "color": "red",
+   "room": "room D",
+   "wall_t": 1795614719.782334,
+   "sim_t": 513.712,
+   "data": {
+    "confidence": 0.95,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red fire extinguisher in room C.",
+   "cls": "fire_extinguisher",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795614746.0991724,
+   "sim_t": 522.2249999999999,
+   "data": {
+    "confidence": 0.868,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the yellow box in room C.",
+   "cls": "box",
+   "color": "yellow",
+   "room": "room C",
+   "wall_t": 1795614756.4223297,
+   "sim_t": 526.183,
+   "data": {
+    "confidence": 0.878,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the yellow box in room C.",
+   "cls": "box",
+   "color": "yellow",
+   "room": "room C",
+   "wall_t": 1795614818.6503797,
+   "sim_t": 543.398,
+   "data": {
+    "confidence": 0.905,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red fire extinguisher in room C.",
+   "cls": "fire_extinguisher",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795614828.0056982,
+   "sim_t": 546.64,
+   "data": {
+    "confidence": 0.877,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the yellow box in room C.",
+   "cls": "box",
+   "color": "yellow",
+   "room": "room C",
+   "wall_t": 1795614915.335291,
+   "sim_t": 576.126,
+   "data": {
+    "confidence": 0.906,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "task_finished",
+   "label": "Done.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795614924.8351145,
+   "sim_t": 580.02,
+   "data": {
+    "tool": "explore",
+    "reason": "done",
+    "task_id": 4,
+    "distance_m": null
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red fire extinguisher in room C.",
+   "cls": "fire_extinguisher",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795614971.8941119,
+   "sim_t": 591.725,
+   "data": {
+    "confidence": 0.897,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "task_started",
+   "label": "go_to started.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795614973.0546014,
+   "sim_t": 592.01,
+   "data": {
+    "tool": "go_to",
+    "task_id": 5
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "go to room B",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795614973.2625964,
+   "sim_t": 592.058,
+   "data": {
+    "text": "go to room B",
+    "starts_task": true
+   }
+  },
+  {
+   "etype": "path_blocked",
+   "label": "The path is blocked.",
+   "cls": null,
+   "color": "",
+   "room": "room C",
+   "wall_t": 1795614989.04246,
+   "sim_t": 597.11,
+   "data": {
+    "task_id": 5
+   }
+  },
+  {
+   "etype": "task_failed",
+   "label": "I couldn't reach room B: my path is blocked.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795614989.0504599,
+   "sim_t": 597.12,
+   "data": {
+    "tool": "go_to",
+    "reason": "blocked",
+    "task_id": 5,
+    "distance_m": null
+   }
+  },
+  {
+   "etype": "task_started",
+   "label": "go_to started.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795614991.2869725,
+   "sim_t": 597.45,
+   "data": {
+    "tool": "go_to",
+    "task_id": 6
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red barrel in room D.",
+   "cls": "barrel",
+   "color": "red",
+   "room": "room D",
+   "wall_t": 1795615010.615146,
+   "sim_t": 603.2,
+   "data": {
+    "confidence": 0.949,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "task_failed",
+   "label": "Stopped.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795615013.5942752,
+   "sim_t": 604.09,
+   "data": {
+    "tool": "go_to",
+    "reason": "cancelled",
+    "task_id": 6,
+    "distance_m": null
+   }
+  },
+  {
+   "etype": "stop",
+   "label": "You told me to stop.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795615013.5942752,
+   "sim_t": 604.09,
+   "data": {
+    "reason": "you told me to stop",
+    "tool": "go_to"
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "stop",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795615013.7932012,
+   "sim_t": 604.111,
+   "data": {
+    "text": "stop",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "hello",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795615023.7825482,
+   "sim_t": 607.285,
+   "data": {
+    "text": "hello",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "task_started",
+   "label": "explore started.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795615039.2688596,
+   "sim_t": 612.76,
+   "data": {
+    "tool": "explore",
+    "task_id": 7
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the white traffic cone in room D.",
+   "cls": "traffic_cone",
+   "color": "white",
+   "room": "room D",
+   "wall_t": 1795615097.5117745,
+   "sim_t": 626.359,
+   "data": {
+    "confidence": 0.935,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "room_left",
+   "label": "Left room C.",
+   "cls": null,
+   "color": "",
+   "room": "room C",
+   "wall_t": 1795615148.937212,
+   "sim_t": 640.047,
+   "data": {
+    "stayed_s": 150.1
+   }
+  },
+  {
+   "etype": "room_visited",
+   "label": "Entered room D.",
+   "cls": null,
+   "color": "",
+   "room": "room D",
+   "wall_t": 1795615148.937212,
+   "sim_t": 640.047,
+   "data": {}
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795615160.8152065,
+   "sim_t": 643.616,
+   "data": {
+    "confidence": 0.947,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the white traffic cone in room D.",
+   "cls": "traffic_cone",
+   "color": "white",
+   "room": "room D",
+   "wall_t": 1795615160.8152065,
+   "sim_t": 643.616,
+   "data": {
+    "confidence": 0.935,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the gray mannequin in room D.",
+   "cls": "mannequin",
+   "color": "gray",
+   "room": "room D",
+   "wall_t": 1795615160.8152065,
+   "sim_t": 643.616,
+   "data": {
+    "confidence": 0.927,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red fire extinguisher in room C.",
+   "cls": "fire_extinguisher",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795615189.0549846,
+   "sim_t": 654.06,
+   "data": {
+    "confidence": 0.898,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the yellow box in room C.",
+   "cls": "box",
+   "color": "yellow",
+   "room": "room C",
+   "wall_t": 1795615195.1757722,
+   "sim_t": 656.691,
+   "data": {
+    "confidence": 0.907,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795615222.4709158,
+   "sim_t": 664.782,
+   "data": {
+    "confidence": 0.947,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw a new red barrel in room B.",
+   "cls": "barrel",
+   "color": "red",
+   "room": "room B",
+   "wall_t": 1795615229.8885458,
+   "sim_t": 667.1709999999999,
+   "data": {
+    "confidence": 0.928,
+    "first": true,
+    "returned": false,
+    "appeared": true,
+    "superseded": true
+   }
+  },
+  {
+   "etype": "object_moved",
+   "label": "The red barrel moved from room D to room B.",
+   "cls": "barrel",
+   "color": "red",
+   "room": "room B",
+   "wall_t": 1795615229.8885458,
+   "sim_t": 667.1709999999999,
+   "data": {
+    "from": {
+     "x": 5.14,
+     "y": 4.94,
+     "room": "room D"
+    },
+    "to": {
+     "x": 3.98,
+     "y": -0.31,
+     "room": "room B"
+    },
+    "distance_m": 5.38
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the white traffic cone in room D.",
+   "cls": "traffic_cone",
+   "color": "white",
+   "room": "room D",
+   "wall_t": 1795615232.5826635,
+   "sim_t": 668.066,
+   "data": {
+    "confidence": 0.937,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_missing",
+   "label": "The red barrel was not where I last saw it.",
+   "cls": "barrel",
+   "color": "red",
+   "room": "room D",
+   "wall_t": 1795615275.2005894,
+   "sim_t": 681.237,
+   "data": {
+    "why": "not seen in room D during a 41 s visit",
+    "last_seen_wall": 1795615027.2176304
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue box in room B.",
+   "cls": "box",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795615279.016501,
+   "sim_t": 682.6189999999999,
+   "data": {
+    "confidence": 0.893,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795615282.5182931,
+   "sim_t": 683.958,
+   "data": {
+    "confidence": 0.947,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "room_left",
+   "label": "Left room D.",
+   "cls": null,
+   "color": "",
+   "room": "room D",
+   "wall_t": 1795615292.3180618,
+   "sim_t": 687.167,
+   "data": {
+    "stayed_s": 47.1
+   }
+  },
+  {
+   "etype": "room_visited",
+   "label": "Entered room B.",
+   "cls": null,
+   "color": "",
+   "room": "room B",
+   "wall_t": 1795615292.3180618,
+   "sim_t": 687.167,
+   "data": {}
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795615343.6583784,
+   "sim_t": 700.913,
+   "data": {
+    "confidence": 0.949,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the white traffic cone in room D.",
+   "cls": "traffic_cone",
+   "color": "white",
+   "room": "room D",
+   "wall_t": 1795615350.568738,
+   "sim_t": 703.076,
+   "data": {
+    "confidence": 0.941,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_missing",
+   "label": "The red barrel was not where I last saw it.",
+   "cls": "barrel",
+   "color": "red",
+   "room": "room B",
+   "wall_t": 1795615363.2766192,
+   "sim_t": 707.685,
+   "data": {
+    "why": "not seen in room B during a 21 s visit",
+    "last_seen_wall": 1795615229.8885458
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the gray mannequin in room D.",
+   "cls": "mannequin",
+   "color": "gray",
+   "room": "room D",
+   "wall_t": 1795615366.1031544,
+   "sim_t": 708.7529999999999,
+   "data": {
+    "confidence": 0.929,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795615497.2432487,
+   "sim_t": 741.733,
+   "data": {
+    "confidence": 0.95,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the white traffic cone in room D.",
+   "cls": "traffic_cone",
+   "color": "white",
+   "room": "room D",
+   "wall_t": 1795615497.2432487,
+   "sim_t": 741.733,
+   "data": {
+    "confidence": 0.935,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795615588.1526935,
+   "sim_t": 769.483,
+   "data": {
+    "confidence": 0.951,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the white traffic cone in room D.",
+   "cls": "traffic_cone",
+   "color": "white",
+   "room": "room D",
+   "wall_t": 1795615639.805175,
+   "sim_t": 793.932,
+   "data": {
+    "confidence": 0.929,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795615661.6240737,
+   "sim_t": 804.1139999999999,
+   "data": {
+    "confidence": 0.952,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795615730.02579,
+   "sim_t": 828.579,
+   "data": {
+    "confidence": 0.953,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the gray mannequin in room D.",
+   "cls": "mannequin",
+   "color": "gray",
+   "room": "room D",
+   "wall_t": 1795615758.4944355,
+   "sim_t": 837.916,
+   "data": {
+    "confidence": 0.929,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue box in room B.",
+   "cls": "box",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795615788.3134513,
+   "sim_t": 849.7,
+   "data": {
+    "confidence": 0.893,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795615803.026574,
+   "sim_t": 854.194,
+   "data": {
+    "confidence": 0.954,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the gray mannequin in room D.",
+   "cls": "mannequin",
+   "color": "gray",
+   "room": "room D",
+   "wall_t": 1795615845.0603015,
+   "sim_t": 869.346,
+   "data": {
+    "confidence": 0.925,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795615892.851184,
+   "sim_t": 881.005,
+   "data": {
+    "confidence": 0.956,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the gray mannequin in room D.",
+   "cls": "mannequin",
+   "color": "gray",
+   "room": "room D",
+   "wall_t": 1795615907.738702,
+   "sim_t": 886.6039999999999,
+   "data": {
+    "confidence": 0.922,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue box in room B.",
+   "cls": "box",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795615938.3104265,
+   "sim_t": 897.103,
+   "data": {
+    "confidence": 0.897,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "The red barrel is back in room B.",
+   "cls": "barrel",
+   "color": "red",
+   "room": "room B",
+   "wall_t": 1795615990.664978,
+   "sim_t": 912.277,
+   "data": {
+    "confidence": 0.957,
+    "first": false,
+    "returned": true,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "task_failed",
+   "label": "I ran out of time trying to finish exploring.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795615992.4792547,
+   "sim_t": 912.79,
+   "data": {
+    "tool": "explore",
+    "reason": "timeout",
+    "task_id": 7,
+    "distance_m": null
+   }
+  },
+  {
+   "etype": "task_started",
+   "label": "explore started.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795615992.8950915,
+   "sim_t": 912.82,
+   "data": {
+    "tool": "explore",
+    "task_id": 8
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue box in room B.",
+   "cls": "box",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795616002.6183274,
+   "sim_t": 916.024,
+   "data": {
+    "confidence": 0.902,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the gray mannequin in room D.",
+   "cls": "mannequin",
+   "color": "gray",
+   "room": "room D",
+   "wall_t": 1795616046.7599173,
+   "sim_t": 933.261,
+   "data": {
+    "confidence": 0.919,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the white traffic cone in room D.",
+   "cls": "traffic_cone",
+   "color": "white",
+   "room": "room D",
+   "wall_t": 1795616056.1126778,
+   "sim_t": 936.4789999999999,
+   "data": {
+    "confidence": 0.929,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795616067.0749207,
+   "sim_t": 941.5609999999999,
+   "data": {
+    "confidence": 0.956,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue box in room B.",
+   "cls": "box",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795616076.964878,
+   "sim_t": 945.2829999999999,
+   "data": {
+    "confidence": 0.905,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red barrel in room B.",
+   "cls": "barrel",
+   "color": "red",
+   "room": "room B",
+   "wall_t": 1795616076.964878,
+   "sim_t": 945.2829999999999,
+   "data": {
+    "confidence": 0.956,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the white traffic cone in room D.",
+   "cls": "traffic_cone",
+   "color": "white",
+   "room": "room D",
+   "wall_t": 1795616131.662844,
+   "sim_t": 961.124,
+   "data": {
+    "confidence": 0.932,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the gray mannequin in room D.",
+   "cls": "mannequin",
+   "color": "gray",
+   "room": "room D",
+   "wall_t": 1795616145.7407622,
+   "sim_t": 966.212,
+   "data": {
+    "confidence": 0.919,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "room_left",
+   "label": "Left room B.",
+   "cls": null,
+   "color": "",
+   "room": "room B",
+   "wall_t": 1795616164.8984542,
+   "sim_t": 974.123,
+   "data": {
+    "stayed_s": 287.0
+   }
+  },
+  {
+   "etype": "room_visited",
+   "label": "Entered room D.",
+   "cls": null,
+   "color": "",
+   "room": "room D",
+   "wall_t": 1795616164.8984542,
+   "sim_t": 974.123,
+   "data": {}
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the white traffic cone in room D.",
+   "cls": "traffic_cone",
+   "color": "white",
+   "room": "room D",
+   "wall_t": 1795616199.9685798,
+   "sim_t": 985.108,
+   "data": {
+    "confidence": 0.934,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_missing",
+   "label": "The red toolbox was not where I last saw it.",
+   "cls": "toolbox",
+   "color": "red",
+   "room": "room D",
+   "wall_t": 1795616268.997939,
+   "sim_t": 1004.535,
+   "data": {
+    "why": "not seen in room D during a 30 s visit",
+    "last_seen_wall": 1795614561.7335045
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the white traffic cone in room D.",
+   "cls": "traffic_cone",
+   "color": "white",
+   "room": "room D",
+   "wall_t": 1795616274.7565238,
+   "sim_t": 1006.651,
+   "data": {
+    "confidence": 0.938,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the gray mannequin in room D.",
+   "cls": "mannequin",
+   "color": "gray",
+   "room": "room D",
+   "wall_t": 1795616324.4725485,
+   "sim_t": 1024.557,
+   "data": {
+    "confidence": 0.923,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw a new red box in room C.",
+   "cls": "box",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795616332.332499,
+   "sim_t": 1026.901,
+   "data": {
+    "confidence": 0.846,
+    "first": true,
+    "returned": false,
+    "appeared": true,
+    "superseded": true
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red barrel in room B.",
+   "cls": "barrel",
+   "color": "red",
+   "room": "room B",
+   "wall_t": 1795616351.330108,
+   "sim_t": 1033.008,
+   "data": {
+    "confidence": 0.957,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795616355.0053825,
+   "sim_t": 1034.59,
+   "data": {
+    "confidence": 0.956,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the white traffic cone in room D.",
+   "cls": "traffic_cone",
+   "color": "white",
+   "room": "room D",
+   "wall_t": 1795616432.7014828,
+   "sim_t": 1059.6490000000001,
+   "data": {
+    "confidence": 0.941,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the blue barrel in room B.",
+   "cls": "barrel",
+   "color": "blue",
+   "room": "room B",
+   "wall_t": 1795616446.0462074,
+   "sim_t": 1063.9489999999998,
+   "data": {
+    "confidence": 0.954,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red box in room C.",
+   "cls": "box",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795616484.4338276,
+   "sim_t": 1076.654,
+   "data": {
+    "confidence": 0.866,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the gray mannequin in room D.",
+   "cls": "mannequin",
+   "color": "gray",
+   "room": "room D",
+   "wall_t": 1795616490.7808435,
+   "sim_t": 1079.2549999999999,
+   "data": {
+    "confidence": 0.925,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the gray mannequin in room D.",
+   "cls": "mannequin",
+   "color": "gray",
+   "room": "room D",
+   "wall_t": 1795616553.9386122,
+   "sim_t": 1102.832,
+   "data": {
+    "confidence": 0.927,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red barrel in room B.",
+   "cls": "barrel",
+   "color": "red",
+   "room": "room B",
+   "wall_t": 1795616559.3283513,
+   "sim_t": 1104.079,
+   "data": {
+    "confidence": 0.956,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the white traffic cone in room D.",
+   "cls": "traffic_cone",
+   "color": "white",
+   "room": "room D",
+   "wall_t": 1795616564.7306726,
+   "sim_t": 1105.722,
+   "data": {
+    "confidence": 0.943,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "task_finished",
+   "label": "Done.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795616604.0439763,
+   "sim_t": 1121.41,
+   "data": {
+    "tool": "explore",
+    "reason": "done",
+    "task_id": 8,
+    "distance_m": null
+   }
+  },
+  {
+   "etype": "task_started",
+   "label": "explore started.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795616604.2717438,
+   "sim_t": 1121.44,
+   "data": {
+    "tool": "explore",
+    "task_id": 9
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red box in room C.",
+   "cls": "box",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795616649.8570032,
+   "sim_t": 1139.756,
+   "data": {
+    "confidence": 0.887,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red box in room C.",
+   "cls": "box",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795616718.3419,
+   "sim_t": 1161.961,
+   "data": {
+    "confidence": 0.89,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red fire extinguisher in room C.",
+   "cls": "fire_extinguisher",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795616729.0644448,
+   "sim_t": 1165.119,
+   "data": {
+    "confidence": 0.897,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the yellow box in room C.",
+   "cls": "box",
+   "color": "yellow",
+   "room": "room C",
+   "wall_t": 1795616732.7811804,
+   "sim_t": 1166.1100000000001,
+   "data": {
+    "confidence": 0.891,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red box in room C.",
+   "cls": "box",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795616783.3130262,
+   "sim_t": 1179.9470000000001,
+   "data": {
+    "confidence": 0.884,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red fire extinguisher in room C.",
+   "cls": "fire_extinguisher",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795616798.0089374,
+   "sim_t": 1185.518,
+   "data": {
+    "confidence": 0.893,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the gray mannequin in room D.",
+   "cls": "mannequin",
+   "color": "gray",
+   "room": "room D",
+   "wall_t": 1795616816.3644426,
+   "sim_t": 1191.964,
+   "data": {
+    "confidence": 0.924,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red box in room C.",
+   "cls": "box",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795616846.224453,
+   "sim_t": 1200.037,
+   "data": {
+    "confidence": 0.875,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the yellow box in room C.",
+   "cls": "box",
+   "color": "yellow",
+   "room": "room C",
+   "wall_t": 1795616848.233197,
+   "sim_t": 1200.57,
+   "data": {
+    "confidence": 0.885,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "room_left",
+   "label": "Left room D.",
+   "cls": null,
+   "color": "",
+   "room": "room D",
+   "wall_t": 1795616861.3676536,
+   "sim_t": 1203.952,
+   "data": {
+    "stayed_s": 229.8
+   }
+  },
+  {
+   "etype": "room_visited",
+   "label": "Entered room C.",
+   "cls": null,
+   "color": "",
+   "room": "room C",
+   "wall_t": 1795616861.3676536,
+   "sim_t": 1203.952,
+   "data": {}
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red fire extinguisher in room C.",
+   "cls": "fire_extinguisher",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795616896.7603388,
+   "sim_t": 1217.887,
+   "data": {
+    "confidence": 0.889,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the yellow box in room C.",
+   "cls": "box",
+   "color": "yellow",
+   "room": "room C",
+   "wall_t": 1795616958.3766167,
+   "sim_t": 1238.315,
+   "data": {
+    "confidence": 0.885,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red fire extinguisher in room C.",
+   "cls": "fire_extinguisher",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795616988.7182183,
+   "sim_t": 1248.8960000000002,
+   "data": {
+    "confidence": 0.888,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red box in room C.",
+   "cls": "box",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795617043.9354546,
+   "sim_t": 1269.815,
+   "data": {
+    "confidence": 0.889,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the yellow box in room C.",
+   "cls": "box",
+   "color": "yellow",
+   "room": "room C",
+   "wall_t": 1795617063.5547166,
+   "sim_t": 1277.2640000000001,
+   "data": {
+    "confidence": 0.894,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "task_finished",
+   "label": "Done.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795617074.2976594,
+   "sim_t": 1281.94,
+   "data": {
+    "tool": "explore",
+    "reason": "done",
+    "task_id": 9,
+    "distance_m": null
+   }
+  },
+  {
+   "etype": "task_started",
+   "label": "explore started.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795617074.4858127,
+   "sim_t": 1281.96,
+   "data": {
+    "tool": "explore",
+    "task_id": 10
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red fire extinguisher in room C.",
+   "cls": "fire_extinguisher",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795617075.2580545,
+   "sim_t": 1282.2930000000001,
+   "data": {
+    "confidence": 0.89,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red fire extinguisher in room C.",
+   "cls": "fire_extinguisher",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795617195.127725,
+   "sim_t": 1325.0320000000002,
+   "data": {
+    "confidence": 0.899,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the yellow box in room C.",
+   "cls": "box",
+   "color": "yellow",
+   "room": "room C",
+   "wall_t": 1795617203.899592,
+   "sim_t": 1328.242,
+   "data": {
+    "confidence": 0.898,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw a new gray box in room A.",
+   "cls": "box",
+   "color": "gray",
+   "room": "room A",
+   "wall_t": 1795617219.8070104,
+   "sim_t": 1333.9370000000001,
+   "data": {
+    "confidence": 0.664,
+    "first": true,
+    "returned": false,
+    "appeared": true
+   }
+  },
+  {
+   "etype": "path_blocked",
+   "label": "The path is blocked.",
+   "cls": null,
+   "color": "",
+   "room": "room C",
+   "wall_t": 1795617220.1210666,
+   "sim_t": 1334.02,
+   "data": {
+    "task_id": 10
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red box in room C.",
+   "cls": "box",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795617286.7779922,
+   "sim_t": 1359.972,
+   "data": {
+    "confidence": 0.892,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_moved",
+   "label": "The red box moved from room A to room C.",
+   "cls": "box",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795617286.7779922,
+   "sim_t": 1359.972,
+   "data": {
+    "from": {
+     "x": -1.2,
+     "y": -1.23,
+     "room": "room A"
+    },
+    "to": {
+     "x": 0.59,
+     "y": 4.91,
+     "room": "room C"
+    },
+    "distance_m": 6.4
+   }
+  },
+  {
+   "etype": "path_blocked",
+   "label": "I am not making progress.",
+   "cls": null,
+   "color": "",
+   "room": "room C",
+   "wall_t": 1795617303.2845838,
+   "sim_t": 1367.65,
+   "data": {
+    "task_id": 10
+   }
+  },
+  {
+   "etype": "task_failed",
+   "label": "I had to stop exploring: my path is blocked.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795617303.2845838,
+   "sim_t": 1367.65,
+   "data": {
+    "tool": "explore",
+    "reason": "blocked",
+    "task_id": 10,
+    "distance_m": null
+   }
+  },
+  {
+   "etype": "room_left",
+   "label": "Left room C.",
+   "cls": null,
+   "color": "",
+   "room": "room C",
+   "wall_t": 1795617315.4421635,
+   "sim_t": 1370.917,
+   "data": {
+    "stayed_s": 167.0
+   }
+  },
+  {
+   "etype": "room_visited",
+   "label": "Entered room A.",
+   "cls": null,
+   "color": "",
+   "room": "room A",
+   "wall_t": 1795617315.4421635,
+   "sim_t": 1370.917,
+   "data": {}
+  },
+  {
+   "etype": "object_missing",
+   "label": "The red box was not where I last saw it.",
+   "cls": "box",
+   "color": "red",
+   "room": "room A",
+   "wall_t": 1795617377.8029165,
+   "sim_t": 1391.628,
+   "data": {
+    "why": "not seen in room A during a 21 s visit",
+    "last_seen_wall": 1795613232.3196397
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the white traffic cone in room A.",
+   "cls": "traffic_cone",
+   "color": "white",
+   "room": "room A",
+   "wall_t": 1795617378.9399474,
+   "sim_t": 1392.082,
+   "data": {
+    "confidence": 0.956,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the yellow box in room C.",
+   "cls": "box",
+   "color": "yellow",
+   "room": "room C",
+   "wall_t": 1795617393.6830711,
+   "sim_t": 1398.5500000000002,
+   "data": {
+    "confidence": 0.897,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red fire extinguisher in room C.",
+   "cls": "fire_extinguisher",
+   "color": "red",
+   "room": "room C",
+   "wall_t": 1795617397.323596,
+   "sim_t": 1399.807,
+   "data": {
+    "confidence": 0.903,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "object_seen",
+   "label": "Saw the red barrel in room B.",
+   "cls": "barrel",
+   "color": "red",
+   "room": "room B",
+   "wall_t": 1795617419.4531937,
+   "sim_t": 1408.137,
+   "data": {
+    "confidence": 0.954,
+    "first": false,
+    "returned": false,
+    "appeared": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "Did I miss anything while I was out?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618120.5038497,
+   "sim_t": 1667.832,
+   "data": {
+    "text": "Did I miss anything while I was out?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "Has room B been rearranged?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618142.7363772,
+   "sim_t": 1677.92,
+   "data": {
+    "text": "Has room B been rearranged?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "Is anything gone from room D?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618145.4123847,
+   "sim_t": 1679.002,
+   "data": {
+    "text": "Is anything gone from room D?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "Is everything in room A where it should be?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618161.7714486,
+   "sim_t": 1685.877,
+   "data": {
+    "text": "Is everything in room A where it should be?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "What differs in room C compared with before?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618164.7056313,
+   "sim_t": 1687.165,
+   "data": {
+    "text": "What differs in room C compared with before?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "Any objects that have vanished altogether?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618167.842392,
+   "sim_t": 1688.548,
+   "data": {
+    "text": "Any objects that have vanished altogether?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "When did the toolbox last show up on camera?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618170.6931567,
+   "sim_t": 1689.781,
+   "data": {
+    "text": "When did the toolbox last show up on camera?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "What's the most recent place you saw the red box?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618173.8122156,
+   "sim_t": 1691.058,
+   "data": {
+    "text": "What's the most recent place you saw the red box?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "Do you remember when you spotted the fire extinguisher?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618176.9126375,
+   "sim_t": 1692.371,
+   "data": {
+    "text": "Do you remember when you spotted the fire extinguisher?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "When did you last notice a wheelbarrow?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618187.967666,
+   "sim_t": 1697.094,
+   "data": {
+    "text": "When did you last notice a wheelbarrow?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "Is the red barrel in the same spot as at the start?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618201.2897158,
+   "sim_t": 1701.846,
+   "data": {
+    "text": "Is the red barrel in the same spot as at the start?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "Has the blue barrel been shifted at all?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618204.2942762,
+   "sim_t": 1702.919,
+   "data": {
+    "text": "Has the blue barrel been shifted at all?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "Did the toolbox get taken?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618207.4088156,
+   "sim_t": 1704.244,
+   "data": {
+    "text": "Did the toolbox get taken?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "Is the red box staying in room A?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618210.3318992,
+   "sim_t": 1705.604,
+   "data": {
+    "text": "Is the red box staying in room A?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "Fill me in on the last stretch while I was gone.",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618212.6940076,
+   "sim_t": 1706.645,
+   "data": {
+    "text": "Fill me in on the last stretch while I was gone.",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "What went on in room D today?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618215.6441438,
+   "sim_t": 1707.812,
+   "data": {
+    "text": "What went on in room D today?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "What was the reason for you halting after I gave that order?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618218.0388656,
+   "sim_t": 1708.869,
+   "data": {
+    "text": "What was the reason for you halting after I gave that order?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "Which rooms have gone unvisited for more than five minutes?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618220.9086583,
+   "sim_t": 1710.177,
+   "data": {
+    "text": "Which rooms have gone unvisited for more than five minutes?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "How recently were you in room C?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618223.4195158,
+   "sim_t": 1711.404,
+   "data": {
+    "text": "How recently were you in room C?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "Does room G exist?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618225.779827,
+   "sim_t": 1712.491,
+   "data": {
+    "text": "Does room G exist?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "what's been shuffled around since this morning?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618229.1436977,
+   "sim_t": 1713.747,
+   "data": {
+    "text": "what's been shuffled around since this morning?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "tell me only the things that actually changed",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618232.2367816,
+   "sim_t": 1715.031,
+   "data": {
+    "text": "tell me only the things that actually changed",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "is the barrel still in room D?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618234.9300413,
+   "sim_t": 1716.144,
+   "data": {
+    "text": "is the barrel still in room D?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "I think someone took something, did they?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618245.7358382,
+   "sim_t": 1720.686,
+   "data": {
+    "text": "I think someone took something, did they?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "what did room C look like before versus now?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618256.1185095,
+   "sim_t": 1724.773,
+   "data": {
+    "text": "what did room C look like before versus now?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "when did you last pass through room A?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618258.8190067,
+   "sim_t": 1726.077,
+   "data": {
+    "text": "when did you last pass through room A?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "which rooms are overdue for a check?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618261.6135468,
+   "sim_t": 1727.361,
+   "data": {
+    "text": "which rooms are overdue for a check?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "has the red box gone anywhere?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618264.0696735,
+   "sim_t": 1728.547,
+   "data": {
+    "text": "has the red box gone anywhere?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "is there anything in a room F?",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618266.4092503,
+   "sim_t": 1729.674,
+   "data": {
+    "text": "is there anything in a room F?",
+    "starts_task": false
+   }
+  },
+  {
+   "etype": "user_command",
+   "label": "quick recap, nothing extra",
+   "cls": null,
+   "color": "",
+   "room": null,
+   "wall_t": 1795618268.531735,
+   "sim_t": 1730.711,
+   "data": {
+    "text": "quick recap, nothing extra",
+    "starts_task": false
+   }
+  }
+ ],
+ "replay": {
+  "run_dir": "brain/runs/incident_eval/20261125_132350",
+  "suite": "incident_suite_v4",
+  "model": "gurdy-sft-400",
+  "picker": true,
+  "llm": "ollama"
+ }
+}
