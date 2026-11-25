@@ -233,6 +233,7 @@ def test_find_known_object_without_motion(tmp_path):
 
 def test_find_live_explores_until_seen_then_approaches(tmp_path):
     b, p = make(tmp_path)
+    p.unknown_cells = [(2.0, 0.0, 20.0)]            # unmapped space: explore first
     p.reveal.append((20.0, dict(BOX)))
     assert b.find({"class": "box", "color": "red"}, approach=True).ok
     run(b, p, 400)
@@ -244,6 +245,7 @@ def test_find_live_explores_until_seen_then_approaches(tmp_path):
 
 def test_find_times_out_when_never_seen(tmp_path):
     b, p = make(tmp_path)
+    p.unknown_cells = [(2.0, 0.0, 20.0)]
     p.reveal.append((9999.0, dict(BOX)))
     b.find({"class": "box"}, max_time_s=30)
     run(b, p, 60)
@@ -528,3 +530,39 @@ def test_why_stop_blocked_names_the_blockage(tmp_path):
     b.go_to(place="room b"); run(b, p, 30)
     evs = b.why("stop").data["events"]
     assert len(evs) == 1 and evs[0]["type"] == "path_blocked"
+
+
+def test_find_on_mapped_rooms_sweeps_before_it_explores(tmp_path):
+    b, p = make(tmp_path)                           # every cell known: nothing to explore, look in the rooms first
+    assert b._rooms_mapped()
+    b.find({"class": "box"}, max_time_s=300)
+    kinds = [b.task.cur["kind"]] * (b.task.cur is not None) + [s["kind"] for s in b.task.steps]
+    assert kinds[0] == "nav" and kinds[-1] == "explore"
+
+
+def test_find_on_unmapped_space_explores_first(tmp_path):
+    b, p = make(tmp_path)
+    p.unknown_cells = [(2.0, 0.0, 20.0)]
+    assert not b._rooms_mapped()
+    b.find({"class": "box"}, max_time_s=300)
+    first = b.task.cur if b.task.cur is not None else b.task.steps[0]
+    assert first["kind"] == "explore"
+
+
+def test_sweep_order_is_a_nearest_neighbour_chain_with_looked_at_rooms_last(tmp_path):
+    b, p = make(tmp_path)
+    b.places = {"room A": {"x": 0.0, "y": 0.0, "kind": "room"}, "room B": {"x": 4.0, "y": 0.0, "kind": "room"},
+                "room C": {"x": 0.0, "y": 4.0, "kind": "room"}, "room D": {"x": 4.0, "y": 4.0, "kind": "room"}}
+    p.x, p.y = 0.0, 0.0
+    names = lambda: [s["name"] for s in b._sweep_steps() if s["kind"] == "nav"]
+    assert names()[:3] in (["room A", "room B", "room D"], ["room A", "room C", "room D"])     # a ring: no crossing the map twice
+    b._scanned["room A"] = 1.0
+    assert names()[-1] == "room A"                  # already looked at without finding anything: last
+
+
+def test_scan_marks_the_room_and_a_second_search_visits_it_last(tmp_path):
+    b, p = make(tmp_path)
+    p.unknown_cells = []
+    b.find({"class": "box"}, max_time_s=900)
+    run(b, p, 400)
+    assert b._scanned                                # the rooms of the first sweep were marked

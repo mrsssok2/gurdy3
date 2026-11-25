@@ -45,6 +45,7 @@ class RosBackend:
         self.places: dict[str, dict] = {}          # name -> {x, y, kind, rect?}
         self.zones: list[dict] = []
         self.zones_version = 0           # bumped when a zone is added / removed: running navigation steps re-check their path
+        self._scanned: dict[str, float] = {}       # room -> time its full-circle scan ended without the search ending (sweep order)
         self.task: _Task | None = None
         self.next_task = 1
         self.events: list[dict] = []
@@ -525,11 +526,14 @@ class RosBackend:
             s["started"], s["t_end"] = True, self.now() + s["secs"]
             self.p.send_cmd(0.0, 0.0, 0.0)
         if self.now() >= s["t_end"]:
+            if s.get("mark_room"):
+                self._scanned[s["mark_room"]] = self.now()
             self._next(t)
 
     # ---- looking around: a sweep visits rooms and turns a full circle in each (the camera sees only a cone ahead)
     SCAN_QUARTERS = 4           # headings per scan: 90 degrees apart
-    SCAN_DWELL_S = 2.5          # stand still per heading, sim seconds (detector confirmation needs several frames)
+    SCAN_DWELL_S = 2.0          # stand still per heading, sim seconds (the detector confirms a track over >= 2 s: min_span; was 2.5)
+    ROOMS_MAPPED_MIN = 0.85     # share of known map cells inside the rooms from which `find` sweeps the rooms before it explores
     EXPLORE_TRIVIAL_S = 30.0    # an explore step that ended within this time and moved less than 1 m found nothing left to explore
 
     def _scan_steps(self) -> list[dict]:
@@ -539,14 +543,48 @@ class RosBackend:
                       {"kind": "rel", "motion": "turn", "direction": "left", "amount": 360.0 / self.SCAN_QUARTERS}]
         return steps
 
+    def _rooms_mapped(self) -> bool:
+        """The named rooms are (almost) all known in the map: there is nothing worth exploring, the robot should go and LOOK. Without this the
+        explore step of `find` ran first and walked the frontier cells of a saved map for the whole search budget (lab4 v2: 214-392 s
+        searches never reached the room sweep). Unknown map -> False (explore first, as before)."""
+        rooms = [v for v in self.places.values() if v.get("kind") == "room" and "rect" in v]
+        known = total = 0
+        for v in rooms:
+            x0, y0, x1, y1 = v["rect"]
+            for i in range(int((x1 - x0) / 0.5)):
+                for j in range(int((y1 - y0) / 0.5)):
+                    c = self.p.map_cell(x0 + 0.25 + 0.5 * i, y0 + 0.25 + 0.5 * j)
+                    if c is None:
+                        return False
+                    total += 1
+                    known += c != "unknown"
+        return total > 0 and known / total >= self.ROOMS_MAPPED_MIN
+
+    def _sweep_order(self, items: list, pose) -> list:
+        """Rooms in the order they are visited: rooms not yet looked at in this session first, then the ones already scanned (an object that had been
+        seen there would be in memory, so they are the least likely); inside each group a nearest-neighbour chain from the robot (rooms are a ring:
+        A, B, D, C, not A, C, B, D)."""
+        todo = [kv for kv in items if kv[0] not in self._scanned] + [kv for kv in items if kv[0] in self._scanned]
+        if pose is None:
+            return todo
+        out, cur = [], (pose[0], pose[1])
+        for group in ([kv for kv in todo if kv[0] not in self._scanned], [kv for kv in todo if kv[0] in self._scanned]):
+            group = list(group)
+            while group:
+                nxt = min(group, key=lambda kv: math.hypot(kv[1]["x"] - cur[0], kv[1]["y"] - cur[1]))
+                group.remove(nxt)
+                out.append(nxt)
+                cur = (nxt[1]["x"], nxt[1]["y"])
+        return out
+
     def _sweep_steps(self, only: str | None = None) -> list[dict]:
         """Go to every room (or the one named place) that is not inside a no-go zone and look all around there. Used by `find` (object not in
         memory) and by `explore` when the explorer has nothing left to explore (an already mapped area): the robot still goes and looks."""
         steps: list[dict] = []
         pose = self._pose()
         items = list(self.places.items())
-        if only is None and pose is not None:          # nearest room first: the robot standing in room D looks in room D before it walks off to room A
-            items.sort(key=lambda kv: math.hypot(kv[1]["x"] - pose[0], kv[1]["y"] - pose[1]))
+        if only is None:
+            items = self._sweep_order([kv for kv in items if kv[1].get("kind") == "room"], pose)
         for n, v in items:
             if only is not None:
                 if _norm(n) != _norm(only):
@@ -557,6 +595,7 @@ class RosBackend:
                 continue
             steps.append({"kind": "nav", "x": v["x"], "y": v["y"], "yaw": None, "name": n, "optional": True})
             steps += self._scan_steps()
+            steps.append({"kind": "wait", "secs": 0.0, "mark_room": n})      # the whole circle was done without the search ending: room looked at
         return steps
 
     def _step_explore(self, t: _Task, s: dict, pose) -> None:
@@ -712,10 +751,11 @@ class RosBackend:
             return self._start("find", args, steps, final, max_time_s, until, estimate={"distance_m": 0.0, "duration_s": float(max_time_s)})
         if not self.p.explore_available():
             return fail("UNAVAILABLE", "The object is not in the map and the exploration action server (/explore) is not running.")
-        steps: list[dict] = [{"kind": "explore", "max_time_s": max_time_s, "area": None}]
-        # On an already mapped area the explorer ends at once ("no frontiers left"); then look through the rooms instead
-        # (found in the 5.6 live test: "find the red box" timed out after 11 s). `until` stops the sweep when the object appears.
-        steps += self._sweep_steps()
+        # Rooms already in the map: look through them FIRST (nearest-neighbour chain, rooms not yet looked at first) and explore what is left
+        # afterwards; unknown space: explore first, then sweep. `until` stops the plan when the object appears.
+        sweep = self._sweep_steps()
+        explore = [{"kind": "explore", "max_time_s": max_time_s, "area": None}]
+        steps: list[dict] = sweep + explore if self._rooms_mapped() else explore + sweep
         until = lambda: bool(self._match(object))
         if approach:      # filled in once the object is seen: the step list is replaced when `until` fires
             def until():
