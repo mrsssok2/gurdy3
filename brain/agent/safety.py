@@ -16,6 +16,7 @@ import yaml
 
 from ..tools import TOOLS, ToolLayer
 from ..tools.schema import validate
+from ..tools.specs import public_args
 from ..tools.types import Result
 
 DEFAULT_CONFIG = Path(__file__).with_name("safety.yaml")
@@ -58,7 +59,7 @@ class SafetyChecker:
         args = args or {}
         if tool not in TOOLS:
             return Verdict("refuse", "That is not something I can do.", rule="outside_tool_list")
-        if validate(args, TOOLS[tool].parameters):
+        if validate(public_args(tool, args), TOOLS[tool].parameters):
             # malformed arguments (LLM output is untrusted): nothing to judge here. The tool layer rejects the call
             # (INVALID_ARGS) before any backend code runs, so nothing unsafe can execute.
             return Verdict("allow", rule="invalid_args_rejected_by_tool_layer")

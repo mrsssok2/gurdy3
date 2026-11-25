@@ -29,6 +29,8 @@ _QUESTION_FIND = re.compile(r"\bwhere\s+(?:can|could|do|would|might|should)\s+(?
 _GO_CUE = re.compile(r"\b(go|head|walk|drive|approach|take me|bring me|come|move)\b", re.I)
 _COLOURS = ("red", "blue", "yellow", "green", "white", "orange", "black", "brown", "grey", "gray")
 _PLACE_KEYS = ("place", "area", "room", "location", "where", "in", "near")
+# "find the cone IN room D": the search is restricted to that room (rooms.normalize has already turned "Delta" into "room D")
+_IN_ROOM = re.compile(r"\b(?:in|inside|within|around|at)\s+(?:the\s+)?(room\s+[a-z])\b", re.I)
 
 # exact class words (plural too); NOT fuzzy: "charlie" is not "chair"
 _WORD_TO_CLASS = {"box": "box", "boxes": "box", "crate": "box", "crates": "box", "barrel": "barrel", "barrels": "barrel", "drum": "barrel",
@@ -80,6 +82,12 @@ def _known(name: str, places: list[str]) -> str | None:
     return next((p for p in places if _canon(p) == n), None)
 
 
+def place_in_utterance(text: str, places: list[str]) -> str | None:
+    """The known room the user wants the search restricted to ("... in room D"), else None."""
+    m = _IN_ROOM.search(text)
+    return _known(m.group(1), places) if m else None
+
+
 def _schema_keys(tool: str) -> set[str]:
     return set(TOOLS[tool].parameters.get("properties", {})) if tool in TOOLS else set()
 
@@ -98,6 +106,10 @@ def route_plan(utterance: str, calls: list[dict], known_places: list[str]) -> Ro
         tool = c["tool"]
         args = dict(c["args"]) if isinstance(c.get("args"), dict) else {}
         # ---- an argument the tool does not have, naming a place ("find ... place: room D")
+        if tool == "find" and "in_place" in args:             # internal argument: only the router sets it, never the planner
+            claimed = args.pop("in_place")
+            if isinstance(claimed, str) and _known(claimed, known_places) and "place" not in args:
+                args["place"] = claimed
         extra = [k for k in args if k in _PLACE_KEYS and k not in _schema_keys(tool)] if tool in ("find", "where_is", "inspect") else []
         for k in extra:
             val = args.pop(k)
@@ -107,7 +119,10 @@ def route_plan(utterance: str, calls: list[dict], known_places: list[str]) -> Ro
             if real is None:
                 return Route([], reply=f"I can't do that. I do not know a place called {val}. I know: {', '.join(known_places)}.",
                              rule="route_unknown_place", changed=True)
-            if tool in ("find", "inspect"):
+            if tool == "find":
+                args["in_place"] = real                       # only an object seen IN that place counts; if none is known there, look there
+                rules.append("place_arg->in_place")
+            elif tool == "inspect":
                 out.append({"tool": "go_to", "args": {"place": real}})
                 rules.append("place_arg->go_to")
             else:
@@ -118,6 +133,8 @@ def route_plan(utterance: str, calls: list[dict], known_places: list[str]) -> Ro
                 new = {"object": args["object"]}
                 if _GO_CUE.search(utterance):
                     new["approach"] = True
+                if (ip := place_in_utterance(utterance, known_places)):
+                    new["in_place"] = ip
                 out.append({"tool": "find", "args": new})
                 have_find = True
                 rules.append("where_is->find")
@@ -126,9 +143,15 @@ def route_plan(utterance: str, calls: list[dict], known_places: list[str]) -> Ro
             continue
         # ---- explore although a named object is the point of the request
         if tool == "explore" and search and len(objs) == 1 and not have_find:
-            out.append({"tool": "find", "args": {"object": objs[0]}})
+            new = {"object": objs[0]}
+            if (ip := place_in_utterance(utterance, known_places)):
+                new["in_place"] = ip
+            out.append({"tool": "find", "args": new})
             have_find = True
             rules.append("explore->find")
             continue
+        if tool == "find" and "in_place" not in args and (ip := place_in_utterance(utterance, known_places)) and isinstance(args.get("object"), dict):
+            args["in_place"] = ip                             # the planner dropped "in room D" (or never had it): the user's words decide
+            rules.append("find_in_place")
         out.append({"tool": tool, "args": args})
     return Route(out, rule=",".join(rules), changed=bool(rules))

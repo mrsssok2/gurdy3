@@ -9,7 +9,7 @@ from typing import Any
 
 from .backend import RobotBackend
 from .schema import validate
-from .specs import TOOLS
+from .specs import TOOLS, public_args
 from .types import Result, fail, ok
 
 
@@ -26,7 +26,7 @@ class ToolLayer:
         spec = TOOLS.get(name)
         if spec is None:
             res = fail("UNKNOWN_TOOL", f"no tool named '{name}'", tools=sorted(TOOLS))
-        elif (problems := validate(args, spec.parameters)):
+        elif (problems := validate(public_args(name, args), spec.parameters)):
             res = fail("INVALID_ARGS", "; ".join(problems), problems=problems)
         elif name == "ask_user":
             res = ok(question=args["question"], options=args.get("options", []), awaiting_user=True)

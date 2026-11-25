@@ -260,9 +260,14 @@ class MockBackend:
                 "bearing_word": bearing_word(b), "place": self.world.place_at(tr["x"], tr["y"]),
                 "last_seen_age_s": round(self.t - tr["last_seen"], 1), "score": tr["score"]}
 
-    def _match(self, ref: dict) -> list[dict]:
+    def _inside(self, place: str, x: float, y: float) -> bool:
+        r = next((r for n, r in self.world.rooms.items() if _norm(n) == _norm(place)), None)
+        return r is not None and r.x0 <= x <= r.x1 and r.y0 <= y <= r.y1
+
+    def _match(self, ref: dict, in_place: str | None = None) -> list[dict]:
         out = [t for t in self.tracks.values() if t["class"] == ref["class"]
-               and (not ref.get("color") or t["color"].lower() == ref["color"].lower())]
+               and (not ref.get("color") or t["color"].lower() == ref["color"].lower())
+               and (in_place is None or self._inside(in_place, t["x"], t["y"]))]
         return sorted(out, key=lambda t: math.hypot(t["x"] - self.x, t["y"] - self.y))
 
     def _unique(self, ref: dict | None = None, oid: int | None = None) -> tuple[dict | None, Result | None]:
@@ -452,21 +457,26 @@ class MockBackend:
             p = c
         return segs
 
-    def find(self, object: dict, approach: bool = False, max_time_s: float = 300) -> Result:
+    def find(self, object: dict, approach: bool = False, max_time_s: float = 300, in_place: str | None = None) -> Result:
         name = f"{object.get('color') or ''} {object['class'].replace('_', ' ')}".strip()
-        known = self._match(object)
+        if in_place is not None:
+            real = next((n for n in self.world.rooms if _norm(n) == _norm(in_place)), None)
+            if real is None:
+                return fail("UNKNOWN_PLACE", f"I do not know a place called '{in_place}'.", known_places=list(self.places))
+            in_place = real
+        known = self._match(object, in_place)
         source = "memory" if known else "live"
         searched0 = self.t
 
         def final(reason, task):
-            m = self._match(object)
+            m = self._match(object, in_place)
             return {"found": bool(m) and reason != "timeout", "object": self._obj(m[0]) if m else None,
                     "source": source, "searched_s": round(self.t - searched0, 1),
-                    "areas_searched": sorted(self.mapped_rooms & set(self.world.rooms))}
-        args = {"object": object, "approach": approach, "max_time_s": max_time_s}
+                    "areas_searched": sorted(self.mapped_rooms & set(self.world.rooms)), **({"in_place": in_place} if in_place else {})}
+        args = {"object": object, "approach": approach, "max_time_s": max_time_s, **({"in_place": in_place} if in_place else {})}
         if known:
             if len(known) == 1 and approach:
-                r = self._resolve(object=object)
+                r = self._resolve(object_id=known[0]["id"]) if in_place else self._resolve(object=object)
                 if isinstance(r, Result):
                     return r
                 goal, face, info = r
@@ -477,11 +487,11 @@ class MockBackend:
                     ("rotate_to", math.atan2(face[1] - goal[1], face[0] - goal[0]))]
                 return self._start("find", args, segs, final, max_time_s)
             return self._start("find", args, [], final)
-        segs = self._search_segments(None)
+        segs = self._search_segments(in_place)
         if not segs:
             return fail("NO_PATH", "I cannot reach any area to search.")
         def until():
-            return bool(self._match(object))
+            return bool(self._match(object, in_place))
         res = self._start("find", args, segs, final, max_time_s, until)
         return res
 

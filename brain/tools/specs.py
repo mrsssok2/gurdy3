@@ -102,3 +102,14 @@ _SPECS = [
 
 TOOLS: dict[str, ToolSpec] = {s.name: s for s in _SPECS}
 assert len(TOOLS) == 24
+
+
+# Arguments the AGENT sets (deterministic routing) but the planner never sees and may not use: not in the prompt, stripped from a planner call
+# by `route_plan`, accepted by validation. `find` + `in_place`: only an object seen / found INSIDE that place counts.
+INTERNAL_ARGS: dict[str, tuple[str, ...]] = {"find": ("in_place",)}
+
+
+def public_args(tool: str, args: dict) -> dict:
+    """`args` without the agent-internal keys (what the JSON schema of the tool describes)."""
+    hide = INTERNAL_ARGS.get(tool, ())
+    return {k: v for k, v in args.items() if k not in hide} if hide else args

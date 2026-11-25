@@ -41,7 +41,7 @@ def test_plain_explore_stays_explore():
 
 def test_invented_place_argument_known_place_becomes_go_to_then_find():
     r = route_plan("find the traffic cone that is in room D", [call("find", object={"class": "traffic_cone"}, place="room D")], PLACES)
-    assert r.calls == [call("go_to", place="room D"), call("find", object={"class": "traffic_cone"})]
+    assert r.calls == [call("find", object={"class": "traffic_cone"}, in_place="room D")]
 
 
 def test_invented_place_argument_unknown_place_is_refused_with_the_known_places():

@@ -60,7 +60,7 @@ def ack(tool: str, args: dict, data: dict) -> str:
     if tool == "return_home":
         return f"Going home{dist}."
     if tool == "find":
-        return f"Looking for the {obj_name(args['object'])}."
+        return f"Looking for the {obj_name(args['object'])}{' in ' + rooms_canon(args['in_place']) if args.get('in_place') else ''}."
     if tool == "explore":
         return "Exploring."
     if tool == "patrol":
@@ -70,6 +70,11 @@ def ack(tool: str, args: dict, data: dict) -> str:
     if tool == "stop":
         return "Stopped."
     return "Okay."
+
+
+def rooms_canon(name: str) -> str:
+    from .rooms import canon_place
+    return canon_place(name)
 
 
 def readback(tool: str, args: dict) -> str:
@@ -256,7 +261,11 @@ def _finished(d: dict, failed: bool = False) -> str | None:
         return f"I have arrived, {d['final_distance_m']:.1f} metres from the goal."
     if tool == "find":
         o = d.get("object")
-        return f"Found the {obj_where(o)}." if d.get("found") and o else f"I did not find it after {d.get('searched_s', 0):.0f} seconds."
+        if d.get("found") and o:
+            return f"Found the {obj_where(o)}."
+        if d.get("in_place"):
+            return f"I did not find it in {rooms_canon(d['in_place'])} after {d.get('searched_s', 0):.0f} seconds."
+        return f"I did not find it after {d.get('searched_s', 0):.0f} seconds."
     if failed:
         return failure_text(tool, reason, d=d)
     return "Done."

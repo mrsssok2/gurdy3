@@ -158,11 +158,23 @@ class RosBackend:
                 "bearing_deg": round(b, 1), "bearing_word": bearing_word(b), "place": self._place_at(tr["x"], tr["y"]),
                 "last_seen_age_s": round(self.now() - tr.get("last_seen", self.now()), 1), "score": tr.get("score")}
 
-    def _match(self, ref: dict) -> list[dict]:
+    def _match(self, ref: dict, in_place: str | None = None) -> list[dict]:
+        """Seen objects of that class / colour, nearest first. `in_place`: only those standing INSIDE that place ("find the cone in room D":
+        a cone remembered in room A does not count)."""
         x, y, _ = self._pose() or (0, 0, 0)
         out = [t for t in self._tracks() if t["class"] == ref["class"]
-               and (not ref.get("color") or (t.get("color") or "").lower() == ref["color"].lower())]
+               and (not ref.get("color") or (t.get("color") or "").lower() == ref["color"].lower())
+               and (in_place is None or self._inside(in_place, t["x"], t["y"]))]
         return sorted(out, key=lambda t: math.hypot(t["x"] - x, t["y"] - y))
+
+    def _inside(self, place: str, x: float, y: float) -> bool:
+        v = self.places.get(place)
+        if v is None:
+            return False
+        if "rect" in v:
+            x0, y0, x1, y1 = v["rect"]
+            return x0 <= x <= x1 and y0 <= y <= y1
+        return math.hypot(x - v["x"], y - v["y"]) <= 1.5
 
     def _unique(self, ref=None, oid=None):
         if oid is not None:
@@ -662,25 +674,42 @@ class RosBackend:
                            final, max_time_s,
                            estimate={"distance_m": 0.0, "duration_s": float(max_time_s)})
 
-    def find(self, object: dict, approach: bool = False, max_time_s: float = 300) -> Result:
-        known = self._match(object)
+    def find(self, object: dict, approach: bool = False, max_time_s: float = 300, in_place: str | None = None) -> Result:
+        """`in_place` (set by the agent's routing, never by the planner): only an object INSIDE that place counts; if none is known there the
+        robot goes to that place and looks (it does not explore the rest of the map)."""
+        if in_place is not None:
+            real = next((n for n in self.places if _norm(n) == _norm(in_place)), None)
+            if real is None:
+                return fail("UNKNOWN_PLACE", f"I do not know a place called '{in_place}'.", known_places=list(self.places))
+            in_place = real
+        known = self._match(object, in_place)
         source = "memory" if known else "live"
         t_search = self.now()
         def final(reason, t):
-            m = self._match(object)
-            return {"found": bool(m) and reason != "timeout", "object": self._obj(m[0]) if m else None, "source": source,
-                    "searched_s": round(self.now() - t_search, 1),
-                    "areas_searched": sorted({self._place_at(*(self._pose() or (0, 0, 0))[:2])})}
-        args = {"object": object, "approach": approach, "max_time_s": max_time_s}
+            m = self._match(object, in_place)
+            d = {"found": bool(m) and reason != "timeout", "object": self._obj(m[0]) if m else None, "source": source,
+                 "searched_s": round(self.now() - t_search, 1),
+                 "areas_searched": sorted({self._place_at(*(self._pose() or (0, 0, 0))[:2])})}
+            if in_place is not None:
+                d["in_place"] = in_place
+            return d
+        args = {"object": object, "approach": approach, "max_time_s": max_time_s, **({"in_place": in_place} if in_place else {})}
         if known:
             if len(known) == 1 and approach:
-                r = self._resolve(object=object)
+                r = self._resolve(object_id=known[0]["id"]) if in_place else self._resolve(object=object)
                 if isinstance(r, Result):
                     return r
                 goal, face, info, path = r
                 return self._start("find", args, self._nav_steps(goal, face, path) + [{"kind": "rotate", "fx": face[0], "fy": face[1]}],
                                    final, max_time_s)
             return self._start("find", args, [], final)
+        if in_place is not None:
+            steps = self._sweep_steps(only=in_place)
+            if not steps:
+                return fail("IN_NO_GO_ZONE" if self._in_zone(self.places[in_place]["x"], self.places[in_place]["y"]) else "NO_PATH",
+                            f"I cannot go and look in {in_place}.")
+            until = lambda: bool(self._match(object, in_place))
+            return self._start("find", args, steps, final, max_time_s, until, estimate={"distance_m": 0.0, "duration_s": float(max_time_s)})
         if not self.p.explore_available():
             return fail("UNAVAILABLE", "The object is not in the map and the exploration action server (/explore) is not running.")
         steps: list[dict] = [{"kind": "explore", "max_time_s": max_time_s, "area": None}]

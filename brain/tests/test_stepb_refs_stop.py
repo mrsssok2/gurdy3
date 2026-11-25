@@ -22,7 +22,7 @@ def agent4(plans=None):
 
 
 # ---------------------------------------------------------------- 1: room references (pure)
-@pytest.mark.parametrize("text", ["go into that other room", "go to the other room", "head to another room", "go to that room", "move to the same room"])
+@pytest.mark.parametrize("text", ["walk into that other room", "go to the other room", "head to another room", "go to that room", "move to the same room"])
 def test_reference_without_earlier_room_asks_and_lists_rooms(text):
     r = rooms.room_reference(text, LAB4, None)
     assert r.question == "Which room: A, B, C or D?" and r.text is None and r.template.endswith("room")
@@ -51,10 +51,10 @@ def test_no_reference_when_a_letter_or_name_follows():
 # ---------------------------------------------------------------- 1: in the agent
 def test_agent_asks_instead_of_guessing_and_never_calls_the_planner():
     b, a, llm = agent4()
-    r = a.say("go into that other room")
+    r = a.say("walk into that other room")
     assert r.reply == "Which room: A, B, C or D?" and not llm.plan_calls and b.task is None
     r2 = a.say("Charlie")                                   # the answer completes the held command
-    assert llm.plan_calls and llm.plan_calls[0]["utterance"] == "go into room C"
+    assert llm.plan_calls and llm.plan_calls[0]["utterance"] == "walk into room C"
 
 
 def test_agent_resolves_that_room_after_an_earlier_room():
@@ -73,7 +73,7 @@ def test_agent_other_room_after_room_b_lists_the_remaining_rooms():
 
 
 # ---------------------------------------------------------------- 2: stop explanation
-@pytest.mark.parametrize("text", ["why are you standing still", "what made you stop", "what made you stand still", "why did you stop",
+@pytest.mark.parametrize("text", ["why are you standing still", "what made you stop", "what got you standing still", "why did you stop",
                                   "why aren't you moving", "what stopped you", "why did you stand still", "how come you stopped"])
 def test_stop_why_questions(text):
     assert is_stop_why(text), text
@@ -89,7 +89,7 @@ def test_after_a_user_stop_the_answer_names_the_user_and_the_command():
     a.say("go to room B")
     r = a.say("please stop")
     assert r.reply == "Stopped."
-    why = a.say("what made you stand still")
+    why = a.say("what got you standing still")
     assert why.reply.startswith('You asked me to stop ("please stop")') and "go_to" not in why.reply and not llm.plan_calls[1:]
     assert a.last_stop["reason"] == "user_stop"
 
@@ -120,3 +120,70 @@ def test_no_stop_on_record_falls_through_to_the_planner():
     b, a, llm = agent4(plans=[{"calls": [call("why", about="stop")]}])
     a.say("why did you stop")
     assert llm.plan_calls
+
+
+# ---------------------------------------------------------------- 4: find in a named room
+from brain.agent.routing import place_in_utterance, route_plan
+from brain.tools import ToolLayer, TOOLS
+from brain.tools.specs import public_args
+
+CONE = {"class": "traffic_cone"}
+
+
+def test_in_place_is_derived_from_the_users_words():
+    assert place_in_utterance("find the cone in room D", LAB4) == "room D"
+    assert place_in_utterance("see whether the toolbox is inside room b", LAB4) == "room B"
+    assert place_in_utterance("find the cone", LAB4) is None
+    assert place_in_utterance("find the cone in room Q", LAB4) is None
+
+
+def test_planner_find_without_place_gets_in_place_from_the_utterance():
+    r = route_plan("go and see whether the cone is in room D", [call("find", object=CONE)], LAB4)
+    assert r.calls == [call("find", object=CONE, in_place="room D")]
+
+
+def test_where_is_with_search_cue_becomes_find_in_place():
+    r = route_plan("go check where the cone in room D is", [call("where_is", object=CONE)], LAB4)
+    assert r.calls[0]["tool"] == "find" and r.calls[0]["args"]["in_place"] == "room D"
+
+
+def test_planner_cannot_set_in_place_to_an_unknown_place():
+    r = route_plan("find the cone", [call("find", object=CONE, in_place="the moon")], LAB4)
+    assert "in_place" not in r.calls[0]["args"]
+
+
+def test_in_place_is_not_part_of_the_planner_schema_but_validates():
+    assert "in_place" not in TOOLS["find"].parameters["properties"]
+    assert public_args("find", {"object": CONE, "in_place": "room A"}) == {"object": CONE}
+
+
+def _mock_with_cone_in_a():
+    b, l, s = make()
+    b.tracks[99] = {"id": 99, "class": "traffic_cone", "color": "orange", "x": 0.5, "y": 0.5, "last_seen": 0.0, "score": 0.9, "state": "present"}
+    return b, l
+
+
+def test_remembered_cone_in_room_a_does_not_satisfy_room_b():
+    b, l = _mock_with_cone_in_a()
+    assert l.call("find", {"object": CONE}).ok                       # anywhere: memory answers at once
+    b.run_until_idle(); b.poll_events()
+    res = l.call("find", {"object": CONE, "in_place": "room B"})
+    assert res.ok
+    assert b.task is not None                                         # it has to go and look in room B (no memory answer)
+    b.run_until_idle(); evs = b.poll_events()
+    fin = [e for e in evs if e["type"] in ("task_finished", "task_failed")][-1]
+    assert fin["data"]["found"] is False and fin["data"]["in_place"] == "room B"
+
+
+def test_cone_remembered_in_the_asked_room_is_accepted_from_memory():
+    b, l = _mock_with_cone_in_a()
+    res = l.call("find", {"object": CONE, "in_place": "room A"})
+    assert res.ok
+    b.run_until_idle(); evs = b.poll_events()
+    fin = [e for e in evs if e["type"] == "task_finished"][-1]
+    assert fin["data"]["found"] is True and fin["data"]["source"] == "memory"
+
+
+def test_unknown_in_place_fails_cleanly():
+    b, l = _mock_with_cone_in_a()
+    assert l.call("find", {"object": CONE, "in_place": "room Q"}).error["code"] == "UNKNOWN_PLACE"
