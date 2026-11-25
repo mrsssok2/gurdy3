@@ -110,18 +110,15 @@ def validate(raw: Any, text: str, rooms: list[str]) -> dict | None:
     tool = raw.get("tool")
     if tool not in ALLOWED:
         return None                                              # "none", an invented tool, a non-string
-    room = None
+    # the room comes from the USER's words (the model only has to agree): a room the model adds on its own is dropped, one that contradicts the text rejects the pick
+    typed = nlu._room(" ".join(text.split()))
+    room = canon_room(typed, rooms) if typed else None
+    if typed and room is None:
+        return None                                              # a room that is not on this map: never guessed
     if raw.get("room") not in (None, "", "null"):
-        room = canon_room(raw.get("room"), rooms)
-        if room is None:
-            return None                                          # a room that is not on this map: never guessed
-    typed_room = nlu._room(" ".join(text.split()))
-    if typed_room and room and typed_room.lower() != room.lower():
-        return None                                              # the model contradicts the user's own words
-    if typed_room and not room:
-        room = canon_room(typed_room, rooms)
-        if room is None:
-            return None
+        said = canon_room(raw.get("room"), rooms)
+        if typed and said is not None and said.lower() != room.lower():
+            return None                                          # the model contradicts the user's own words
     objs = named_objects(text)
     if tool in NEEDS_OBJECT and not objs and room:
         tool = "unchecked_rooms" if tool == "last_seen" else "what_changed"      # asked about a ROOM with an object tool: the room tool answers it

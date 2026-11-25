@@ -47,8 +47,9 @@ class TestValidation(unittest.TestCase):
         self.assertEqual(self.v({"tool": "what_changed", "room": "room C"}, "anything odd in room C")["args"]["room"], "room C")
         self.assertEqual(self.v({"tool": "what_changed", "room": "c"}, "anything odd in room C")["args"]["room"], "room C")
         self.assertIsNone(self.v({"tool": "what_changed", "room": "room Z"}, "anything odd in room Z"))          # not on the map: never guessed
-        self.assertIsNone(self.v({"tool": "what_changed", "room": "the kitchen"}, "anything odd in the kitchen"))
+        self.assertNotIn("room", self.v({"tool": "what_changed", "room": "the kitchen"}, "anything odd in the kitchen")["args"])   # not a map room: dropped, never used
         self.assertIsNone(self.v({"tool": "what_changed", "room": "room A"}, "anything odd in room C"))          # contradicts the user's words
+        self.assertNotIn("room", self.v({"tool": "what_changed", "room": "room A"}, "anything odd around here")["args"])   # a room the user did not name is dropped
 
     def test_object_comes_from_the_users_words_not_the_model(self):
         r = self.v({"tool": "last_seen", "object": {"class": "toolbox"}}, "when did you last notice the red crate")
