@@ -29,6 +29,13 @@ class TestSuiteShape(unittest.TestCase):
         cats = {q["category"] for q in S.QUESTIONS}
         self.assertEqual(cats, {"changes", "last_seen", "history", "timeline", "rooms"})
 
+    def test_external_set(self):
+        self.assertEqual(len(S.EXTERNAL), 10)
+        self.assertEqual(len(S.ALL_QUESTIONS), 30)
+        self.assertEqual(len({q["id"] for q in S.ALL_QUESTIONS}), 30)
+        for q in S.EXTERNAL:
+            self.assertTrue(q["external"] and set(q["check"]) <= CHECKS and set(q["expect_tool"]) <= TOOLS | {"where_am_i"}, q["id"])
+
     def test_scenario_steps(self):
         kinds = [s[0] for s in S.SCENARIO]
         self.assertEqual(kinds, ["round", "say", "wait", "stop", "say", "mark", "world", "round", "wait"])
@@ -180,6 +187,8 @@ class TestScorer(unittest.TestCase):
         self.assertEqual(s["routed"], 20)
         self.assertLess(s["answers_ok"], 20)                                      # an empty answer to every question must not pass
         self.assertIn("Incident graph evaluation", SC.report(s, res))
+        self.assertEqual(s["external"]["n_questions"], 10)
+        self.assertEqual(s["external"]["answers_ok"], 0)
         self.assertEqual(SC.score({**res, "turns": []})["answers_ok"], 0)
 
 
@@ -192,6 +201,15 @@ class TestRunner(unittest.TestCase):
         txt = (ROOT / "scripts/incident_eval.sh").read_text()
         self.assertIn("check_overlap", txt)
         self.assertIn("docker ps", txt)
+        self.assertIn("lab4_incident.sdf", txt)
+
+    def test_eval_world_is_a_copy_with_three_dynamic_models(self):
+        import subprocess, sys
+        subprocess.run([sys.executable, str(ROOT / "scripts/make_incident_world.py")], check=True, capture_output=True)
+        w = ROOT / "ros2_ws/src/gurdy_gazebo/worlds"
+        a, b = (w / "lab4.sdf").read_text(), (w / "lab4_incident.sdf").read_text()
+        self.assertEqual(b.count("<static>false</static>"), 3)
+        self.assertEqual(b.replace("<static>false</static>", "<static>true</static>"), a)
 
 
 if __name__ == "__main__":

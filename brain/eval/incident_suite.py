@@ -11,7 +11,7 @@ ONE continuous session in ONE Gazebo stack (the graph needs time to pass), drive
   round 2   the robot looks around every room again, order B D C A (so the red box is seen in C BEFORE room A is re-checked and the red barrel in B
             BEFORE room D is re-checked: both identity paths of the recorder are exercised)
   wait      300 sim seconds in the last room (for "which rooms have you not checked for 5 minutes")
-  questions the 20 questions below, typed, one after the other (nothing else is typed in between)
+  questions the 20 questions below, then the 10 EXTERNAL ones (written by the user), typed, one after the other (nothing else is typed in between)
 
 Everything not listed under `world` stays untouched (blue box, both cones, mannequin, extinguisher, yellow box, blue barrel): a change reported for any
 of them is a FALSE report. The question texts occur in no unit test, test set, SFT data or older suite (`check_overlap`, tested). Written by the
@@ -108,8 +108,42 @@ QUESTIONS = [
 BY_ID = {q["id"]: q for q in QUESTIONS}
 
 
+# ---- EXTERNAL set: 10 questions written by the user (not by the author of the router), asked after the 20 above and scored / reported SEPARATELY.
+# Expected answers fixed here from the scenario BEFORE the run (red box A->C, red barrel D->B, toolbox removed; everything else untouched).
+# The router must not be tuned on them and is not changed after seeing their results. `expect_tool` = tools that count as sensible routing (informational;
+# an answer is correct on CONTENT alone: a question the planner answers with another tool can still be answered right).
+def X(qid, text, tools, **check):
+    return {"id": qid, "category": "external", "text": text, "expect_tool": tools, "check": check, "external": True}
+
+
+EXTERNAL = [
+    X("x01", "did anything go missing while you were looking around?", ("what_changed", "timeline"),
+      all=[r"toolbox"], none=[UNCHANGED_WORDS]),
+    X("x02", "where's the barrel now, wasn't it somewhere else before?", ("object_history", "last_seen"),
+      all=[r"room B", r"room D"]),
+    X("x03", "is room C any different from the first time you checked it?", ("what_changed",),
+      all=[r"red box"], none=[r"toolbox", r"barrel", r"nothing (has )?changed"]),
+    X("x04", "which things got moved?", ("what_changed",),
+      all=[r"red box", r"barrel"], none=[UNCHANGED_WORDS, r"nothing (has )?changed"]),
+    X("x05", "have you spotted the toolbox recently?", ("last_seen", "object_history"),
+      all=[r"toolbox", r"not there|missing|gone|not since|no longer|haven't|have not"], time={"round": 1, "room": "room D", "tol_s": 240}),
+    X("x06", "what's new in room B?", ("what_changed",),
+      all=[r"barrel"], none=[r"red box", r"toolbox", r"nothing (has )?changed"]),
+    X("x07", "tell me everything that happened after I said stop", ("timeline",),
+      all=[r"room"], none=[r"no record|haven't recorded anything"]),
+    X("x08", "is the red box still where you first saw it?", ("object_history", "last_seen"),
+      all=[r"room A", r"room C"], none=[r"^\W*yes"]),
+    X("x09", "which room did you visit last?", ("timeline", "unchecked_rooms", "where_am_i"),
+      all=[r"room A"]),
+    X("x10", "anything unusual today?", ("what_changed", "timeline"),
+      all=[r"toolbox|red box|barrel"], none=[UNCHANGED_WORDS]),
+]
+ALL_QUESTIONS = QUESTIONS + EXTERNAL
+BY_ID.update({q["id"]: q for q in EXTERNAL})
+
+
 def say_texts() -> list[str]:
-    return [s[1] for s in SCENARIO if s[0] in ("say", "stop")] + [q["text"] for q in QUESTIONS]
+    return [s[1] for s in SCENARIO if s[0] in ("say", "stop")] + [q["text"] for q in ALL_QUESTIONS]
 
 
 def _norm(t: str) -> str:
@@ -121,7 +155,7 @@ def check_overlap(root: str = ".") -> dict:
     import glob
     import os
     from . import final_suite_lab4 as base
-    mine = {_norm(t): t for t in [q["text"] for q in QUESTIONS]}
+    mine = {_norm(t): t for t in [q["text"] for q in ALL_QUESTIONS]}
     hits: dict[str, list[str]] = {}
     saved = base.say_texts
     base.say_texts = lambda: list(mine.values())                       # reuse the lab4 checker's file scan (testsets, SFT data, voice prompts, my_commands)

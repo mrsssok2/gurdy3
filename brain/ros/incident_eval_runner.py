@@ -202,8 +202,12 @@ def run(a, rec: dict) -> int:
                 rec["gt"]["ops"].append(apply_op(S.WORLD, op))
                 print(f"   world: {op['op']} {op['model']} verified={rec['gt']['ops'][-1]['verified']}", flush=True)
             pump_for(2.0)
-    for q in S.QUESTIONS:                                               # the questions, one after the other, nothing else typed in between
-        type_text(q["text"], q["id"])
+    for q in S.ALL_QUESTIONS:                                           # the questions, one after the other, nothing else typed in between
+        t = type_text(q["text"], q["id"])
+        t["started_motion"] = bool(be.task is not None or agent.executor.active)
+        if t["started_motion"]:                                         # a planner-handled question must not wander off and spoil the next one
+            be.stop(); agent.executor.cancel(); t["motion"] = "stopped by the evaluation"
+        agent.gate.clear()
         pump_for(1.0)
     rec["gt"]["t_end"] = time.time()
     rec["graph_events"] = [{"etype": e["etype"], "label": e["label"], "cls": e["cls"], "color": e["color"] or "", "room": e["room"], "wall_t": e["wall_t"],

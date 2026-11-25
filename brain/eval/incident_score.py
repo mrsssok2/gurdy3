@@ -131,30 +131,55 @@ def check_answer(q: dict, reply: str, gt: dict, asked_wall: float) -> list[str]:
     return bad
 
 
-def score(result: dict) -> dict:
-    gt = result["gt"]
-    g = graph_score(gt, result.get("graph_events", []))
+def _rows(result: dict, qs: list[dict], gt: dict) -> list[dict]:
     rows = []
-    for q in S.QUESTIONS:
+    for q in qs:
         t = next((t for t in result.get("turns", []) if t.get("qid") == q["id"]), None)
         if t is None:
             rows.append({"id": q["id"], "category": q["category"], "text": q["text"], "ran": False, "routed": False, "content": False, "ok": False, "problems": ["not asked"]})
             continue
         tools = [c[0] for c in t.get("calls", [])]
-        routed = q["expect_tool"] in tools
+        want = q["expect_tool"] if isinstance(q["expect_tool"], (tuple, list)) else (q["expect_tool"],)
+        routed = any(w in tools for w in want)
         problems = check_answer(q, t["reply"], gt, t.get("wall", gt.get("t_end", 0)))
-        wrong_claim = [p for p in problems if p.startswith("must not say")]
+        wrong = [p for p in problems if p.startswith("must not say")]
+        ext = q.get("external", False)
         rows.append({"id": q["id"], "category": q["category"], "text": q["text"], "ran": True, "routed": routed, "tools": tools, "reply": t["reply"],
-                     "content": not problems, "ok": routed and not problems, "problems": problems, "wrong_claims": len(wrong_claim),
-                     "grounding_violations": t.get("grounding_final", 0), "llm_calls": t.get("llm_calls")})
-    n = len(rows)
+                     "content": not problems, "ok": (not problems) if ext else (routed and not problems), "problems": problems, "wrong_claims": len(wrong),
+                     "grounding_violations": t.get("grounding_final", 0), "llm_calls": t.get("llm_calls"), "latency_s": t.get("latency_s"),
+                     "started_motion": t.get("started_motion", False)})
+    return rows
+
+
+def _summary(rows: list[dict]) -> dict:
+    lat = sorted(r["latency_s"] for r in rows if r.get("latency_s") is not None)
     cats: dict[str, list[dict]] = {}
     for r in rows:
         cats.setdefault(r["category"], []).append(r)
-    return {"scenario": S.NAME, "n_questions": n, "answers_ok": sum(r["ok"] for r in rows), "routed": sum(r["routed"] for r in rows),
-            "content_ok": sum(r["content"] for r in rows), "wrong_claims": sum(r.get("wrong_claims", 0) for r in rows),
-            "grounding_violations": sum(r.get("grounding_violations", 0) for r in rows), "by_category": {k: [sum(x["ok"] for x in v), len(v)] for k, v in cats.items()},
-            "graph": g, "rows": rows, "ops_verified": all(o.get("verified") for o in gt["ops"]), "falls": result.get("falls", 0)}
+    return {"n_questions": len(rows), "answers_ok": sum(r["ok"] for r in rows), "routed": sum(r["routed"] for r in rows), "content_ok": sum(r["content"] for r in rows),
+            "wrong_claims": sum(r.get("wrong_claims", 0) for r in rows), "grounding_violations": sum(r.get("grounding_violations", 0) for r in rows),
+            "by_category": {k: [sum(x["ok"] for x in v), len(v)] for k, v in cats.items()}, "rows": rows,
+            "latency_p50_s": lat[len(lat) // 2] if lat else None, "latency_max_s": lat[-1] if lat else None,
+            "llm_questions": sum(1 for r in rows if (r.get("llm_calls") or 0) > 0), "motion_started": sum(1 for r in rows if r.get("started_motion"))}
+
+
+def score(result: dict) -> dict:
+    gt = result["gt"]
+    own = _summary(_rows(result, S.QUESTIONS, gt))
+    ext = _summary(_rows(result, S.EXTERNAL, gt))
+    return {"scenario": S.NAME, **own, "external": ext, "graph": graph_score(gt, result.get("graph_events", [])),
+            "ops_verified": all(o.get("verified") for o in gt["ops"]), "falls": result.get("falls", 0)}
+
+
+def _section(title: str, s: dict) -> list[str]:
+    L = ["", f"## {title}", "", f"**{s['answers_ok']} / {s['n_questions']}** correct; routed {s['routed']} / {s['n_questions']}, content {s['content_ok']} / {s['n_questions']}, "
+         f"wrong claims {s['wrong_claims']}, grounding violations {s['grounding_violations']}, questions that used the LLM {s['llm_questions']}, "
+         f"motion started by a question {s['motion_started']}; latency p50 {s['latency_p50_s']} s, max {s['latency_max_s']} s.", "",
+         "| category | ok | n |", "|---|---|---|"] + [f"| {k} | {a} | {b} |" for k, (a, b) in s["by_category"].items()]
+    L += ["", "| id | question | tools | ok | problems |", "|---|---|---|---|---|"]
+    for r in s["rows"]:
+        L.append(f"| {r['id']} | {r['text']} | {','.join(r.get('tools', []))} | {'yes' if r['ok'] else 'NO'} | {'; '.join(r['problems'])} |")
+    return L + ["", "Replies:", ""] + [f"- **{r['id']}** {r['text']} -> {r.get('reply', '')}" for r in s["rows"]]
 
 
 def report(s: dict, result: dict) -> str:
@@ -167,14 +192,7 @@ def report(s: dict, result: dict) -> str:
          f"false moved / missing reports for untouched objects: {g['n_false']}", ""]
     L += [f"  - {m['object']}: found={m['found']} delay {m['delay_s']} s" for m in g["moves"]] + [f"  - {r['object']} (removed): found={r['found']} in {r['room']}, delay {r['delay_s']} s" for r in g["removed"]]
     L += [f"  - FALSE: {f['type']} {f['object']} {f['room']}" for f in g["false_reports"]]
-    L += ["", "## Answers", "", f"**{s['answers_ok']} / {s['n_questions']}** correct (right tool AND right content); routed {s['routed']} / {s['n_questions']}, "
-          f"content {s['content_ok']} / {s['n_questions']}, wrong claims {s['wrong_claims']}, grounding violations {s['grounding_violations']}.", "",
-          "| category | ok | n |", "|---|---|---|"] + [f"| {k} | {a} | {b} |" for k, (a, b) in s["by_category"].items()]
-    L += ["", "| id | question | tool | ok | problems |", "|---|---|---|---|---|"]
-    for r in s["rows"]:
-        L.append(f"| {r['id']} | {r['text']} | {','.join(r.get('tools', []))} | {'yes' if r['ok'] else 'NO'} | {'; '.join(r['problems'])} |")
-    L += ["", "## Replies", ""] + [f"- **{r['id']}** {r['text']} -> {r.get('reply', '')}" for r in s["rows"]]
-    return "\n".join(L) + "\n"
+    return "\n".join(L + _section("Own questions (20, written by the router's author)", s) + _section("External questions (10, written by the user)", s["external"])) + "\n"
 
 
 def main() -> None:

@@ -6,7 +6,8 @@
 # Preflight refuses to start while any other container runs (one heavy workload at a time), like scripts/p5_final_eval.sh.
 set -uo pipefail
 cd "$(dirname "$0")/.."
-export WORLD=lab4 MAP_NAME=lab4_map MAP_ID=lab4 PLACES_FILE=maps/lab4.places.yaml MODEL=${MODEL:-gurdy-sft-400}; PORT=11435; WALL=${WALL:-9000}
+python3 scripts/make_incident_world.py >/dev/null || exit 1           # eval copy of lab4 with the 3 scenario objects dynamic (lab4.sdf itself is never touched)
+export WORLD_FILE=ros2_ws/src/gurdy_gazebo/worlds/lab4_incident.sdf MAP_NAME=lab4_map MAP_ID=lab4 PLACES_FILE=maps/lab4.places.yaml MODEL=${MODEL:-gurdy-sft-400}; PORT=11435; WALL=${WALL:-9000}
 TS=$(date -u +%Y%m%d_%H%M%S); RUN=${RUN_DIR:-brain/runs/incident_eval/$TS}; mkdir -p "$RUN/stack"
 RUN_REL=${RUN#"$PWD"/}; case "$RUN_REL" in /*) echo "RUN_DIR must be inside the repo ($PWD)"; exit 1 ;; esac
 log() { echo "$(date -u +%H:%M:%S) $*" | tee -a "$RUN/run.log"; }
@@ -33,11 +34,11 @@ h = check_overlap('.'); print('overlap:', h); raise SystemExit(1 if h else 0)" |
   curl -s "localhost:$PORT/api/generate" -d "{\"model\":\"$MODEL\",\"keep_alive\":\"30m\"}" >/dev/null
   log "incident eval: model $MODEL, commit $(git rev-parse --short HEAD)$(git status --porcelain | grep -q . && echo ' (dirty)'), run dir $RUN, wall limit ${WALL}s"
   CHAT="$RUN_REL/stack"; export CHAT OUT="$RUN_REL/result.json"
-  timeout -k 30 "$WALL" docker compose run --rm -T --name gurdy3_incident_eval -e OLLAMA_URL -e MODEL -e WORLD -e MAP_NAME -e MAP_ID -e PLACES_FILE -e CHAT -e OUT sim bash -c '
+  timeout -k 30 "$WALL" docker compose run --rm -T --name gurdy3_incident_eval -e OLLAMA_URL -e MODEL -e WORLD_FILE -e MAP_NAME -e MAP_ID -e PLACES_FILE -e CHAT -e OUT sim bash -c '
     cd ~/gurdy2 && source ros2_ws/install/setup.bash && export PYTHONPATH=$HOME/gurdy2:$HOME/gurdy2/gurdy_core:$HOME/gurdy2/sim_mujoco:$PYTHONPATH
     source scripts/lib_nav_start.sh; mkdir -p "$CHAT"; cp "$PLACES_FILE" "$CHAT/places.yaml"
     trap "stop_nav_stack" EXIT
-    start_nav_stack "$CHAT" gui:=false world:=$WORLD perception:=true estop_gate:=true target_frame:=map nav:=localization map:=$MAP_NAME navigation:=true controller:=policy odom_source:=ground_truth > "$CHAT/start.log" 2>&1 < /dev/null \
+    start_nav_stack "$CHAT" gui:=false world:=$HOME/gurdy2/$WORLD_FILE perception:=true estop_gate:=true target_frame:=map nav:=localization map:=$MAP_NAME navigation:=true controller:=policy odom_source:=ground_truth > "$CHAT/start.log" 2>&1 < /dev/null \
       || { echo "Nav2 never became ready"; tail -20 "$CHAT/launch.log"; exit 5; }
     ros2 launch gurdy_safety monitors.launch.py odom_topic:=/odom > "$CHAT/monitors.log" 2>&1 < /dev/null &
     ros2 run gurdy_navigation frontier_explorer_node --ros-args -p serve_action:=true -p clock_topic:=/clock_slow -p log_path:=$CHAT/explore_log.json -p done_path:=$CHAT/explore.done > "$CHAT/explorer.log" 2>&1 < /dev/null &
