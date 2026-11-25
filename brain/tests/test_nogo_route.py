@@ -110,3 +110,18 @@ def test_sweep_step_into_a_zone_room_is_left_out(tmp_path):
     b.no_go_zone("add", place="room M")
     steps = b._sweep_steps()
     assert all(s.get("name") != "room M" for s in steps if s["kind"] == "nav")
+
+
+def test_walk_with_a_zone_is_cut_into_short_legs_along_the_checked_route():
+    from brain.ros.backend import RosBackend
+    b = RosBackend.__new__(RosBackend)
+    b.zones = [{"id": 1, "x": 0.0, "y": 4.0, "r": 1.0, "rect": [-2.0, 2.0, 2.0, 6.0]}]
+    pts = [(0.025 * i, 0.0) for i in range(321)]              # a straight 8 m plan
+    path = {"length_m": 8.0, "points": pts}
+    legs = b._waypoints(path)
+    assert len(legs) == 3 and all(abs(x - 2.0 * (i + 1)) < 0.05 for i, (x, y) in enumerate(legs))      # 2, 4, 6 m (7.x m is too close to the goal)
+    steps = b._nav_steps((8.0, 0.0), None, path, "room X")
+    assert [s.get("via") for s in steps] == [True, True, True, None] and steps[-1]["name"] == "room X"
+    b.zones = []
+    assert b._waypoints(path) == []                           # no zone: one goal, as before
+    assert len(b._nav_steps((8.0, 0.0), None, path, "room X")) == 1

@@ -69,7 +69,7 @@ run_one() {   # $1 = mission id; returns 0 when a valid result file exists
     chat="$RUN_REL/logs/$id.attempt$attempt.stack"; mkdir -p "$chat"
     log "$id: attempt $attempt/$ATTEMPTS (limit ${limit}s sim, wall limit ${wall}s)"
     t_att=$SECONDS
-    timeout -k 30 "$wall" docker compose run --rm -T --name gurdy3_final_eval -e OLLAMA_URL -e MODEL -e GURDY_FINAL_SUITE -e WORLD -e MAP_NAME -e MAP_ID -e PLACES_FILE -e SEED -e ID="$id" -e OUT="$out" -e CHAT="$chat" sim bash -c '
+    timeout -k 30 "$wall" docker compose run --rm -T --name gurdy3_final_eval -e OLLAMA_URL -e MODEL -e GURDY_DEBUG_NAV -e GURDY_FINAL_SUITE -e WORLD -e MAP_NAME -e MAP_ID -e PLACES_FILE -e SEED -e ID="$id" -e OUT="$out" -e CHAT="$chat" sim bash -c '
       cd ~/gurdy2 && source ros2_ws/install/setup.bash && export PYTHONPATH=$HOME/gurdy2:$HOME/gurdy2/gurdy_core:$HOME/gurdy2/sim_mujoco:$PYTHONPATH
       source scripts/lib_nav_start.sh; mkdir -p "$CHAT"; cp "$PLACES_FILE" "$CHAT/places.yaml"
       trap "stop_nav_stack" EXIT

@@ -7,6 +7,8 @@ Facts that have no ROS source yet are reported as unknown (None / "unknown"), ne
 from __future__ import annotations
 
 import math
+import os
+import sys
 from pathlib import Path
 from typing import Any, Callable
 
@@ -234,6 +236,11 @@ class RosBackend:
         entered = self._zone_ids(pose[0], pose[1]) - s.setdefault("zones0", self._zone_ids(pose[0], pose[1]))
         return bool(entered)
 
+    def _dbg(self, msg: str) -> None:
+        """Navigation decisions to stderr when GURDY_DEBUG_NAV is set (probe runs; the agent log keeps them)."""
+        if os.environ.get("GURDY_DEBUG_NAV"):
+            print(f"[nav {self.now():7.1f}s] {msg}", file=sys.stderr, flush=True)
+
     def _resolve(self, place=None, object=None, object_id=None, point=None, standoff_m=0.6):
         """-> (goal_xy, face_xy|None, info, path) or a Result error. `path` is the Nav2 plan to the goal."""
         pose = self._pose()
@@ -273,9 +280,12 @@ class RosBackend:
             path = self.p.compute_path(*goal)
             if path is None:
                 continue
-            if self._path_crosses_zone(path):
+            crosses = self._path_crosses_zone(path)
+            self._dbg(f"resolve goal ({goal[0]:.2f},{goal[1]:.2f}) from ({pose[0]:.2f},{pose[1]:.2f}): path {path['length_m']:.1f} m, {len(path['points'])} pts, crosses zone: {crosses}")
+            if crosses:
                 zone_hit = True
                 path = self._detour(goal, pose)           # the planner's way leads through a zone: another way round, through a room that is allowed
+                self._dbg(f"detour: {None if path is None else (path['via'], round(path['length_m'], 1))}")
                 if path is None:
                     continue
             return goal, face, info, path
@@ -431,6 +441,7 @@ class RosBackend:
             if s["started"]:
                 return self._recheck_nav(t, s, pose)
         if ids - s["zones0"]:
+            self._dbg(f"ZONE ENTERED at ({pose[0]:.2f},{pose[1]:.2f}) step ({s['x']:.2f},{s['y']:.2f}) name={s.get('name')} via={bool(s.get('via'))}")
             self._cancel_step(t)
             self._emit("path_blocked", "warning", "I stopped at the edge of a no-go zone.", src="zone_guard", task_id=t.id)
             self._finish(t, "no_go_zone")
@@ -446,6 +457,15 @@ class RosBackend:
             det = None
         if path is not None and not self._path_crosses_zone(path):
             s["checked"] = True
+            if not s.get("started") and (self._waypoints(path)):          # zones active: walk the checked route in short legs
+                self._cancel_step(t)
+                fresh = {k: v for k, v in s.items() if k in ("kind", "x", "y", "yaw", "name", "optional", "length_m")}
+                legs = self._nav_steps(goal, None, path, s.get("name"))[:-1]
+                for v in legs:
+                    v["optional"] = bool(s.get("optional"))
+                t.steps[:0] = legs + [{**fresh, "checked": True}]
+                t.cur = None
+                return True
             return False
         if path is not None and not self._in_zone(*goal):
             det = self._detour(goal, pose)
@@ -467,6 +487,7 @@ class RosBackend:
             return
         if not s["started"]:
             s["h"] = self.p.nav_send(s["x"], s["y"], s.get("yaw"))
+            self._dbg(f"nav_send ({s['x']:.2f},{s['y']:.2f}) name={s.get('name')} via={bool(s.get('via'))} checked={s.get('checked')} from ({pose[0]:.2f},{pose[1]:.2f})")
             s["started"] = True
             if s["h"] is None:
                 return self._finish(t, "no_path")
@@ -481,9 +502,10 @@ class RosBackend:
             self.p.nav_cancel(s["h"])
             self._next(t, {"place": s.get("name"), "reached": True, "close": True})
         elif st["state"] == NAV_ABORTED:
+            self._dbg(f"nav ABORTED at ({pose[0]:.2f},{pose[1]:.2f}) step ({s['x']:.2f},{s['y']:.2f}) recoveries={s.get('recoveries')}")
             self._emit_once("path_blocked", "warning", "The path is blocked.", "nav_monitor", task_id=t.id)
             if s.get("optional"):
-                self._next(t, {"place": s.get("name"), "reached": False})
+                self._next(t, None if s.get("via") else {"place": s.get("name"), "reached": False})
             else:
                 self._finish(t, "blocked")
         elif st["state"] == NAV_CANCELED:
@@ -650,9 +672,28 @@ class RosBackend:
             return d
         return final
 
+    WAYPOINT_M = 2.0     # with a no-go zone active the walk is cut into legs this long (see _waypoints)
+
+    def _waypoints(self, path: dict | None) -> list[tuple[float, float]]:
+        """Points of the checked plan every WAYPOINT_M metres (not the last one). Nav2 re-plans a goal by itself all the time and knows nothing about
+        our no-go zones: after a deviation or a recovery spin the shortest way from where it stands can lead through the forbidden room (held-out lab4
+        v2 `nogo_c_route`: the robot ended at the C-A doorway in 2 of 3 runs). Short legs leave it no such way: each leg's shortest path stays on the
+        checked route. Only used while a zone exists."""
+        pts = (path or {}).get("points") or []
+        if not self.zones or len(pts) < 2 or path.get("length_m", 0.0) < 1.5 * self.WAYPOINT_M:
+            return []
+        out, acc, last, end = [], 0.0, pts[0], pts[-1]
+        for p in pts[1:]:
+            acc += math.hypot(p[0] - last[0], p[1] - last[1])
+            last = p
+            if acc >= self.WAYPOINT_M and math.hypot(p[0] - end[0], p[1] - end[1]) >= 0.75 * self.WAYPOINT_M and not self._in_zone(*p):
+                out.append((p[0], p[1]))
+                acc = 0.0
+        return out
+
     def _nav_steps(self, goal, face, path=None, name=None) -> list[dict]:
-        steps = [{"kind": "nav", "x": v[0], "y": v[1], "yaw": None, "length_m": None, "name": None, "via": True, "checked": True}
-                 for v in (path or {}).get("via", [])]            # a detour round a no-go zone: waypoints first
+        legs = self._waypoints(path) or [tuple(v) for v in (path or {}).get("via", [])]      # waypoints first (a detour round a no-go zone, or legs)
+        steps = [{"kind": "nav", "x": v[0], "y": v[1], "yaw": None, "length_m": None, "name": None, "via": True, "checked": True} for v in legs]
         steps.append({"kind": "nav", "x": goal[0], "y": goal[1], "yaw": math.atan2(face[1] - goal[1], face[0] - goal[0]) if face else None,
                       "length_m": path["length_m"] if path else None, "name": name, "checked": path is not None})
         return steps
