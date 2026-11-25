@@ -11,13 +11,13 @@ Source: `docs/results/phase5_heldout_lab4_v2.md` (88 % mean, 84-91 %). v2 is no 
 ## 3. No-go detour
 Root cause (debug trace, `GURDY_DEBUG_NAV=1`): the checked plan A->B->D (7.8 m) was fine, but Nav2 re-plans a goal by itself and knows nothing about our zones: after a deviation or a recovery spin the shortest way from where the robot stands can lead through room C, and the live pose check then (correctly) stopped the mission. Fix: while a zone exists the checked route is walked in legs of about 2 m (`RosBackend._waypoints`, only points with no occupied cell within the inflation radius, so no doorway waypoints); each leg's shortest path stays on the checked route. The estimate counts the route once (first try said 17.6 m: legs counted from the start).
 Measured, same mission as `v2_nogo_c_route` (three runs each, fresh stack):
-| | pass | sim s (path m) |
+| | pass | per run: sim s (path m, ok?) |
 |---|---|---|
-| v2 held-out runs (before) | 1/3 | 149 (13.4) stopped, 135-180 |
-| probe before | 1/3 | |
-| probe before, with debug prints only | 3/3 | ~170 |
-| **after (legs)** | **3/3** | 249 (23.4), 179 (16.8), 336 (31.2) |
-The robot is nondeterministic (before: 1/3, 1/3, 3/3 on the same code), so 3/3 is evidence, not proof. The legs make the walk slower and wigglier (path 17-31 m for a 8 m route). A first version with waypoints on the doorway was aborted by Nav2 within a second and led to the "no doorway waypoints" rule. Stops honestly ("the way there leads through a no-go zone") when no route exists. Tests: `test_nogo_route.py`.
+| v2 held-out runs (before) | 1/3 | 149 (13.4, stopped at C), 92 (7.7, stopped at C), 180 (16.4, ok) |
+| probe before | 1/3 | 32 (2.8, Nav2 path blocked), 84 (7.7, stopped at C), 172 (16.8, ok) |
+| probe before, debug prints only | 3/3 | 153 (14.6), 173 (16.5), 166 (15.4) |
+| **after (legs)** | **3/3** | 249 (23.4), 179 (16.8), 336 (31.2), all arrived in room D, never in C |
+The robot is nondeterministic (before: 1/3, 1/3, 3/3 on the same code), so 3/3 is evidence, not proof. The legs make the walk slower and wigglier (path 17-31 m, before 15-17 m when it worked). A first version with waypoints on the doorway was aborted by Nav2 within a second and led to the "no doorway waypoints" rule. Stops honestly ("the way there leads through a no-go zone") when no route exists. Tests: `test_nogo_route.py`.
 
 ## 4. `find` in a named room
 `find` takes an agent-internal argument `in_place` (not in the planner prompt, not accepted from the planner: `specs.INTERNAL_ARGS`, `route_plan`): only an object INSIDE that room counts; if none is known there the robot goes to that room and looks (no global explore). Set by routing from the planner's invented `place` argument or from the user's words ("... in room D"). The replies say it: `I did not find it in room D after N seconds.` Mock and ROS backends both. Tests: `test_stepb_refs_stop.py` (cone remembered in room A does not satisfy room B, remembered in room A is accepted for room A, unknown room fails cleanly).
