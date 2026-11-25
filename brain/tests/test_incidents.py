@@ -391,11 +391,11 @@ class TestNlu(unittest.TestCase):
             "did the yellow box move since 2 pm": ("object_history", {"object": {"class": "box", "color": "yellow"}, "since": "clock:14:00"}),
             "What happened while I was away?": ("timeline", {"since": "away", "limit": 10}),
             "what happened in room B today": ("timeline", {"since": "today", "room": "room B"}),
-            "Why did you stop earlier?": ("incident_why", {"about": "stop"}),
+            "Why did you halt earlier?": ("incident_why", {"about": "stop"}),
             "why did the patrol fail": ("incident_why", {"about": "failure"}),
             "Which rooms haven't you checked for an hour?": ("unchecked_rooms", {"older_than_s": 3600.0}),
             "which rooms haven't you visited in the last 30 minutes": ("unchecked_rooms", {"older_than_s": 1800.0}),
-            "when did you last check room C": ("unchecked_rooms", {"room": "room C"}),
+            "when did you last visit room C": ("unchecked_rooms", {"room": "room C"}),
         }
         for text, (tool, args) in cases.items():
             got = self.p(text)

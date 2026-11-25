@@ -316,6 +316,7 @@ criteria are 5.A–5.K below (formerly numbered 5.1–5.11); the build order is 
 ---
 
 ## Phase 6 — Robot Incident Graph (robot-ops)
+**Gurdy 3.0 (2026-11-25): "Incident Graph = temporal memory" built + unit-tested, NOT evaluated** — `docs/phase6_incident_graph.md` (SQLite temporal graph, recorder with move / missing detection, 6 query tools, deterministic routing + grounded answers, web Timeline panel + map arrows; held-out Gazebo scenario + 20 questions committed, not run: `scripts/incident_eval.sh`). The Redpanda / HDBSCAN ops track below stays paused.
 **PAUSED (2026-11-18) after step 1** (incident data model + SQLite `IncidentStore`, `ops/incidents`, commit 405c10c). Phase 7 is done (except the public demo deployment), so Phase 6 **resumes at step 2** (event/metric schema, exporter, replay) next.
 Design (2026-11-17, plan only): **`docs/phase6_design.md`** (incident definition, data flow, storage, root-cause linking, brain queries, stack budget, milestones 6.1–6.9, ~19 working days estimated).
 - [ ] Telemetry/log exporter: ROS 2 → Redpanda (also from rosbag replay)

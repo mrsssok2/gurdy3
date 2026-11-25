@@ -26,6 +26,8 @@ class IncidentBackend:
         self._last_tick = -1e9
 
     def __getattr__(self, name: str):
+        if name == "advance" and hasattr(self._inner, "advance"):      # only a mock world has it: `hasattr(backend, "advance")` must stay False for the real robot
+            return self._advance
         return getattr(self._inner, name)
 
     def _is_room(self, name: str) -> bool:
@@ -67,10 +69,9 @@ class IncidentBackend:
             self.recorder.no_go(action, target, self._inner.now())
         return res
 
-    def advance(self, dt: float) -> None:
-        """Mock worlds only (`__getattr__` would pass this through unchecked): advance in <= TICK_S steps and sample after each, so a 3x-speed web demo
-        still looks at every room the way the real robot would."""
-        step = getattr(self._inner, "advance")
+    def _advance(self, dt: float) -> None:
+        """Mock worlds only: advance in <= TICK_S steps and sample after each, so a 3x-speed web demo still looks at every room the way the real robot would."""
+        step = self._inner.advance
         end = self._inner.now() + dt
         while self._inner.now() < end - 1e-9:
             step(min(TICK_S, end - self._inner.now()))
