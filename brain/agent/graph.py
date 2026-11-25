@@ -19,6 +19,8 @@ from ..tools import TOOLS, ToolLayer
 from . import templates
 from .alerts import ALERT_TYPES, AlertManager
 from .capabilities import unsupported_request
+from ..incidents import nlu as incident_nlu
+from ..incidents.phrasing import must_include as incident_must, phrase as incident_phrase
 from .executor import MissionExecutor
 from .grounding import GroundedReply, collect_facts, grounded_reply, violations
 from .fuzzy import suggest_object, suggest_place, suggest_verb
@@ -166,7 +168,9 @@ class Agent:
         """Never raises: an internal exception (a node crashed, a backend / database error) becomes a spoken "Something went wrong: ..." reply,
         the traceback goes to stderr (the agent log) and pending questions are dropped so the next turn starts clean."""
         try:
-            return self._say(utterance, stt_confidence, started_at)
+            res = self._say(utterance, stt_confidence, started_at)
+            self._note_command(utterance)
+            return res
         except LLMUnavailable as e:                              # the model server is down / unreachable: a plain sentence, details in the log
             import sys
             print(f"[agent] language model unavailable: {e}", file=sys.stderr, flush=True)
@@ -188,6 +192,15 @@ class Agent:
                 pass
             self.pending_fix = self.pending_room = self.followup = None
             return TurnResult(f"Something went wrong: {type(e).__name__}: {e}", [], [{"outcome": "error", "rule": "internal_error"}], 0, {})
+
+    def _note_command(self, utterance: str) -> None:
+        """Tell the incident graph what the user said AFTER the answer (so 'while I was away' means since the PREVIOUS command). Never raises."""
+        note = getattr(self.layer.backend, "note_user_command", None)
+        if note is not None:
+            try:
+                note(utterance)
+            except Exception as e:                               # noqa: BLE001
+                self.errors.append(f"incident note failed: {e}")
 
     def _say(self, utterance: str, stt_confidence: float | None = None, started_at: float | None = None) -> TurnResult:
         """`started_at`: wall-clock (self.clock.wall) time the user STARTED speaking; pending questions are judged by that, not by
@@ -455,6 +468,8 @@ class Agent:
             return {"reply_parts": ["Stopped."], "next": "finish", "events": ev, "has_query": False,
                     "calls": [{"tool": "stop", "args": {}}], "verdicts": [{"outcome": "allow", "rule": "estop_fast_path"}]} \
                 if res.ok else {"reply_parts": ["I could not stop."], "next": "finish"}
+        if self.gate.pending is None and (inc := self._incident_route(text)) is not None:
+            return inc
         if is_stop_why(text) and (why := self._stop_explanation()):
             return {"reply_parts": [why], "next": "finish", "verdicts": [{"outcome": "none", "rule": "stop_explanation"}]}
         if is_unsafe_request(text):
@@ -497,6 +512,49 @@ class Agent:
             msg = f"I can't do that. I don't know what a {noun} is, and I have not seen one."
             return {"reply_parts": [msg], "next": "finish", "verdicts": [{"outcome": "none", "rule": "unknown_noun"}]}
         return {"next": "plan"}
+
+    # ---- incident questions (temporal memory): routed without the planner, answered from the graph, grounded
+    def _incident_route(self, text: str) -> dict | None:
+        if not hasattr(self.layer.backend, "incident_query"):
+            return None                                       # this backend keeps no timeline: the planner handles the text as before
+        plan = incident_nlu.parse(text, self.layer.backend.known_places())
+        if plan is None:
+            return None
+        verdict = [{"outcome": "none", "rule": "incident_query"}]
+        if "reply" in plan:
+            return {"reply_parts": [plan["reply"]], "next": "finish", "verdicts": verdict, "has_query": False}
+        tool, args = plan["tool"], plan["args"]
+        res = self.layer.call(tool, args)
+        calls = [{"tool": tool, "args": args}]
+        if not res.ok:
+            msg = ("I did not understand that time." if res.code == "INVALID_ARGS" else
+                   "I don't keep a timeline in this session." if res.code == "UNAVAILABLE" else f"I can't answer that: {res.error['message']}")
+            return {"reply_parts": [msg], "next": "finish", "calls": calls, "verdicts": verdict, "has_query": False}
+        entries = self.layer.log[-1:]
+        template = incident_phrase(tool, res.data, args)
+        reply, g = template, {"attempts": 0, "fallback": False, "rejected": [], "violations": []}
+        if getattr(self.llm, "phrases_incidents", False):
+            # the LLM only PHRASES the answer: it must use values of the query result (grounding check) and mention the facts that carry the answer
+            must = incident_must(tool, res.data)
+            facts = collect_facts(entries, text)
+            places = self.layer.backend.known_places()
+            feedback, rejected = None, []
+            for attempt in (1, 2):
+                try:
+                    cand = self.llm.respond(SYSTEM_PROMPT, text, entries, feedback)
+                except LLMUnavailable:
+                    raise
+                except Exception:                                            # noqa: BLE001
+                    break
+                bad = violations(cand, facts, places) + [{"kind": "missing", "text": m} for m in must if m.lower() not in cand.lower()]
+                if cand.strip() and not bad:
+                    reply, g = cand.strip(), {**g, "attempts": attempt}
+                    break
+                rejected.append(cand)
+                feedback = "Your answer had problems: " + ", ".join(f"{x['kind']} '{x['text']}'" for x in bad) + ". Use only values from the tool result."
+            if reply == template:
+                g = {**g, "attempts": len(rejected), "fallback": True, "rejected": rejected}
+        return {"reply_parts": [reply], "next": "finish", "calls": calls, "verdicts": verdict, "has_query": False, "grounding": g}
 
     # ---- plan
     def n_plan(self, s: TurnState) -> dict:

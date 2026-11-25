@@ -46,6 +46,9 @@ def main() -> None:
         from ..memory import MemoryBackend, MemoryStore
         be = MemoryBackend(be, MemoryStore(a.memory_db, a.map_id))
         print(f"persistent memory: {a.memory_db} (map {a.map_id})")
+    from pathlib import Path
+    from ..incidents.backend import with_incidents
+    be = with_incidents(be, str(Path(a.memory_db).with_name("incidents.db")) if a.memory_db else None, a.map_id)   # temporal memory; RAM-only without MEMORY
     if a.ollama:
         from ..agent.ollama_llm import OllamaLLM
         llm = OllamaLLM(model=a.ollama, constrain=not a.ollama.startswith("gurdy-sft"))   # fine-tuned model: unconstrained (phase5_eval_sft.md)

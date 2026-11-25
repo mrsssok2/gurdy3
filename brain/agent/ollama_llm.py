@@ -117,6 +117,7 @@ def repair_json(text: str) -> str | None:
 
 
 class OllamaLLM:
+    phrases_incidents = True      # the agent lets this model phrase incident-graph answers (grounded, template fallback)
     def __init__(self, model: str, host: str | None = None, num_ctx: int = 4096, num_predict: int = 400,
                  keep_alive: str = "30m", timeout: float = 120.0, prompt_style: str = "compact", constrain: bool = True):
         self.model = model

@@ -13,6 +13,11 @@ from .specs import TOOLS, public_args
 from .types import Result, fail, ok
 
 
+def _incident_tools() -> dict:
+    from ..incidents.tools import INCIDENT_TOOLS         # lazy: brain.tools must stay importable without brain.incidents
+    return INCIDENT_TOOLS
+
+
 class ToolLayer:
     def __init__(self, backend: RobotBackend):
         self.backend = backend
@@ -24,6 +29,8 @@ class ToolLayer:
     def call(self, name: str, args: dict[str, Any] | None = None) -> Result:
         args = {} if args is None else args
         spec = TOOLS.get(name)
+        if spec is None and name in _incident_tools():
+            return self._call_incident(name, args)
         if spec is None:
             res = fail("UNKNOWN_TOOL", f"no tool named '{name}'", tools=sorted(TOOLS))
         elif (problems := validate(public_args(name, args), spec.parameters)):
@@ -33,6 +40,19 @@ class ToolLayer:
         else:
             res = getattr(self.backend, name)(**args)
         self._update_focus(name, args, res)
+        self.log.append({"t": self.backend.now(), "tool": name, "args": args, "result": res.to_dict()})
+        return res
+
+    def _call_incident(self, name: str, args: dict[str, Any]) -> Result:
+        """Incident tools (brain.incidents): not in TOOLS (= the planner prompt); validated against their own specs, answered by the backend wrapper."""
+        spec = _incident_tools()[name]
+        run = getattr(self.backend, "incident_query", None)
+        if (problems := validate(args, spec.parameters)):
+            res = fail("INVALID_ARGS", "; ".join(problems), problems=problems)
+        elif run is None:
+            res = fail("UNAVAILABLE", "this session keeps no timeline")
+        else:
+            res = run(name, args)
         self.log.append({"t": self.backend.now(), "tool": name, "args": args, "result": res.to_dict()})
         return res
 
