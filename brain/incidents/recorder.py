@@ -66,6 +66,7 @@ class IncidentRecorder:
         self._cmd_wall: float | None = None
         self._clock: list[tuple[float, float]] = []   # (sim, wall) pairs seen so far: converts a sim time in the past to wall time (RTF is not 1)
         self._poses: list[tuple[float, float, float, float]] = []      # (sim, x, y, heading_deg)
+        self._past: dict[str, list[list[tuple[float, float, float]]]] = {}    # room -> sample lists of CLOSED visits (this session only): what was looked at before
         self.rejected_sightings = 0                   # sightings dropped by the in-view / consistency checks (diagnostics)
         self._load()
         sid = store.add_event("session_start", "Recording started.", 0.0, store.wall())
@@ -218,11 +219,26 @@ class IncidentRecorder:
     def _close_visit(self, now_sim: float, wall: float) -> None:
         v = self._visit
         self._check_missing(v, now_sim, wall)
+        if now_sim - v.enter_sim >= MIN_VISIT_S:                              # a real look at the room, not a walk through the doorway
+            thin: list[tuple[float, float, float]] = []
+            for smp in v.samples:
+                if not thin or math.hypot(smp[0] - thin[-1][0], smp[1] - thin[-1][1]) >= 0.25 or abs(smp[2] - thin[-1][2]) >= 15.0:
+                    thin.append(smp)
+            self._past.setdefault(v.room, []).append(thin[-400:])
         self._event("room_left", f"Left {v.room}.", now_sim, wall, room=v.room, data={"stayed_s": round(now_sim - v.enter_sim, 1)})
         self.store.update_node(self.store.ensure_room(v.room), sim_t=now_sim, wall_t=wall)
 
     def _covered(self, v: _Visit, ox: float, oy: float) -> bool:
-        for x, y, hdg in v.samples:
+        return self._covered_by(v.samples, ox, oy)
+
+    def _appeared(self, room: str | None, x: float, y: float) -> bool:
+        """A first sighting is a CHANGE only if an earlier, completed visit of the room had this spot in view (and did not see anything there). Otherwise it is
+        just the first look at the room: a baseline, not news. (Memory of this session only: after a restart nothing counts as 'appeared'.)"""
+        return bool(room) and any(self._covered_by(samples, x, y) for samples in self._past.get(room, []))
+
+    @staticmethod
+    def _covered_by(samples: list[tuple[float, float, float]], ox: float, oy: float) -> bool:
+        for x, y, hdg in samples:
             d = math.hypot(ox - x, oy - y)
             if d > VIEW_M:
                 continue
@@ -321,17 +337,17 @@ class IncidentRecorder:
                            "first_wall": wall_seen, "logged_wall": wall_seen, "first_event": None}
         if bid is not None:
             self._by_bid[bid] = nid
-        eid = self._seen(nid, x, y, room, sim_seen, wall_seen, score, first=True)
+        eid = self._seen(nid, x, y, room, sim_seen, wall_seen, score, first=True, appeared=self._appeared(room, x, y))
         self._objs[nid]["first_event"] = eid
         self._save(nid)
         self._try_merge_new(nid, sim_seen, wall_seen)
 
-    def _seen(self, nid, x, y, room, sim_seen, wall_seen, score, first=False, returned=False) -> int:
+    def _seen(self, nid, x, y, room, sim_seen, wall_seen, score, first=False, returned=False, appeared=False) -> int:
         o = self._objs[nid]
         name = pretty(o["cls"], o["color"])
         text = (f"Saw a new {name}" if first else f"The {name} is back" if returned else f"Saw the {name}") + (f" in {room}." if room else ".")
         eid = self.store.add_event("object_seen", text, sim_seen, wall_seen, room=room, x=x, y=y, object_id=nid, cls=o["cls"], color=o["color"],
-                                   data={"confidence": score, "first": first, "returned": returned})
+                                   data={"confidence": score, "first": first, "returned": returned, "appeared": appeared})
         if room:
             self.store.add_edge(nid, self.store.ensure_room(room), "seen_in", sim_seen, wall_seen)
         o["logged_wall"] = wall_seen

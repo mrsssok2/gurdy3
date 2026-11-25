@@ -439,6 +439,77 @@ class TestNlu(unittest.TestCase):
         self.assertEqual(self.p("why did you stop at 10:30")["args"], {"about": "stop", "at": "10:30"})
 
 
+class TestWhatChangedSemantics(unittest.TestCase):
+    """A first sighting is not a change; 2 moves + 1 removal are exactly 3 changes, and a moved object is not also 'missing from' its old room."""
+
+    def scenario(self) -> Rig:
+        rig = Rig()
+        rig.patrol("room A", "room B", "room A")                  # baseline: everything seen where it is
+        rig.mb.move_object(RED, 3.6, 0.2)                         # move 1: red box room A -> room B
+        rig.mb.move_object(YELLOW, 0.4, -1.2)                     # move 2: yellow box room B -> room A
+        rig.mb.remove_object(GREEN)                               # removal: green barrel (room B)
+        rig.patrol("room B", "room A", "room B")
+        return rig
+
+    def test_two_moves_and_one_removal_are_exactly_three_changes(self):
+        rig = self.scenario()
+        for since in ("session", "today", "all"):
+            d = rig.q("what_changed", since=since).data
+            self.assertEqual((len(d["moved"]), len(d["missing"]), len(d["new"]), len(d["returned"]), d["changes"]), (2, 1, 0, 0, 3), since)
+        d = rig.q("what_changed", since="session").data
+        self.assertEqual({m["object"] for m in d["moved"]}, {"red box", "yellow box"})
+        self.assertEqual([m["object"] for m in d["missing"]], ["green barrel"])
+        self.assertEqual({m["object"]: (m["from"]["room"], m["to"]["room"]) for m in d["moved"]},
+                         {"red box": ("room A", "room B"), "yellow box": ("room B", "room A")})
+
+    def test_first_look_only_is_no_change(self):
+        rig = Rig()
+        rig.patrol("room A", "room B")
+        d = rig.q("what_changed", since="session").data
+        self.assertEqual((d["changes"], d["new"], d["moved"], d["missing"]), (0, [], [], []))
+        self.assertFalse(d["no_data"])                            # rooms were looked at: "nothing changed", not "no data"
+
+    def test_per_room_query_counts_only_that_room(self):
+        rig = self.scenario()
+        d = rig.q("what_changed", room="room A", since="session").data
+        self.assertEqual({m["object"] for m in d["moved"]}, {"red box", "yellow box"})    # one left room A, one arrived
+        self.assertEqual(d["missing"], [])
+        db = rig.q("what_changed", room="room B", since="session").data
+        self.assertEqual([m["object"] for m in db["missing"]], ["green barrel"])
+
+    def test_moved_object_is_not_also_missing(self):
+        rig = self.scenario()
+        d = rig.q("what_changed", since="session").data
+        self.assertFalse({m["object"] for m in d["moved"]} & {m["object"] for m in d["missing"]})
+        text = phrasing.phrase("what_changed", d)
+        self.assertNotIn("red box is missing", text)
+        self.assertIn("3 changes", text)
+
+    def test_object_that_appears_where_the_room_was_already_looked_at_is_new(self):
+        from brain.incidents.recorder import IncidentRecorder
+        t = TestGhostSightings()
+        t.wall = [T0]
+        store = IncidentStore(":memory:", "lab", lambda: t.wall[0])
+        rec = IncidentRecorder(store, is_room=lambda n: n.startswith("room"))
+
+        def step(sim, pose, place, records):
+            t.wall[0] = T0 + sim
+            rec.observe_pose({"x": pose[0], "y": pose[1], "heading_deg": pose[2], "place": place}, sim)
+            rec.observe_objects(records, sim)
+        for sim in range(0, 40):                                      # first visit of room D, facing +x: nothing at (2, 0) (nothing seen at all)
+            step(float(sim), (0.0, 0.0, 0.0), "room D", [])
+        for sim in range(40, 60):                                     # away
+            step(float(sim), (-9.0, 0.0, 180.0), "room A", [])
+        box = lambda s, x: {"id": 5, "class": "box", "color": "red", "x": x, "y": 0.0, "place": "room D", "age_s": 0.0, "score": 0.9}
+        step(60.0, (0.0, 0.0, 0.0), "room D", [box(60, 2.0)])         # now a box stands where the first visit looked: it appeared
+        first = [e for e in store.events(etypes=["object_seen"])][0]
+        self.assertTrue(first["data"]["first"] and first["data"]["appeared"])
+        # a spot that was never in view of an earlier visit is a first look, not a change
+        step(61.0, (0.0, 0.0, 90.0), "room D", [{**box(61, 0.0), "y": 2.5, "id": 6, "class": "barrel", "color": "blue"}])
+        e2 = [e for e in store.events(etypes=["object_seen"]) if e["cls"] == "barrel"][0]
+        self.assertFalse(e2["data"]["appeared"])
+
+
 class TestGhostSightings(unittest.TestCase):
     """The first incident evaluation logged a removed toolbox as 'seen' every minute for 20 minutes: the detector's track was stale (sim last_seen fixed), but
     wall_seen = wall - age mixed a SIM age with the wall clock, so at RTF 0.4 a stale track looked newer by 0.6 s per second."""

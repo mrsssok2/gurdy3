@@ -162,13 +162,21 @@ def what_changed(store: IncidentStore, now: float, room: str | None = None, sinc
         elif e["etype"] == "object_seen":
             f = fmt_event(e, now)
             if e["data"].get("first"):
-                new.append(f)
+                if e["data"].get("appeared"):                  # a first sighting is only news where the spot had been looked at (and found empty) before
+                    new.append(f)
             elif e["data"].get("returned"):
                 back.append(f)
                 gone.pop(oid, None)
         else:
             config.append(fmt_event(e, now))
     moved_names = {m["object"] for m in moved.values()}
+    gone = {k: g for k, g in gone.items() if g["object"] not in moved_names}      # a moved object is not also "missing from" its old room
+    seen_gone: set[tuple] = set()
+    for k in list(gone):                                                         # one line per object and room
+        key = (gone[k]["object"], gone[k].get("room"))
+        if key in seen_gone:
+            del gone[k]
+        seen_gone.add(key)
     new = [n for n in new if n["object"] not in moved_names]                # first seen AND moved inside the window: the move is the news
     visited = _visited_rooms(store, since_wall, now)
     changes = len(moved) + len(gone) + len(new) + len(back) + len(config)
