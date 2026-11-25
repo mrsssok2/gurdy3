@@ -26,6 +26,7 @@ def use_suite(name: str) -> None:
     _COLOUR_FREE = name != "incident_suite"
 
 _COLOUR_FREE = False                # v1 matches (class, colour) exactly (frozen scoring of the committed run); `use_suite("incident_suite_v2")` switches to class + optional colour
+INCIDENT_TOOLS = ("what_changed", "last_seen", "object_history", "timeline", "incident_why", "unchecked_rooms")
 GREY_S = 90.0                       # rooms whose last visit is this close to the threshold may be listed either way
 
 
@@ -153,8 +154,14 @@ def _rows(result: dict, qs: list[dict], gt: dict) -> list[dict]:
             continue
         tools = [c[0] for c in t.get("calls", [])]
         want = q["expect_tool"] if isinstance(q["expect_tool"], (tuple, list)) else (q["expect_tool"],)
-        routed = any(w in tools for w in want)
+        if want == ("none",):                       # blind suite: not an incident question, no incident tool may be called
+            routed = not any(x in INCIDENT_TOOLS for x in tools)
+        elif want == ("any",):                      # routing not scored
+            routed = True
+        else:
+            routed = any(w in tools for w in want)
         problems = check_answer(q, t["reply"], gt, t.get("wall", gt.get("t_end", 0)))
+        problems += [f"tool {c} was not called" for c in q["check"].get("calls", []) if c not in tools]
         wrong = [p for p in problems if p.startswith("must not say")]
         ext = q.get("external", False)
         rows.append({"id": q["id"], "category": q["category"], "text": q["text"], "ran": True, "routed": routed, "tools": tools, "reply": t["reply"],
