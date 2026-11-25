@@ -22,7 +22,7 @@ CAPABILITIES: list[tuple[str, str, re.Pattern]] = [
         r"\b((?:take|snap|capture|shoot|film|get|make|save|record)\b.{0,25}\b(?:photos?|pictures?|pics?|selfies?|screenshots?|videos?|footage|audio|clips?)|"
         r"photograph\w*|selfies?|screenshot)\b", re.I)),
     ("carrying", "pick up, carry or fetch things", re.compile(
-        r"\b(pick (?:up|it up|that up|this up)|pick (?:the|a|an|that|this|my) \w+( \w+)? up|grab (?:the|a|an|that|this|my|it)|"
+        r"\b(pick(?:ed)? (?:up|it up|that up|this up)|pick(?:ed)? (?:the|a|an|that|this|my) \w+( \w+)? up|grab(?:bed)? (?:the|a|an|that|this|my|it)|"
         r"carry (?!on\b|out\b)(?:the|a|an|that|this|my|it|me)|fetch (?:the|a|an|that|this|my|it|me)|hand me|"
         r"bring (?:me |us )?(?:the|a|an|that|this|my|it|some)\b|deliver (?:the|a|an|that|this|it)|throw (?:the|a|an|that|this|it))", re.I)),
     ("errands", "do that kind of thing", re.compile(

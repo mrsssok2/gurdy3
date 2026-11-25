@@ -149,6 +149,28 @@ def unknown_noun(text: str, known_places: list[str] | None = None) -> str | None
     return None
 
 
+_FIND_TARGET = re.compile(r"\b(?:find|look\s+for|search\s+for|locate|seek|hunt\s+for)\s+(?:me\s+)?(?:the\s+|a\s+|an\s+|any\s+|some\s+)?((?:[a-z-]+\s+){0,2}?[a-z-]+)\s*[.?!,]*\s*$", re.I)
+_FIND_SKIP = {"way", "path", "route", "exit", "exits", "something", "anything", "everything", "object", "objects", "item", "items", "thing", "things", "it", "that", "this",
+              "me", "you", "home", "base", "place", "places", "room", "rooms", "spot", "doorway", "door", "out", "again", "first", "there", "here", "nearest", "closest", "last",
+              "other", "another", "one", "ones", "all", "them", "him", "her", "us", "now", "please", "object", "obstacle", "obstacles", "gap", "target", "targets", "stuff"}
+_COLOURS = {"red", "blue", "green", "yellow", "orange", "white", "black", "brown", "grey", "gray", "purple", "pink"}
+
+
+def unknown_find_target(text: str, known_places: list[str] | None = None) -> str | None:
+    """"find the purple unicorn": the last word of what is to be found is neither a known object word, a colour, a place nor a plain filler -> that noun, else None."""
+    from ..data_gen.lexicon import OBJECT_WORDS
+    m = _FIND_TARGET.search(text.strip())
+    if not m:
+        return None
+    known = {w for phrase in sum(OBJECT_WORDS.values(), []) for w in phrase.split()} | set(_CLASS_WORDS) | _COLOURS | _FIND_SKIP
+    known |= {w for p in (known_places or []) for w in p.lower().split()}
+    words = [w.lower() for w in m.group(1).split()]
+    noun = words[-1]
+    if noun in known or _is_room_word(noun) or len(noun) < 3:
+        return None
+    return noun
+
+
 # ---------------------------------------------------------------- guard
 @dataclass
 class GuardResult:

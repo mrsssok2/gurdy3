@@ -25,11 +25,12 @@ from ..incidents.phrasing import must_include as incident_must, phrase as incide
 from .executor import MissionExecutor
 from .grounding import GroundedReply, collect_facts, grounded_reply, violations
 from .fuzzy import suggest_object, suggest_place, suggest_verb
-from .guard import _is_state_change, guard_plan, normalize_call, unknown_noun
+from .guard import _is_state_change, guard_plan, normalize_call, unknown_find_target, unknown_noun
 from .llm import LLM, LLMUnavailable
 from .refs import resolve_other
 from .routing import route_plan
 from . import rooms
+from . import untrusted
 from .answer_clock import AnswerClock
 from .safety import ConfirmationGate, is_clear_no, is_clear_yes, SafetyChecker, Verdict
 from .stopwords import is_estop_phrase, is_stop_why, is_unsafe_request     # noqa: F401  (re-exported: the e-stop text rules live in stopwords.py)
@@ -226,7 +227,10 @@ class Agent:
                          "llm_calls": 0, "calls": [], "reply_parts": [], "verdicts": [], "events": [], "grounding": {},
                          "approved": False, "has_query": False, "cont": False, "notes": [],
                          "voice": stt_confidence is not None}
+        held_before = self.gate.pending
         out = self.graph.invoke(st)
+        if held_before is not None and self.gate.pending is held_before and held_before.tool != "mission_step":
+            self.gate.clear()                                  # a question that survived a whole turn unanswered is dead: a later "yes" confirms nothing
         if out.get("followup"):
             self.followup = {"utterance": out["utterance"], "log_start": self.executor.log_start}
         return TurnResult(templates.squash(out["reply"]), out["calls"], out["verdicts"], out["llm_calls"], out["grounding"], out["events"])
@@ -467,9 +471,31 @@ class Agent:
             self.gate.clear()
             res = self.layer.call("stop")
             self.last_stop = {"reason": "user_stop", "at": self.clock.wall(), "command": text.strip()}
-            return {"reply_parts": ["Stopped."], "next": "finish", "events": ev, "has_query": False,
+            return {"reply_parts": ["Stopped." + (" " + untrusted.STOP_ONLY_NOTE if untrusted.stop_prefix(text) else "")], "next": "finish", "events": ev, "has_query": False,
                     "calls": [{"tool": "stop", "args": {}}], "verdicts": [{"outcome": "allow", "rule": "estop_fast_path"}]} \
                 if res.ok else {"reply_parts": ["I could not stop."], "next": "finish"}
+        # ---- Phase 7b: what the user's TEXT may do (untrusted.py). A stop always wins and is handled above; nothing below can change state or rules.
+        if untrusted.stop_prefix(text):                       # "Emergency stop, then continue walking ..." = a stop, nothing else
+            ev = self.executor.cancel()
+            self.gate.clear()
+            res = self.layer.call("stop")
+            self.last_stop = {"reason": "user_stop", "at": self.clock.wall(), "command": text.strip()}
+            return {"reply_parts": ["Stopped. " + untrusted.STOP_ONLY_NOTE if res.ok else "I could not stop."], "next": "finish", "events": ev, "has_query": False,
+                    "calls": [{"tool": "stop", "args": {}}], "verdicts": [{"outcome": "allow", "rule": "stop_wins"}]}
+        save_text = bool(_SAVE_WORDS.search(text))
+        blocked = (("untrusted_text", untrusted.SPOOF_REPLY) if untrusted.spoofed_input(text) else
+                   ("privacy", untrusted.PRIVACY_REPLY) if untrusted.privacy_request(text) else
+                   ("sql_text", untrusted.SQL_REPLY) if (untrusted.sql_text(text) and not save_text) else
+                   ("claim_request", untrusted.CLAIM_REPLY) if untrusted.claim_request(text) else
+                   ("endless_motion", untrusted.ENDLESS_REPLY) if untrusted.endless_request(text) else None)
+        if blocked:
+            self.gate.clear()                                  # a pending question is never answered by this kind of text
+            return {"reply_parts": [blocked[1]], "next": "finish", "verdicts": [{"outcome": "refuse", "rule": blocked[0]}]}
+        speed_note: list[str] = []
+        clean, fast = untrusted.speed_request(text)
+        if fast and self.gate.pending is None:
+            text, speed_note = clean, [untrusted.speed_note(float(self.safety.cfg.get("max_speed_mps", untrusted.MAX_SPEED_MPS)))]
+            s = {**s, "utterance": text}
         if self.gate.pending is None and (inc := self._incident_route(text)) is not None:
             return inc
         if is_stop_why(text) and (why := self._stop_explanation()):
@@ -501,7 +527,7 @@ class Agent:
                         "verdicts": [{"outcome": "confirmed", "rule": p.reason}]}
         if self.gate.pending is None and (cap := unsupported_request(text)):
             return {"reply_parts": [cap], "next": "finish", "verdicts": [{"outcome": "none", "rule": "unsupported_capability"}]}
-        noun = unknown_noun(text, self.layer.backend.known_places())
+        noun = unknown_noun(text, self.layer.backend.known_places()) or unknown_find_target(text, self.layer.backend.known_places())
         if noun:                                   # no concept of this thing: say so, never substitute a known one (no LLM call)
             from .guard import UNKNOWN_PLACE_NOUNS
             dest = re.search(rf"\b(go|head|walk|move|navigate|drive|come|travel|get|take me|proceed|bring me)\b.*\b(to|towards|toward|into)\s+(the |a |an )?{re.escape(noun)}", text, re.I)
@@ -513,7 +539,7 @@ class Agent:
                         "verdicts": [{"outcome": "clarify", "rule": "unknown_noun"}]}
             msg = f"I can't do that. I don't know what a {noun} is, and I have not seen one."
             return {"reply_parts": [msg], "next": "finish", "verdicts": [{"outcome": "none", "rule": "unknown_noun"}]}
-        return {"next": "plan"}
+        return {"next": "plan", "utterance": text, "notes": speed_note}
 
     # ---- incident questions (temporal memory): routed without the planner, answered from the graph, grounded
     def _incident_route(self, text: str) -> dict | None:
@@ -592,8 +618,17 @@ class Agent:
                 self.gate.hold(*g.confirm)
                 return {"reply_parts": [g.confirm[2]], "llm_calls": n, "next": "finish",
                         "verdicts": s["verdicts"] + [{"outcome": "confirm", "rule": g.rule}]}
-            return {"calls": s["calls"] + g.calls, "cont": bool(out.get("continue")), "llm_calls": n,
-                    "notes": s.get("notes", []) + g.notes, "next": "safety_check"}
+            plan_calls, notes = list(g.calls), list(g.notes)
+            plan_calls, later = untrusted.drop_after_stop(plan_calls) if untrusted.says_stop(s["utterance"]) else (plan_calls, [])    # the user said stop: nothing after it runs
+            # (a replacement the PLANNER adds -- "actually go to room A instead" = stop + go_to -- is not a stop request and keeps its go_to)
+            if later:
+                notes.append(untrusted.STOP_ONLY_NOTE)
+            plan_calls, unasked = untrusted.unsupported_calls(s["utterance"], plan_calls)     # no confirmation question for an action nobody asked for
+            if unasked and not plan_calls:
+                return {"reply_parts": ["I did not do anything, because I did not understand what you want. Could you say it another way?"], "llm_calls": n,
+                        "next": "finish", "verdicts": s["verdicts"] + [{"outcome": "none", "rule": "call_not_asked_for"}]}
+            return {"calls": s["calls"] + plan_calls, "cont": bool(out.get("continue")), "llm_calls": n,
+                    "notes": s.get("notes", []) + notes, "next": "safety_check"}
         if self._is_low_conf(s["stt_confidence"], s["utterance"]):      # nothing parseable and the recognition was shaky: ask again
             return {"reply_parts": [self._low_conf_message(s["utterance"])], "llm_calls": n, "next": "finish",
                     "verdicts": s["verdicts"] + [{"outcome": "clarify", "rule": "low_confidence"}]}
@@ -724,9 +759,12 @@ class Agent:
 
     def n_finish(self, s: TurnState) -> dict:
         reply = " ".join([p for p in s.get("reply_parts", []) if p] + s.get("notes", [])) or "Okay."
+        did = any(e["result"]["ok"] and e["tool"] != "ask_user" for e in self._entries(s)) or bool(s.get("events")) or self.gate.pending is not None
+        reply = untrusted.vacuous_ack(reply, s["utterance"], did) or reply     # a bare "Okay." when nothing was done is a false acknowledgement
         return {"reply": reply, "calls": [{k: v for k, v in c.items() if k != "_done"} for c in s.get("calls", [])]}
 
 
+_SAVE_WORDS = re.compile(r"\b(save|remember|store|mark|name|call|label)\b", re.I)
 _BARE_YES_NO = re.compile(r"^\W*(yes|yeah|yep|yup|sure|no|nope|nah)\W*$", re.I)    # a lone answer with no question pending
 
 

@@ -37,6 +37,8 @@ def _target_name(a: dict) -> str:
     return "the target"
 
 
+_LIMIT_UNITS = {"distance_m": ("I walk", "metres"), "angle_deg": ("I turn", "degrees"), "loops": ("I patrol", "loops"), "radius_m": ("A zone is", "metres wide"),
+                "delay_s": ("I can wait", "seconds")}
 FRIENDLY_ERRORS = {"INVALID_ARGS": "I could not work out how to do that. Could you say it another way?",
                    "UNKNOWN_TOOL": "I can't do that. I don't have a way to do it."}
 
@@ -44,6 +46,13 @@ FRIENDLY_ERRORS = {"INVALID_ARGS": "I could not work out how to do that. Could y
 def error_text(res: dict) -> str:
     """User-facing text of a failed tool result: no validator internals."""
     err = res["error"]
+    if err.get("code") == "INVALID_ARGS":
+        for prob in err.get("problems") or []:                       # a value over / under the limit: say the limit (Phase 7b), never a bare "could not work out"
+            m = re.match(r"args\.(\w+): \S+ ([<>]) (?:maximum|minimum) (\S+)", prob)
+            if m and m.group(1) in _LIMIT_UNITS:
+                what, unit = _LIMIT_UNITS[m.group(1)]
+                return (f"That is more than I will do at once. {what} at most {m.group(3)} {unit}." if m.group(2) == ">" else
+                        f"That is too little to do. {what} at least {m.group(3)} {unit}.")
     return FRIENDLY_ERRORS.get(err.get("code"), err["message"])
 
 
