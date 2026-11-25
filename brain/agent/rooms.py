@@ -110,21 +110,15 @@ def missing_letter_question(text: str, places: list[str]) -> str | None:
     return None
 
 
-# Letters speech recognition really swaps for a room letter ("be" / "dee" / "see" / "pee" / "vee" / "tee" / "gee"). Every letter is "edit distance 1" from
-# every other one, so for letters the near-miss rule is acoustic: only these go on to the "Did you mean ...?" repair; any other letter (Z, Q, X ...) gets the honest answer.
-_SOUND_ALIKE = set("BCDEGPTV")
-
-
 def unknown_room_message(text: str, places: list[str]) -> str | None:
     """An explicit "room X" whose letter is not on the map: say so honestly ("There is no room Z. I know rooms A, B, C and D.") BEFORE any
     spelling repair. Only misspelt words ("roon B") reach the "Did you mean ...?" repair, which names what it assumed."""
     letters = known_letters(places)
     if not letters:
         return None
-    top = max(ord(letters[-1]) + 2, ord("D"))
     typed = mentioned_letters(text) + [m.upper() for m in re.findall(r"\broom\s+([a-hj-z])\b", text)]     # "room z" (lowercase) too; a lone "i" stays a word
     for ch in dict.fromkeys(typed):
-        if ch not in letters and (ord(ch) <= top or ch not in _SOUND_ALIKE):
+        if ch not in letters:
             plural = "rooms" if len(letters) > 1 else "room"
             known = letters[0] if len(letters) == 1 else ", ".join(letters[:-1]) + " and " + letters[-1]
             return f"There is no room {ch}. I know {plural} {known}."

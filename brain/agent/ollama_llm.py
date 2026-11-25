@@ -131,6 +131,10 @@ class OllamaLLM:
         self.stats: list[dict] = []
         self.parse_failures = 0
         self.repaired = 0            # outputs that needed repair_json
+        self.incident_picker = None
+        if os.environ.get("GURDY_INCIDENT_PICKER", "1") != "0":          # Phase 6d: validated LLM tool picker for incident questions (brain/incidents/picker.py)
+            from ..incidents.picker import IncidentPicker
+            self.incident_picker = IncidentPicker(host=self.host)
 
     # ------------------------------------------------------------------ transport
     def _chat(self, kind: str, user: str, fmt: dict | None) -> str:

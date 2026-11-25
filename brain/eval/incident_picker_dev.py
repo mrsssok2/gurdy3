@@ -1,0 +1,81 @@
+"""DEV set for the incident tool picker (Phase 6d): free phrasings -> the tool the picker should choose (or None = "none": not an incident question).
+Used to choose the picker's model and to measure it OFFLINE (`python3 -m brain.eval.picker_dev --model qwen3:1.7b`). It is a DEV set: it was looked at while building the picker.
+Written by the assistant, kept disjoint from the picker's few-shot examples, from the three held-out incident suites and from the unit tests (`test_incident_picker.py`).
+(text, expected tool or None, expected room or None)."""
+from __future__ import annotations
+
+DEV = [
+    # ---- what_changed
+    ("has somebody tampered with anything in room C", "what_changed", "room C"),
+    ("were any items shifted in room A during my break", "what_changed", "room A"),
+    ("is everything in room D still the same as this morning", "what_changed", "room D"),
+    ("what's different around here since I went for coffee", "what_changed", None),
+    ("did you spot anything gone missing", "what_changed", None),
+    ("any items turn up that weren't there before", "what_changed", None),
+    ("what has been rearranged while I wasn't looking", "what_changed", None),
+    ("compare room B with the first time you saw it", "what_changed", "room B"),
+    ("did anyone walk off with something", "what_changed", None),
+    ("have things been moved around since lunch", "what_changed", None),
+    ("is room C untouched", "what_changed", "room C"),
+    ("report any alterations to the lab", "what_changed", None),
+    # ---- last_seen
+    ("at what point did you most recently see the mannequin", "last_seen", None),
+    ("where was the fire extinguisher when you last looked", "last_seen", None),
+    ("how long has it been since the red crate was in view", "last_seen", None),
+    ("when's the last you noticed a traffic cone", "last_seen", None),
+    ("remind me when you last saw the yellow box", "last_seen", None),
+    ("last sighting of the toolbox?", "last_seen", None),
+    ("do you recall the last time the chair showed up", "last_seen", None),
+    ("when did the green barrel last appear on your camera", "last_seen", None),
+    # ---- object_history
+    ("has the blue box been bumped or relocated", "object_history", None),
+    ("did the mannequin ever change places", "object_history", None),
+    ("is the toolbox in its original spot", "object_history", None),
+    ("where has the red barrel been over time", "object_history", None),
+    ("hasn't the extinguisher been shoved somewhere else", "object_history", None),
+    ("is the yellow box where it started out", "object_history", None),
+    ("has anyone touched the chair", "object_history", None),
+    ("what became of the white cone", "object_history", None),
+    # ---- timeline
+    ("what's the story of the last half hour", "timeline", None),
+    ("run through what you did today in order", "timeline", None),
+    ("anything noteworthy happen in room B", "timeline", "room B"),
+    ("give me the log of room D", "timeline", "room D"),
+    ("walk me through your day", "timeline", None),
+    ("what did you get up to while I was away", "timeline", None),
+    ("summarise the session so far", "timeline", None),
+    ("bring me up to speed on what went down", "timeline", None),
+    # ---- incident_why
+    ("what caused you to give up on that search", "incident_why", None),
+    ("explain the halt you made a bit ago", "incident_why", None),
+    ("why did that mission die", "incident_why", None),
+    ("what was behind you freezing up earlier", "incident_why", None),
+    ("how come you aborted the trip", "incident_why", None),
+    ("what brought you to a standstill after I gave the order", "incident_why", None),
+    # ---- unchecked_rooms
+    ("which part of the lab has gone longest without a visit", "unchecked_rooms", None),
+    ("is there a room you've been ignoring", "unchecked_rooms", None),
+    ("how long since you last set eyes on room B", "unchecked_rooms", "room B"),
+    ("when was room D last covered", "unchecked_rooms", "room D"),
+    ("rooms nobody has inspected in the last 15 minutes", "unchecked_rooms", None),
+    ("which rooms need another look", "unchecked_rooms", None),
+    ("when did you drop in on room A", "unchecked_rooms", "room A"),
+    ("anywhere you haven't been for a long while", "unchecked_rooms", None),
+    # ---- none (not incident questions)
+    ("what do you see right now", None, None),
+    ("how much battery do I have", None, None),
+    ("where is the red box", None, None),
+    ("how far away is the barrel", None, None),
+    ("go to room B and look around", None, None),
+    ("find the mannequin", None, None),
+    ("are you ok", None, None),
+    ("what can you do", None, None),
+    ("is the path to room D clear", None, None),
+    ("how many boxes have you found", None, None),
+    ("turn around", None, None),
+    ("is there a chair nearby", None, None),
+    ("who are you", None, None),
+    ("is anything blocking the doorway", None, None),
+    ("what's your name", None, None),
+    ("can you see the toolbox from here", None, None),
+]

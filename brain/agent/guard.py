@@ -196,8 +196,13 @@ def guard_plan(utterance: str, calls: list[dict], focus: dict | None = None, rec
         for ref in _object_refs(c):
             cls = ref.get("class")
             if cls is not None and cls not in _CLASSES and _is_room_word(str(cls)):
-                return GuardResult([], reply="That sounds like a question about a room. Which room do you mean? Please name one, for example room A.",
-                                   rule="room_not_object", changed=True)      # a room is never an unknown object
+                named = re.search(r"\broom\s+([A-Za-z])\b", utterance)
+                if named:                                                     # the user DID name a room: say what can be asked about it, never ask which one
+                    reply = (f"I can tell you what changed in room {named.group(1).upper()}, when I was last there, or what happened there. "
+                             "Which of those do you want?")
+                else:
+                    reply = "That sounds like a question about a room. Which room do you mean? Please name one, for example room A."
+                return GuardResult([], reply=reply, rule="room_not_object", changed=True)      # a room is never an unknown object
             if cls is not None and cls not in _CLASSES:
                 noun = str(cls).replace("_", " ")
                 say = noun if noun.lower() in utterance.lower() else "that"

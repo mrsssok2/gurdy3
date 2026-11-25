@@ -44,21 +44,21 @@ def _agent():
 
 def test_agent_asks_and_does_not_move_without_yes():
     b, a = _agent()
-    r = a.say("go to room V")
-    assert "Did you mean room B" in r.reply and r.calls == [] and r.llm_calls == 0
+    r = a.say("go to dorway")
+    assert "Did you mean doorway" in r.reply and r.calls == [] and r.llm_calls == 0
     assert a.executor.state == "idle"
 
 
 def test_agent_runs_corrected_request_after_yes():
     b, a = _agent()
-    a.say("go to room V")
+    a.say("go to dorway")
     r = a.say("yes")
-    assert any(c["tool"] == "go_to" for c in r.calls) and "room B" in str(r.calls)
+    assert any(c["tool"] == "go_to" for c in r.calls) and "doorway" in str(r.calls)
 
 
 def test_agent_drops_fix_on_other_answer():
     b, a = _agent()
-    a.say("go to room V")
+    a.say("go to dorway")
     r = a.say("no, go home")
     assert a.pending_fix is None and "room b" not in str(r.calls).lower()
     r = a.say("yes")                        # a stale yes must not resurrect the old request
@@ -67,14 +67,14 @@ def test_agent_drops_fix_on_other_answer():
 
 def test_stop_beats_pending_fix():
     b, a = _agent()
-    a.say("go to room V")
+    a.say("go to dorway")
     r = a.say("stop")
     assert r.reply == "Stopped." and a.pending_fix is None
 
 
 def test_fix_expires():
     b, a = _agent()
-    a.say("go to room V")
+    a.say("go to dorway")
     a.clock.wall = lambda t0=a.clock.wall(): t0 + 100.0       # 100 wall-clock seconds later
     r = a.say("yes")
     assert not any(c["tool"] == "go_to" for c in r.calls)

@@ -519,7 +519,7 @@ class Agent:
     def _incident_route(self, text: str) -> dict | None:
         if not hasattr(self.layer.backend, "incident_query"):
             return None                                       # this backend keeps no timeline: the planner handles the text as before
-        plan = incident_nlu.parse(text, self.layer.backend.known_places())
+        plan = incident_nlu.parse(text, self.layer.backend.known_places(), picker=getattr(self.llm, "incident_picker", None))
         if plan is None:
             return None
         verdict = [{"outcome": "none", "rule": "incident_query"}]

@@ -331,7 +331,8 @@ def test_room_that_does_not_exist_is_said_plainly():
     b, a = _agent()
     r = a.say("Go to room C", 0.9)
     assert r.reply == "There is no room C. I know rooms A and B." and b.task is None
-    assert "Did you mean" in a.say("go to room V", 0.9).reply          # not a plausible room label: still the repair question
+    assert a.say("go to room V", 0.9).reply == "There is no room V. I know rooms A and B."      # Phase 6d: an unknown letter is never "repaired" into a room
+    assert "Did you mean" in a.say("go to dorway", 0.9).reply                                    # a misspelt WORD still gets the repair question
 
 
 def test_new_command_while_confirmation_pending_runs_instead_of_cancelling():
