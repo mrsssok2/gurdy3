@@ -58,6 +58,10 @@ class DemoSession:
         reply = self._add("robot", self.host.say(text.strip()))
         return {"user": user, "reply": reply, "state": self.state()}
 
+    def incidents(self, which, query) -> dict:
+        from web.api.incidents_api import answer
+        return answer(self.host.agent.layer.backend, which, query or {})
+
     # ------------------------------------------------------------------ voice (the browser transcribes; the rules are the real pipeline's)
     def voice_context(self) -> dict:
         """What the browser's Whisper should be biased towards: the vocabulary prompt (place names, objects, colours, commands) and, while the agent

@@ -300,7 +300,7 @@ class TestQueries(unittest.TestCase):
         rig = Rig()
         rig.ib.go_to(place="room B")
         rig.drive(5)
-        rig.ib.note_user_command("stop right now")
+        rig.ib.note_user_command("please cease all motion")
         rig.mb.estop_on() if hasattr(rig.mb, "estop_on") else rig.ib.stop()
         rig.drive(1)
         d = rig.q("incident_why", about="stop").data

@@ -387,6 +387,9 @@ class GurdyWebServer:
         """Demo = simulated robot only. Checked on the real objects, so a RemoteHost / RosBackend / any other telemetry is refused."""
         from brain.mock import MockBackend
         backend = getattr(getattr(getattr(host, "agent", None), "layer", None), "backend", None)
+        from brain.incidents.backend import IncidentBackend
+        while isinstance(backend, IncidentBackend):          # the timeline wrapper is transparent: what it wraps must still be the mock
+            backend = backend._inner
         if not isinstance(backend, MockBackend) or not isinstance(telemetry, MockTelemetry):
             raise ValueError("demo mode serves the MockBackend only (it is meant to be public and must never reach a real robot)")
 
@@ -408,6 +411,10 @@ class GurdyWebServer:
             return {**snap, "demo": True} if self.demo else snap
         except Exception as e:                       # noqa: BLE001  a broken source must not kill the stream
             return {"connected": False, "error": f"{type(e).__name__}: {e}"}
+
+    def incidents(self, sess: Session, which: str, q: dict) -> dict:
+        from .incidents_api import answer
+        return answer(sess.host.agent.layer.backend, which, {k: v[0] for k, v in q.items() if v}, getattr(sess.host, "lock", None))
 
     def say(self, sess: Session, text: str) -> dict:
         sess.chat.add("user", text)
@@ -659,6 +666,8 @@ class _Handler(BaseHTTPRequestHandler):
                 if c is None:
                     return self._json({"available": False})
                 return self._json({"available": True, **{k: v for k, v in c.items() if k != "jpeg"}, "jpeg_b64": base64.b64encode(c["jpeg"]).decode()})
+            if u.path in ("/api/timeline", "/api/changes"):
+                return self._json(self.app.incidents(sess, u.path.rsplit("/", 1)[1], q))
             if u.path == "/api/messages":
                 try:
                     since = int((q.get("since") or ["0"])[0])

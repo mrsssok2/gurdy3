@@ -42,6 +42,15 @@ class TrailBuffer:
         return len(self._pts)
 
 
+def moves_of(backend) -> list[dict]:
+    """Objects the incident graph saw MOVE (old -> new position), for the map arrows. [] when the backend keeps no timeline."""
+    fn = getattr(backend, "moved_objects", None)
+    try:
+        return fn()[-8:] if fn else []
+    except Exception:                                  # noqa: BLE001  a timeline problem must never break the state stream
+        return []
+
+
 class Telemetry(Protocol):
     def snapshot(self) -> dict[str, Any]: ...
     def map(self) -> dict[str, Any]: ...
@@ -98,6 +107,7 @@ class MockTelemetry:
             "zones": [dict(z) for z in getattr(b, "zones", [])],
             "trail": self._trail.points(),
             "path": self._planned_path(b),
+            "moves": moves_of(b),
         }
 
     @staticmethod

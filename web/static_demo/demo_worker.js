@@ -10,6 +10,7 @@ async function boot() {
   const py = await loadPyodide({ indexURL: self.PYODIDE_BASE });
   post({ type: "progress", text: "Loading the robot's code" });
   await py.loadPackage("pyyaml");
+  try { await py.loadPackage("sqlite3"); } catch (e) { /* no sqlite3: the demo runs without the timeline */ }
   const zip = await (await fetch("gurdy_demo.zip")).arrayBuffer();
   py.unpackArchive(zip, "zip", { extractDir: "/home/pyodide/app" });
   py.runPython(`import sys\nsys.path[:0] = ["/home/pyodide/app/pylib", "/home/pyodide/app", "/home/pyodide/app/gurdy_core"]`);

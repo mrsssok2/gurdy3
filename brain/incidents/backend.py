@@ -67,6 +67,16 @@ class IncidentBackend:
             self.recorder.no_go(action, target, self._inner.now())
         return res
 
+    def advance(self, dt: float) -> None:
+        """Mock worlds only (`__getattr__` would pass this through unchecked): advance in <= TICK_S steps and sample after each, so a 3x-speed web demo
+        still looks at every room the way the real robot would."""
+        step = getattr(self._inner, "advance")
+        end = self._inner.now() + dt
+        while self._inner.now() < end - 1e-9:
+            step(min(TICK_S, end - self._inner.now()))
+            with self._lock:
+                self.tick()
+
     def note_user_command(self, text: str) -> None:
         with self._lock:
             self.recorder.user_command(text, self._inner.now())
@@ -93,6 +103,13 @@ class IncidentBackend:
 
     def moved_objects(self, since_wall: float | None = None) -> list[dict]:
         return self.recorder.moved_objects(since_wall)
+
+
+def virtual_wall(inner: Any, start: float | None = None):
+    """Wall clock for a MOCK world whose clock is virtual: start-of-run wall time + sim time, so 'ago' and clock times are consistent at any speed."""
+    import time
+    t0 = time.time() if start is None else start
+    return lambda: t0 + inner.now()
 
 
 def with_incidents(inner: Any, db_path: str | None, map_id: str, wall=None) -> IncidentBackend:

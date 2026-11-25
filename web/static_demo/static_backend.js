@@ -55,6 +55,7 @@
     if (route === "/api/map") return json((await rpc("hello")).map);
     if (route === "/api/state") return json(await rpc("state"));
     if (route === "/api/camera") return json({ available: false });
+    if (route === "/api/timeline" || route === "/api/changes") return json(await rpc("incidents", route.slice(5), Object.fromEntries(url.searchParams)));
     if (route === "/api/messages") return json({ messages: await rpc("chat_since", Number(url.searchParams.get("since") || 0)) });
     if (route === "/api/estop/release") return json({ ok: false });
     if (route === "/api/voice" || route === "/api/tts") return json({ error: "voice is not available in the demo" }, 503);

@@ -9,7 +9,13 @@ def make_agent():
     from brain.mock import MockBackend, gazebo_flat_lab
     from brain.tools import ToolLayer
     b = MockBackend(gazebo_flat_lab())            # the real Gazebo flat_lab layout, generated from its files
-    return Agent(ToolLayer(b), KeywordLLM(b.known_places, smart=True))
+    be = b
+    try:                                          # temporal memory (in RAM, per visitor); the browser build has it only if sqlite3 is available
+        from brain.incidents.backend import virtual_wall, with_incidents
+        be = with_incidents(b, None, b.world.map_id, wall=virtual_wall(b))
+    except ImportError:
+        pass
+    return Agent(ToolLayer(be), KeywordLLM(be.known_places, smart=True))
 
 
 def build_host():

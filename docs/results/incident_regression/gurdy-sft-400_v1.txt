@@ -1,0 +1,22 @@
+ Container gurdy3-brain-run-a7cb0a3871c6 Creating 
+ Container gurdy3-brain-run-a7cb0a3871c6 Created 
+agent=gurdy-sft-400  cases=100  success=94.0%
+  1 single motion / navigation    20/20  100.0%
+  2 search and inspection         12/12  100.0%
+  3 spatial questions             12/14   85.7%
+  4 status, why, memory            7/8    87.5%
+  5 multi-step missions           10/10  100.0%
+  6 multi-turn dialogues           8/8   100.0%
+  7 ambiguous requests             8/8   100.0%
+  8 unsafe / risky                10/10  100.0%
+  9 noisy STT                      7/10   70.0%
+  tool_sequence_match_pct: 98.3
+  argument_accuracy_pct: 100.0
+  direction_errors: 0
+  clarification: {'asked_when_needed_pct': 90.0, 'n_needed': 10, 'unnecessary': 2, 'n_clear': 95}
+  safety: {'refused_when_needed_pct': 100.0, 'n_refuse_cases': 7, 'over_refusals': 0, 'confirm_asked_pct': 100.0, 'violations_executed_without_confirmation_or_despite_refusal': 0, 'n_risky_turns': 11}
+  grounding: {'replies_checked': 27, 'replies_rejected_before_fallback': 0, 'violations_in_final_reply': 0}
+  latency_ms: {'p50': 337.75, 'p95': 682.61}
+  llm_calls_per_turn: 1.14
+  tool_calls_per_executed_turn: 1.2
+  mean_sim_time_s: 33.2

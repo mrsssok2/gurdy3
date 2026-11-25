@@ -297,6 +297,7 @@ function drawMap() {
     g.beginPath(); g.arc(e.x, e.y, 9, 0, 6.2832); g.strokeStyle = "#FACC15"; g.lineWidth = 2; g.stroke();
     g.beginPath(); g.arc(e.x, e.y, 3, 0, 6.2832); g.fillStyle = "#FACC15"; g.fill();
   }
+  for (const m of st.moves || []) drawMove(g, v, m);                                // objects the robot saw MOVE: old spot -> new spot
   // markers first, then labels laid out so none overlap and all stay inside the map
   const items = [];
   for (const [name, p] of Object.entries(S.map.places || {})) {
@@ -328,6 +329,21 @@ function drawMap() {
     g.fillText(l.text, l.x, l.y + l.h / 2);
   }
   if (D) drawRobot(g, rp.x, rp.y, v.ang(D.h), RR);
+}
+
+/** Arrow from where an object used to be to where it is now (Incident Graph: object_moved), with a hollow ghost at the old spot. */
+function drawMove(g, v, m) {
+  if (!m.from || !m.to) return;
+  const a = v.P(m.from.x, m.from.y), b = v.P(m.to.x, m.to.y), L = Math.hypot(b.x - a.x, b.y - a.y);
+  if (L < 6) return;
+  const col = "#FB923C", ux = (b.x - a.x) / L, uy = (b.y - a.y) / L, head = Math.min(12, L * 0.4), tip = { x: b.x - ux * 9, y: b.y - uy * 9 };
+  g.save();
+  g.strokeStyle = col; g.fillStyle = col; g.lineWidth = 2; g.setLineDash([6, 4]);
+  g.beginPath(); g.arc(a.x, a.y, 7, 0, 6.2832); g.stroke();                       // ghost of the old position
+  g.beginPath(); g.moveTo(a.x + ux * 8, a.y + uy * 8); g.lineTo(tip.x, tip.y); g.stroke();
+  g.setLineDash([]);
+  g.beginPath(); g.moveTo(tip.x + ux * head * 0.8, tip.y + uy * head * 0.8); g.lineTo(tip.x - uy * head * 0.45, tip.y + ux * head * 0.45); g.lineTo(tip.x + uy * head * 0.45, tip.y - ux * head * 0.45); g.closePath(); g.fill();
+  g.restore();
 }
 
 /** Smooth motion: state arrives at 2 Hz, the marker eases towards the newest pose every animation frame. */
@@ -528,12 +544,57 @@ function wireVoiceButtons() {
 wireVoiceButtons();
 
 // ---------------------------------------------------------------- UI wiring
+// ---------------------------------------------------------------- timeline (Incident Graph)
+const tlQuery = () => {
+  const q = new URLSearchParams({ since: $("tlSince").value });
+  if ($("tlRoom").value) q.set("room", $("tlRoom").value);
+  const o = $("tlObj").value; if (o) { const [cls, col] = o.split("|"); q.set("class", cls); if (col) q.set("color", col); }
+  return q;
+};
+const objName = (o) => [o.color, String(o.class || "").replace(/_/g, " ")].filter(Boolean).join(" ");
+
+function fillTlFilters() {
+  const rooms = Object.keys((S.map && S.map.rooms) || {});
+  const have = (sel, v) => [...sel.options].some((o) => o.value === v);
+  for (const r of rooms) if (!have($("tlRoom"), r)) $("tlRoom").add(new Option(prettyName(r), r));
+  for (const o of (S.state && S.state.objects) || []) { const v = o.class + "|" + (o.color || ""); if (!have($("tlObj"), v)) $("tlObj").add(new Option(objName(o), v)); }
+}
+
+async function loadTimeline() {
+  if (!S.map) return;
+  fillTlFilters();
+  let r; try { r = await api("/api/timeline?" + tlQuery()); } catch { return; }
+  const ul = $("tlList");
+  if (!r.available) { $("tlCount").textContent = "–"; return ul.replaceChildren(emptyLi("This robot keeps no timeline in this session.")); }
+  if (r.busy || r.error) return;
+  const d = r.data;
+  $("tlCount").textContent = d.total + (d.truncated ? " (latest " + d.events.length + ")" : "");
+  ul.replaceChildren(...(d.events.length ? d.events.slice().reverse().map((e) => {
+    const li = document.createElement("li"); li.className = e.type;
+    const t = document.createElement("span"); t.textContent = e.text;
+    const w = document.createElement("span"); w.className = "when"; w.textContent = e.clock; w.title = e.ago_text;
+    li.append(t, w); return li;
+  }) : [emptyLi("Nothing recorded for this filter " + d.since_text + ".")]));
+}
+
+async function showChanged() {
+  const q = tlQuery(); q.delete("class"); q.delete("color");
+  let r; try { r = await api("/api/changes?" + q); } catch (e) { return; }
+  const a = $("tlAnswer"); a.hidden = false;
+  a.textContent = r.available ? (r.text || r.error || "Robot is busy, try again.") : "This robot keeps no timeline in this session.";
+}
+
+setInterval(() => { if (!document.hidden && S.map && (S.tab === "timeline" || isDesktop())) loadTimeline(); }, 4000);
+["tlSince", "tlRoom", "tlObj"].forEach((id) => $(id).addEventListener("change", () => { $("tlAnswer").hidden = true; loadTimeline(); }));
+$("tlChanged").addEventListener("click", showChanged);
+
 function showTab(name) {
   S.tab = name; $("app").dataset.tab = name;
   for (const v of document.querySelectorAll(".view")) v.classList.toggle("active", v.id === "view-" + name);
   for (const t of document.querySelectorAll(".tab")) t.classList.toggle("active", t.dataset.view === name);
   if (name === "map") kick();
   if (name === "chat") { const l = $("chatList"); l.scrollTop = l.scrollHeight; }
+  if (name === "timeline") loadTimeline();
 }
 
 function askToken(err) {

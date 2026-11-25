@@ -231,7 +231,7 @@ class DashboardAssets(Base):
         for f in ("style.css", "app.js", "lib.js"):
             st, body = request(self.srv, "GET", "/" + f, token=None)
             self.assertEqual(st, 200, f)
-        self.assertEqual([t.lower() for t in re.findall(r'class="tab[^"]*" data-view="(\w+)"', html)], ["map", "chat", "status", "alerts"])
+        self.assertEqual([t.lower() for t in re.findall(r'class="tab[^"]*" data-view="(\w+)"', html)], ["map", "chat", "status", "timeline", "alerts"])
         for color in ("#0E1116", "#161B22", "#2DD4BF", "#D93036"):
             self.assertIn(color.lower(), css.lower())
         for font in ("Inter", "Space Grotesk", "JetBrains Mono"):

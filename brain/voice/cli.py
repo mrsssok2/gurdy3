@@ -31,6 +31,8 @@ def build_local_host(ollama: str | None, lab: bool = False):
     from ..tools import ToolLayer
     from .host import AgentHost
     b = MockBackend(gazebo_flat_lab() if lab else None)
+    from ..incidents.backend import virtual_wall, with_incidents
+    b = with_incidents(b, None, b.world.map_id, wall=virtual_wall(b))          # temporal memory (RAM only: a mock world has no restarts)
     if ollama:
         from ..agent.ollama_llm import OllamaLLM
         llm = OllamaLLM(model=ollama, constrain=not ollama.startswith("gurdy-sft"))

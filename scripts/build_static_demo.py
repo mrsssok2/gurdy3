@@ -24,10 +24,10 @@ PY_FILES = [
     "brain/__init__.py", "brain/eval/__init__.py", "brain/eval/keyword_parser.py", "brain/data_gen/__init__.py", "brain/data_gen/lexicon.py",
     "brain/voice/__init__.py", "brain/voice/host.py", "brain/voice/vocab.py", "brain/voice/transcript_filter.py",
     "gurdy_core/gurdy_core/__init__.py", "gurdy_core/gurdy_core/vision/__init__.py", "gurdy_core/gurdy_core/vision/classes.py",
-    "web/__init__.py", "web/api/demo.py", "web/api/telemetry.py", "web/static_demo/__init__.py", "web/static_demo/session.py",
+    "web/__init__.py", "web/api/demo.py", "web/api/telemetry.py", "web/api/incidents_api.py", "web/static_demo/__init__.py", "web/static_demo/session.py",
     "scripts/gen_world_flat_lab.py", "maps/flat_lab.places.yaml",
 ]
-PY_DIRS = {"brain/agent": ("*.py", "*.yaml"), "brain/mock": ("*.py",), "brain/tools": ("*.py",)}
+PY_DIRS = {"brain/incidents": ("*.py",), "brain/agent": ("*.py", "*.yaml"), "brain/mock": ("*.py",), "brain/tools": ("*.py",)}
 PY_SKIP = {"ollama_llm.py", "cli.py"}            # the LLM client and the terminal chat are not part of the keyword-planner demo
 WEB_API_INIT = '"""Trimmed for the in-browser demo: only the telemetry (the HTTP server is not part of it)."""\nfrom .telemetry import MockTelemetry, Telemetry\n\n__all__ = ["MockTelemetry", "Telemetry"]\n'
 SCRIPTS = ("remote_connect.js", "browser_voice.js", "static_backend.js")      # classic scripts injected before app.js

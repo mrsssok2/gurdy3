@@ -11,7 +11,7 @@ import time
 from collections import deque
 from typing import Any
 
-from .telemetry import TrailBuffer
+from .telemetry import moves_of, TrailBuffer
 
 STALE_AFTER_S = 30.0          # same idea as brain.ros.backend.STALE_AFTER_S: a remembered object not seen for this long is drawn faded
 PATH_POINTS = 40
@@ -85,6 +85,7 @@ class RosTelemetry:
             "objects": objs, "zones": [dict(z) for z in getattr(b, "zones", [])],
             "trail": self._trail.points(), "path": self._planned_path(st),
             "camera_available": bool(self.extras and self.extras.has_camera()),
+            "moves": moves_of(b),
         }
 
     def _planned_path(self, st) -> list[list[float]]:
