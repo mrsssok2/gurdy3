@@ -67,8 +67,29 @@ QUESTIONS = [
       all=[ASSUMED], none=[r"nothing", r"I haven't been in room G"]),
 ]
 
-# EXTERNAL (10 questions written by the user) is added in the final commit before the run; until then the suite is incomplete on purpose.
-EXTERNAL: list = []
+# EXTERNAL: 10 questions written by the user, added in the final commit before the run. Expectations fixed here from the scenario ground truth.
+# z07 has no time word ("overdue"): the documented default applies (1 hour), the robot visited every room within the last hour, so no room should be listed.
+EXTERNAL = [
+    X("z01", "what's been shuffled around since this morning?", ("what_changed", "timeline"),
+      all=[r"red box", r"barrel"], none=[UNCHANGED_WORDS, r"nothing (has )?changed"]),
+    X("z02", "tell me only the things that actually changed", ("what_changed",),
+      all=[r"red box", r"barrel", r"toolbox"], none=[UNCHANGED_WORDS, r"nothing (has )?changed"]),
+    X("z03", "is the barrel still in room D?", ("object_history", "last_seen", "where_is"),
+      all=[r"^\W*no", r"room B"], none=[r"^\W*yes"]),
+    X("z04", "I think someone took something, did they?", ("what_changed", "timeline", "object_history"),
+      all=[r"toolbox"], none=[UNCHANGED_WORDS]),
+    X("z05", "what did room C look like before versus now?", ("what_changed",),
+      all=[r"red box"], none=[r"toolbox", r"barrel", r"nothing (has )?changed"]),
+    X("z06", "when did you last pass through room A?", ("unchecked_rooms", "timeline"),
+      all=[r"room A"], time={"round": 2, "room": "room A", "tol_s": 900}),
+    X("z07", "which rooms are overdue for a check?", ("unchecked_rooms",), unchecked={"threshold_s": 3600}),
+    X("z08", "has the red box gone anywhere?", ("object_history", "last_seen"),
+      all=[r"^\W*yes", r"room A", r"room C"]),
+    X("z09", "is there anything in a room F?", ("unchecked_rooms", "where_am_i"),
+      all=[ASSUMED], none=[r"nothing", r"^\W*yes"]),
+    X("z10", "quick recap, nothing extra", ("timeline",),
+      all=[r"room"], none=[r"no record|haven't recorded anything"]),
+]
 ALL_QUESTIONS = QUESTIONS + EXTERNAL
 BY_ID = {q["id"]: q for q in ALL_QUESTIONS}
 

@@ -23,7 +23,7 @@ class TestSuiteV3(unittest.TestCase):
 
     def test_shape(self):
         self.assertEqual(len(S.QUESTIONS), 20)
-        self.assertEqual(len(S.ALL_QUESTIONS), len(S.QUESTIONS) + len(S.EXTERNAL))
+        self.assertEqual((len(S.EXTERNAL), len(S.ALL_QUESTIONS)), (10, 30))
         self.assertEqual(len({q["id"] for q in S.ALL_QUESTIONS}), len(S.ALL_QUESTIONS))
         for q in S.ALL_QUESTIONS:
             tools = q["expect_tool"] if isinstance(q["expect_tool"], (tuple, list)) else (q["expect_tool"],)
