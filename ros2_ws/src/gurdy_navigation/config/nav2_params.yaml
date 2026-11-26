@@ -59,7 +59,10 @@ bt_navigator:
     robot_base_frame: base_link
     odom_topic: /odom
     bt_loop_duration: 10
-    default_server_timeout: 20
+    # Phase 8a (docs/results/phase8a_nav2_doorways.md): was 20 ms (Nav2 default). Every Nav2 abort in lab4 v3 / postfix_7d (5) and the final eval (6) was
+    # 'Timed out while waiting for action server to acknowledge goal request' for follow_path / compute_path_to_pose during the 1 Hz replanning under CPU load;
+    # such a failure carries no error code, so the BT's recovery subtree refuses to run and the goal aborts at once ('path blocked').
+    default_server_timeout: 1000
     wait_for_service_timeout: 1000
     action_server_result_timeout: 900.0
     navigators: [navigate_to_pose, navigate_through_poses]

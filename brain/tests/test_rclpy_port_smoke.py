@@ -47,3 +47,16 @@ def test_clock_message_and_zero_hold_work_on_a_real_node(port):
         rclpy.spin_once(helper, timeout_sec=0.05)
     helper.destroy_node()
     assert len(got) >= 5 and all(g.linear.x == 0.0 and g.angular.z == 0.0 for g in got)
+
+
+def test_compute_path_retries_once_after_clearing_the_global_costmap(port):
+    calls = []
+    port._plan.server_is_ready = lambda: True
+    port._compute_path_once = lambda x, y, start=None: calls.append("plan") or (None if calls.count("plan") == 1 else {"length_m": 1.0, "points": []})
+    port._clear_global_costmap = lambda: calls.append("clear") or True
+    assert port.compute_path(1.0, 2.0) == {"length_m": 1.0, "points": []}
+    assert calls == ["plan", "clear", "plan"]
+    calls.clear()
+    port._clear_global_costmap = lambda: calls.append("clear") or False      # service not there: no second plan
+    port._compute_path_once = lambda x, y, start=None: calls.append("plan") or None
+    assert port.compute_path(1.0, 2.0) is None and calls == ["plan", "clear"]

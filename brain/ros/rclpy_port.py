@@ -19,6 +19,7 @@ import rclpy
 from geometry_msgs.msg import PoseStamped, Twist
 from gurdy_interfaces.action import Explore
 from nav2_msgs.action import ComputePathToPose, NavigateToPose
+from nav2_msgs.srv import ClearEntireCostmap
 from lifecycle_msgs.srv import GetState
 from nav_msgs.msg import OccupancyGrid, Odometry
 from rclpy.action import ActionClient
@@ -81,6 +82,7 @@ class RclpyPort:
         self._pub_estop = n.create_publisher(Bool, "/estop", _LATCHED)
         self._nav = ActionClient(n, NavigateToPose, "navigate_to_pose")
         self._plan = ActionClient(n, ComputePathToPose, "compute_path_to_pose")
+        self._clear_global = n.create_client(ClearEntireCostmap, "/global_costmap/clear_entirely_global_costmap")
         self._explore = ActionClient(n, Explore, "explore")
         if spin:
             self._ex = MultiThreadedExecutor(num_threads=3)
@@ -270,8 +272,26 @@ class RclpyPort:
             g["state"] = NAV_CANCELED
 
     def compute_path(self, x, y, start=None):
+        """Plan with Nav2's planner. A failed plan is retried ONCE after clearing the global costmap's obstacle marks (the static map stays):
+        the same planner recovery Nav2's own navigate_to_pose BT does (ClearGlobalCostmap-Context), which this direct planner call (the
+        safety checker's path check) skipped. Phase 8a: one 'blocked or unknown space' refusal from inside room C next to the C-A doorway."""
         if not self._plan.server_is_ready():
             return None
+        r = self._compute_path_once(x, y, start)
+        if r is None and self._clear_global_costmap():
+            r = self._compute_path_once(x, y, start)
+        return r
+
+    def _clear_global_costmap(self) -> bool:
+        if not self._clear_global.service_is_ready():
+            return False
+        res = self._wait(self._clear_global.call_async(ClearEntireCostmap.Request()), 2.0)
+        if res is None:
+            return False
+        time.sleep(0.3)                                    # let the obstacle layer re-mark from the next scans before re-planning
+        return True
+
+    def _compute_path_once(self, x, y, start=None):
         goal = ComputePathToPose.Goal()
         goal.goal = self._pose_msg(x, y, None)
         goal.use_start = start is not None                 # default: from the robot's current pose
