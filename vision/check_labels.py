@@ -19,7 +19,8 @@ from PIL import Image, ImageDraw
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "gurdy_core"))
 from gurdy_core.vision.classes import CLASSES  # noqa: E402
 
-COL = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6"]
+COL = ["#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6",
+       "#d62a2a", "#7a5c00", "#00a3c4", "#c400a3", "#4d4d4d"]   # 7-11: Phase 9b small classes
 
 
 def main():
@@ -28,6 +29,9 @@ def main():
     ap.add_argument("--samples", type=int, default=5); ap.add_argument("--scale", type=int, default=3)
     a = ap.parse_args()
     data, out = Path(a.data), Path(a.out)
+    global CLASSES
+    if (data / "classes.json").exists():               # Phase 9b v3 datasets carry their 12 class names
+        CLASSES = tuple(json.loads((data / "classes.json").read_text()))
     out.mkdir(parents=True, exist_ok=True)
     metas = sorted(data.glob("meta/*/*.json"))
     n_box = n_match = n_gt = n_gt_box = n_empty = 0

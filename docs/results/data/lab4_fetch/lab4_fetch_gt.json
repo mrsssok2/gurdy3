@@ -1,0 +1,264 @@
+{
+ "world": "lab4_fetch",
+ "bounds": [
+  -2.0,
+  6.0,
+  -2.0,
+  6.0
+ ],
+ "doors": {
+  "A-B": [
+   2.0,
+   -0.7
+  ],
+  "B-D": [
+   4.0,
+   2.0
+  ],
+  "D-C": [
+   2.0,
+   4.2
+  ],
+  "C-A": [
+   -0.7,
+   2.0
+  ]
+ },
+ "objects": [
+  {
+   "name": "red_box",
+   "class": "box",
+   "x": -1.2,
+   "y": -1.3,
+   "color": "red",
+   "room": "room A",
+   "pickable": false
+  },
+  {
+   "name": "cone_a",
+   "class": "traffic_cone",
+   "x": 1.3,
+   "y": 1.3,
+   "color": "",
+   "room": "room A",
+   "pickable": false
+  },
+  {
+   "name": "blue_box",
+   "class": "box",
+   "x": 5.0,
+   "y": -1.2,
+   "color": "blue",
+   "room": "room B",
+   "pickable": false
+  },
+  {
+   "name": "barrel_blue",
+   "class": "barrel",
+   "x": 4.9,
+   "y": 1.2,
+   "color": "blue",
+   "room": "room B",
+   "pickable": false
+  },
+  {
+   "name": "yellow_box",
+   "class": "box",
+   "x": -1.3,
+   "y": 5.0,
+   "color": "yellow",
+   "room": "room C",
+   "pickable": false
+  },
+  {
+   "name": "extinguisher",
+   "class": "fire_extinguisher",
+   "x": -1.4,
+   "y": 3.0,
+   "color": "",
+   "room": "room C",
+   "pickable": false
+  },
+  {
+   "name": "barrel_red",
+   "class": "barrel",
+   "x": 5.1,
+   "y": 5.0,
+   "color": "red",
+   "room": "room D",
+   "pickable": false
+  },
+  {
+   "name": "mannequin",
+   "class": "mannequin",
+   "x": 3.0,
+   "y": 3.0,
+   "color": "",
+   "room": "room D",
+   "pickable": false
+  },
+  {
+   "name": "toolbox",
+   "class": "toolbox",
+   "x": 3.2,
+   "y": 5.3,
+   "color": "",
+   "room": "room D",
+   "pickable": false
+  },
+  {
+   "name": "cone_d",
+   "class": "traffic_cone",
+   "x": 5.2,
+   "y": 3.0,
+   "color": "",
+   "room": "room D",
+   "pickable": false
+  },
+  {
+   "name": "red_cube",
+   "class": "small_box",
+   "color": "red",
+   "x": 1.2,
+   "y": -1.4,
+   "z": 0.025,
+   "size": [
+    0.05,
+    0.05,
+    0.05
+   ],
+   "yaw": 0.3,
+   "mass": 0.05,
+   "room": "room A",
+   "pickable": true,
+   "model": "f_red_cube"
+  },
+  {
+   "name": "blue_can",
+   "class": "can",
+   "color": "blue",
+   "x": -1.3,
+   "y": 0.3,
+   "z": 0.06,
+   "size": [
+    0.066,
+    0.066,
+    0.12
+   ],
+   "yaw": 0.0,
+   "mass": 0.06,
+   "room": "room A",
+   "pickable": true,
+   "model": "f_blue_can"
+  },
+  {
+   "name": "orange_cone",
+   "class": "mini_cone",
+   "color": "orange",
+   "x": 3.2,
+   "y": -1.4,
+   "z": 0.05,
+   "size": [
+    0.08,
+    0.08,
+    0.1
+   ],
+   "yaw": 0.0,
+   "mass": 0.03,
+   "room": "room B",
+   "pickable": true,
+   "model": "f_orange_cone"
+  },
+  {
+   "name": "red_mini_extinguisher",
+   "class": "mini_extinguisher",
+   "color": "red",
+   "x": 5.3,
+   "y": 0.0,
+   "z": 0.075,
+   "size": [
+    0.05,
+    0.05,
+    0.15
+   ],
+   "yaw": 1.2,
+   "mass": 0.08,
+   "room": "room B",
+   "pickable": true,
+   "model": "f_red_mini_extinguisher"
+  },
+  {
+   "name": "yellow_mini_toolbox",
+   "class": "mini_toolbox",
+   "color": "yellow",
+   "x": 0.9,
+   "y": 5.3,
+   "z": 0.0475,
+   "size": [
+    0.12,
+    0.05,
+    0.095
+   ],
+   "yaw": 0.5,
+   "mass": 0.08,
+   "room": "room C",
+   "pickable": true,
+   "model": "f_yellow_mini_toolbox"
+  },
+  {
+   "name": "red_can",
+   "class": "can",
+   "color": "red",
+   "x": 1.3,
+   "y": 2.6,
+   "z": 0.06,
+   "size": [
+    0.066,
+    0.066,
+    0.12
+   ],
+   "yaw": 0.0,
+   "mass": 0.06,
+   "room": "room C",
+   "pickable": true,
+   "model": "f_red_can"
+  },
+  {
+   "name": "blue_cube",
+   "class": "small_box",
+   "color": "blue",
+   "x": 4.2,
+   "y": 5.4,
+   "z": 0.025,
+   "size": [
+    0.05,
+    0.05,
+    0.05
+   ],
+   "yaw": -0.4,
+   "mass": 0.05,
+   "room": "room D",
+   "pickable": true,
+   "model": "f_blue_cube"
+  },
+  {
+   "name": "green_cone",
+   "class": "mini_cone",
+   "color": "green",
+   "x": 5.3,
+   "y": 4.0,
+   "z": 0.05,
+   "size": [
+    0.08,
+    0.08,
+    0.1
+   ],
+   "yaw": 0.0,
+   "mass": 0.03,
+   "room": "room D",
+   "pickable": true,
+   "model": "f_green_cone"
+  }
+ ],
+ "note": "big objects: lab4_gt.json (x, y only, static); small objects: 3D centre, size, mass (dynamic models)"
+}

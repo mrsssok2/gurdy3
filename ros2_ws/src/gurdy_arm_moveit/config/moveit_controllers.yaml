@@ -1,0 +1,14 @@
+# MoveIt executes ARM trajectories only; the gripper is closed / opened by the fetch backend with effort control
+# (close until the fingers stall = object between them; Phase 9a plan section 4), not by MoveIt.
+moveit_controller_manager: moveit_simple_controller_manager/MoveItSimpleControllerManager
+moveit_simple_controller_manager:
+  controller_names: [arm_controller]
+  arm_controller:
+    type: FollowJointTrajectory
+    action_ns: follow_joint_trajectory
+    default: true
+    joints: [arm_yaw, arm_shoulder, arm_elbow, arm_wrist_pitch, arm_wrist_roll]
+trajectory_execution:
+  allowed_execution_duration_scaling: 1.5
+  allowed_goal_duration_margin: 1.0
+  allowed_start_tolerance: 0.02

@@ -24,5 +24,6 @@ setup(
         "leg_odometry_node = gurdy_navigation.leg_odometry_node:main",
         "cmd_vel_min_speed_node = gurdy_navigation.cmd_vel_min_speed_node:main",
         "scan_self_filter_node = gurdy_navigation.scan_self_filter_node:main",
-        "frontier_explorer_node = gurdy_navigation.frontier_explorer_node:main"]},
+        "frontier_explorer_node = gurdy_navigation.frontier_explorer_node:main",
+        "low_obstacle_node = gurdy_navigation.low_obstacle_node:main"]},
 )

@@ -18,7 +18,11 @@ import numpy as np
 from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "gurdy_core"))
-from gurdy_core.vision.classes import CLASSES, radius_prior  # noqa: E402
+from gurdy_core.vision.classes import CLASSES, CLASSES_V3, SIZE_PRIOR_SMALL, SMALL_CLASSES, radius_prior  # noqa: E402
+
+
+def _radius(name):
+    return 0.5 * min(SIZE_PRIOR_SMALL[name][:2]) if name in SIZE_PRIOR_SMALL else radius_prior(name)
 from gurdy_core.vision.detector import OnnxDetector, iou_xyxy  # noqa: E402
 from gurdy_core.vision.geometry import K_from_camera_info, backproject, box_depth, surface_to_centre  # noqa: E402
 from gurdy_core.vision.metrics import evaluate  # noqa: E402
@@ -43,13 +47,16 @@ def main():
     ap.add_argument("--conf", type=float, default=0.35)
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--out", default="")
+    ap.add_argument("--classes", default="v1", choices=["v1", "v3"],
+                    help="v1: the 7 deployed classes; v3: 12 classes (Phase 9b model, old ids 0-6 unchanged)")
     a = ap.parse_args()
+    NAMES = CLASSES_V3 if a.classes == "v3" else CLASSES
     root = Path(a.data)
     files = sorted((root / "images" / a.split).glob("*.png"))[: a.limit or None]
     imgs = [np.array(Image.open(f).convert("RGB")) for f in files]
     rows, report = [], []
     for prov in a.providers:
-        det = OnnxDetector(a.model, "CUDAExecutionProvider" if prov == "cuda" else "CPUExecutionProvider", conf=0.05)
+        det = OnnxDetector(a.model, "CUDAExecutionProvider" if prov == "cuda" else "CPUExecutionProvider", conf=0.05, names=NAMES)
         if prov == "cuda" and "CUDA" not in det.provider:
             report.append(f"- {prov}: CUDA provider not available (got {det.provider}), skipped")
             continue
@@ -80,15 +87,21 @@ def main():
                         z, _ = box_depth(depth, d.box)
                         if z is None:
                             continue
-                        est = surface_to_centre(backproject(u, v, z, K), radius_prior(d.name))
+                        est = surface_to_centre(backproject(u, v, z, K), _radius(d.name))
                         errs.append((float(np.linalg.norm(est - np.array(g["p_cam"]))), float(np.linalg.norm(g["p_cam"]))))
-            res = evaluate(per_image, len(CLASSES), 0.5, a.conf)
+            res = evaluate(per_image, len(NAMES), 0.5, a.conf)
     lines = [f"# Phase 4 detector evaluation — {Path(a.model).name} on {a.data}/{a.split} ({len(files)} images)", "",
              f"| class | GT | AP50 | precision@{a.conf} | recall@{a.conf} |", "|---|---|---|---|---|"]
-    for c, n in enumerate(CLASSES):
+    for c, n in enumerate(NAMES):
         r = res[c]
         lines.append(f"| {n} | {r['n_gt']} | {r['ap']:.3f} | {r['precision']:.3f} | {r['recall']:.3f} |")
     lines += [f"| **mAP50** | | **{res['mAP']:.3f}** | | |", ""]
+    if a.classes == "v3":       # regression guard: the old classes alone, and small-class false positives
+        old = [res[c]["ap"] for c in range(len(CLASSES)) if res[c]["n_gt"] > 0]
+        fp_small = sum(1 for im in per_image for cls, sc_, _ in im["pred"] if sc_ >= a.conf and NAMES[cls] in SMALL_CLASSES
+                       and not any(g[0] == cls for g in im["gt"]))
+        lines += [f"mAP50 over the {len(old)} old classes with GT: {np.mean(old):.3f}" if old else "no old-class GT in this split",
+                  f"small-class detections (score >= {a.conf}) in images without that class: {fp_small} in {len(per_image)} images", ""]
     if errs:
         e = np.array(errs)
         lines += [f"3D centre error (camera frame, {len(e)} true positives): median {np.median(e[:, 0]):.3f} m, "

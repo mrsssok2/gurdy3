@@ -1,0 +1,18 @@
+# Controllers for the second <ros2_control> block (GurdyArmSystem, gurdy_arm.xacro). To be MERGED into the controller
+# manager file the sim uses (gurdy_control) when arm:=true; whether gz_ros2_control loads two hardware blocks is TO VERIFY.
+controller_manager:
+  ros__parameters:
+    arm_controller: {type: joint_trajectory_controller/JointTrajectoryController}
+    gripper_controller: {type: effort_controllers/JointGroupEffortController}
+arm_controller:
+  ros__parameters:
+    joints: [arm_yaw, arm_shoulder, arm_elbow, arm_wrist_pitch, arm_wrist_roll]
+    command_interfaces: [position]
+    state_interfaces: [position, velocity]
+    allow_partial_joints_goal: false
+    constraints:
+      stopped_velocity_tolerance: 0.05
+      goal_time: 1.0
+gripper_controller:
+  ros__parameters:
+    joints: [arm_finger_left_joint, arm_finger_right_joint]
