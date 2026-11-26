@@ -19,9 +19,10 @@ A new Gazebo world with four rooms (A–D) and objects (fire extinguisher, barre
 |---|---|---|---|
 | lab4 v1 | 32 × 3 | 80 % (75–84 %) | 0 |
 | lab4 v2 (new missions, after fixes) | 32 × 3 | **88 % (84–91 %)** | 0 |
+| lab4 v3 (new missions, after Step B + Phase 7b) | 33 × 3 | **79 % (76–82 %)** | 0 |
 | flat_lab regression (after all fixes) | 27 × 1 | **27/27** | 0 |
 
-v1 and v2 are different mission sets, so the scores are not a like-for-like comparison.
+v1, v2 and v3 are different mission sets, so the scores are not a like-for-like comparison.
 
 ### Fixes driven by the held-out failures
 - **Room names first:** "go to Charlie" goes to room C, not the chair
@@ -109,7 +110,7 @@ The fixes are deterministic text rules in front of the planner (`brain/agent/unt
 - The safety rules are **English-only regex**: paraphrases, other languages, encodings or text split across turns still depend on the older layers (planner, safety checker, validators). The red-team suites are small (70 cases), single model, temperature 0, mock robot, no speech or web gateway.
 - Spoofed-looking text refuses the whole turn, so a real command mixed with such framing has to be repeated plainly.
 - Most live numbers are **single runs** (one run per mission, one live incident eval); no variance estimate.
-- **lab4 v3 results are pending**: the suite is committed and has not been run yet (`scripts/heldout_lab4_v3_runs.sh`).
+- **lab4 v3** (33 new missions, 3 runs, `docs/results/phase5_heldout_lab4_v3.md`): **79 % mean (76-82 %)**, 0 falls, 0 wrong claims, 1 retry, 1 timeout. 6 missions fail in all 3 runs (two of them from refusals that should have been actions: a Phase 7b rule and an old `run over` regex), 2 are flaky. Multi-room 4/12 and objects 9/15 are the weak categories; ambiguity 9/9 and stop 9/9 improved. Not comparable one-to-one with v2 (different missions).
 
 ### Start in the lab4 world
 ```bash
