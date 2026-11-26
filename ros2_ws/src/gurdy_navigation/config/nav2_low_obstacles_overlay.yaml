@@ -1,0 +1,28 @@
+# Phase 9c OVERLAY (optional, NOT applied by default; nav2_params.yaml is unchanged):
+#   params = gurdy_navigation.param_overlay.apply_overlay(nav2_params, this file)   (deep merge; lists are replaced)
+# Adds the body-depth-camera low obstacles (low_obstacle_node) to the LOCAL costmap only (rolling 4 x 4 m window, odom
+# frame: marks persist while the robot walks past; the global costmap / planner stays LiDAR-only at first) and to the
+# collision monitor. Height windows are wide on purpose: the node already removed floor and self points, and the
+# z of the floor in the odom frame (0 or -0.11) still has to be confirmed in Gazebo.
+local_costmap:
+  local_costmap:
+    ros__parameters:
+      plugins: [obstacle_layer, low_obstacle_layer, inflation_layer]      # inflation stays last
+      low_obstacle_layer:
+        plugin: nav2_costmap_2d::ObstacleLayer
+        enabled: true
+        footprint_clearing_enabled: true
+        combination_method: 1                                             # max with the layers below
+        observation_sources: low_mark low_clear
+        low_mark: {topic: /low_obstacles/marking, data_type: PointCloud2, marking: true, clearing: false,
+          sensor_frame: camera_optical_frame, min_obstacle_height: -0.3, max_obstacle_height: 0.6,
+          obstacle_min_range: 0.0, obstacle_max_range: 1.8, expected_update_rate: 0.0, observation_persistence: 0.0,
+          inf_is_valid: false}
+        low_clear: {topic: /low_obstacles/clearing, data_type: PointCloud2, marking: false, clearing: true,
+          sensor_frame: camera_optical_frame, min_obstacle_height: -0.3, max_obstacle_height: 0.6,
+          raytrace_min_range: 0.0, raytrace_max_range: 1.9, expected_update_rate: 0.0, observation_persistence: 0.0,
+          inf_is_valid: false}
+collision_monitor:
+  ros__parameters:
+    observation_sources: [scan, low_obstacles]
+    low_obstacles: {type: pointcloud, topic: /low_obstacles/marking, min_height: -0.3, max_height: 0.6, enabled: true}

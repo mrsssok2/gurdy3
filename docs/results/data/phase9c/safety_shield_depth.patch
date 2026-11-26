@@ -1,0 +1,84 @@
+--- a/ros2_ws/src/gurdy_safety/gurdy_safety/safety_shield_node.py
++++ b/ros2_ws/src/gurdy_safety/gurdy_safety/safety_shield_node.py
+@@ -15,19 +15,25 @@
+ Status: /shield/status (std_msgs/String, JSON: state pass|active|stale|no_scan, active, reduction 0..1, min_clearance m,
+ n_constraints, n_self_hits, scan_age s, cmd_in, cmd_out) at 5 Hz while commands flow and on every state change.
+ Start it with `sim.launch.py shield:=true` (default false).
++Phase 9c (default OFF): use_depth_obstacles:=true also takes the low obstacles of low_obstacle_node (/low_obstacles/shield,
++PointCloud2 in base_link: points below the LiDAR plane seen by the body depth camera, incl. its 10 s memory) as obstacle
++points. They are added to the LiDAR points of every scan update. Depth points older than depth_timeout are ignored
++(the LiDAR alone still protects; status field depth_stale) - the depth camera is not required for the fail-safe.
+ """
+ import json
+ import time
+ 
++import numpy as np
++
+ import rclpy
+ from geometry_msgs.msg import Twist
+ from rclpy.node import Node
+ from rclpy.qos import qos_profile_sensor_data
+-from sensor_msgs.msg import LaserScan
++from sensor_msgs.msg import LaserScan, PointCloud2
+ from std_msgs.msg import String
+ 
+ from gurdy_core.robot import load_robot
+-from gurdy_core.safety_shield import SafetyShield, ShieldConfig
++from gurdy_core.safety_shield import SafetyShield, ShieldConfig, scan_to_points
+ from gurdy_navigation.footprint import footprint_polygon
+ 
+ 
+@@ -36,7 +42,8 @@
+         super().__init__("safety_shield_node")
+         p = {"robot_yaml": "", "input_topic": "/cmd_vel", "output_topic": "/cmd_vel_shielded", "scan_topic": "/scan",
+              "status_topic": "/shield/status", "d_safe": 0.10, "alpha": 2.0, "self_margin": 0.02, "influence": 0.60,
+-             "footprint_margin": 0.04, "scan_timeout": 0.5, "cmd_timeout": 0.5, "rate_hz": 20.0, "scale_only": False}
++             "footprint_margin": 0.04, "scan_timeout": 0.5, "cmd_timeout": 0.5, "rate_hz": 20.0, "scale_only": False,
++             "use_depth_obstacles": False, "depth_topic": "/low_obstacles/shield", "depth_timeout": 0.5}
+         for k, v in p.items():
+             self.declare_parameter(k, v)
+         g = lambda k: self.get_parameter(k).value          # noqa: E731
+@@ -57,6 +64,11 @@
+         self.create_subscription(Twist, g("input_topic"), self.on_cmd, 10)
+         self.create_subscription(LaserScan, g("scan_topic"), self.on_scan, qos_profile_sensor_data)
+         self.create_timer(1.0 / float(g("rate_hz")), self.tick)
++        self.use_depth = bool(g("use_depth_obstacles"))
++        self.depth_timeout = float(g("depth_timeout"))
++        self.depth_xy, self.depth_t = [], None
++        if self.use_depth:
++            self.create_subscription(PointCloud2, g("depth_topic"), self.on_depth_points, 2)
+         self.get_logger().info(f"shield: {g('input_topic')} -> {g('output_topic')}, d_safe {cfg.d_safe} m, "
+                                f"alpha {cfg.alpha} 1/s, scan {g('scan_topic')} (timeout {cfg.scan_timeout} s)")
+ 
+@@ -64,8 +76,20 @@
+     def now():
+         return time.monotonic()
+ 
++    def on_depth_points(self, m: PointCloud2):
++        from sensor_msgs_py import point_cloud2
++        pts = point_cloud2.read_points_numpy(m, field_names=("x", "y"), skip_nans=True) if m.width * m.height else np.zeros((0, 2))
++        self.depth_xy = [(float(x), float(y)) for x, y in np.asarray(pts).reshape(-1, 2)]
++        self.depth_t = self.now()
++
++    def depth_fresh(self) -> bool:
++        return self.use_depth and self.depth_t is not None and self.now() - self.depth_t <= self.depth_timeout
++
+     def on_scan(self, m: LaserScan):
+-        self.shield.update_laserscan(m.ranges, m.angle_min, m.angle_increment, m.range_min, m.range_max, self.now())
++        pts = scan_to_points(m.ranges, m.angle_min, m.angle_increment, m.range_min, m.range_max, self.shield.cfg.lidar_origin)
++        if self.depth_fresh():
++            pts = pts + self.depth_xy                     # low obstacles (base_link xy) from the body depth camera
++        self.shield.update_scan(pts, self.now())
+ 
+     def on_cmd(self, m: Twist):
+         self.cmd, self.cmd_t = (m.linear.x, m.linear.y, m.angular.z), self.now()
+@@ -90,6 +114,9 @@
+             d = st.as_dict()
+             d["cmd_in"] = [round(v, 4) for v in self.cmd]
+             d["cmd_out"] = [round(v, 4) for v in u]
++            if self.use_depth:
++                d["depth_points"] = len(self.depth_xy) if self.depth_fresh() else 0
++                d["depth_stale"] = not self.depth_fresh()
+             self.status_pub.publish(String(data=json.dumps(d)))
+             self.last_state, self.last_status_t = st.state, t
+ 
