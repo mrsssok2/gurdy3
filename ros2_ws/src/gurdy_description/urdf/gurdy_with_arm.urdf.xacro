@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!-- Phase 9a: Gurdy + optional arm. Includes the UNCHANGED gurdy.urdf.xacro (all its args pass through) and adds the arm
+     only with arm:=true (default false -> identical to gurdy.urdf.xacro). Not used by any launch file yet.
+       xacro gurdy_with_arm.urdf.xacro arm:=true [sim_gazebo:=true ...] [arm_fallback_model:=small_box_1]
+-->
+<robot name="gurdy" xmlns:xacro="http://www.ros.org/wiki/xacro">
+  <xacro:arg name="arm" default="false"/>
+  <xacro:arg name="arm_yaml" default="$(find gurdy_description)/config/arm.yaml"/>
+  <xacro:arg name="arm_fallback_model" default=""/>   <!-- DetachableJoint FALLBACK target; empty = real contact only -->
+
+  <xacro:include filename="gurdy.urdf.xacro"/>
+
+  <xacro:if value="$(arg arm)">
+    <xacro:include filename="gurdy_arm.xacro"/>
+    <xacro:gurdy_arm parent="base_link" arm_yaml="$(arg arm_yaml)" sim_gazebo="$(arg sim_gazebo)"
+                     fallback_model="$(arg arm_fallback_model)"/>
+  </xacro:if>
+</robot>
