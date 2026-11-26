@@ -47,8 +47,29 @@ def controllers_params(robot, js_rate: int) -> dict:
     }
 
 
+def arm_controllers(ctrl: dict) -> dict:
+    """Phase 9 (arm:=true only): add the arm / gripper controllers of gurdy_arm_moveit/config/ros2_controllers.yaml to
+    the controller-manager parameters (loaded lazily: without the arm nothing here runs)."""
+    with open(os.path.join(get_package_share_directory("gurdy_arm_moveit"), "config", "ros2_controllers.yaml")) as f:
+        extra = yaml.safe_load(f)
+    out = dict(ctrl)
+    out["controller_manager"] = {"ros__parameters": {**ctrl["controller_manager"]["ros__parameters"],
+                                                     **extra["controller_manager"]["ros__parameters"]}}
+    for k, v in extra.items():
+        if k != "controller_manager":
+            out[k] = v
+    return out
+
+
+WRIST_BRIDGE = ["/wrist_camera/image@sensor_msgs/msg/Image[gz.msgs.Image",
+                "/wrist_camera/depth_image@sensor_msgs/msg/Image[gz.msgs.Image",
+                "/wrist_camera/camera_info@sensor_msgs/msg/CameraInfo[gz.msgs.CameraInfo",
+                "/wrist_camera/trigger@std_msgs/msg/Bool]gz.msgs.Boolean"]
+
+
 def _setup(context):
     gui = LaunchConfiguration("gui").perform(context).lower() == "true"
+    arm = LaunchConfiguration("arm").perform(context).lower() == "true"
     fixed = LaunchConfiguration("fixed_base").perform(context).lower() == "true"
     sensors = LaunchConfiguration("sensors").perform(context).lower() == "true"
     lidar = LaunchConfiguration("lidar").perform(context).lower() == "true"
@@ -61,13 +82,16 @@ def _setup(context):
 
     fd, ctrl_yaml = tempfile.mkstemp(prefix="gurdy_controllers_", suffix=".yaml")
     with os.fdopen(fd, "w") as f:
-        yaml.safe_dump(controllers_params(robot, int(LaunchConfiguration("js_rate").perform(context))), f)
+        ctrl = controllers_params(robot, int(LaunchConfiguration("js_rate").perform(context)))
+        yaml.safe_dump(arm_controllers(ctrl) if arm else ctrl, f)
 
     q0 = leg_ik(robot, nominal_foot(robot))
     base_z = 0.3 if fixed else robot.stance["body_height"] + 0.005
     urdf = xacro.process_file(
-        os.path.join(desc_share, "urdf", "gurdy.urdf.xacro"),
+        os.path.join(desc_share, "urdf", "gurdy_with_arm.urdf.xacro" if arm else "gurdy.urdf.xacro"),
         mappings={"sim_gazebo": "true", "controllers_yaml": ctrl_yaml, "robot_yaml": robot_yaml,
+                  **({"arm": "true", "arm_yaml": LaunchConfiguration("arm_yaml").perform(context)
+                      or os.path.join(desc_share, "config", "arm.yaml")} if arm else {}),
                   "initial_q": " ".join(f"{v:.6f}" for v in q0),
                   "fixed_base": str(fixed).lower(), "base_z": str(base_z),
                   "sensors": str(sensors).lower(), "lidar": str(lidar).lower()},
@@ -96,11 +120,18 @@ def _setup(context):
                arguments=["joint_state_broadcaster", "--controller-manager-timeout", "60"])
     pd = Node(package="controller_manager", executable="spawner",
               arguments=["joint_pd_controller", "--controller-manager-timeout", "60"])
-    return [
+    actions = [
         gz, rsp, clock, spawn,
         RegisterEventHandler(OnProcessExit(target_action=spawn, on_exit=[jsb])),
         RegisterEventHandler(OnProcessExit(target_action=jsb, on_exit=[pd])),
     ]
+    if arm:      # Phase 9: arm + gripper controllers after the legs' PD, wrist camera topics + trigger
+        arm_sp = Node(package="controller_manager", executable="spawner",
+                      arguments=["arm_controller", "gripper_controller", "--controller-manager-timeout", "60"])
+        actions += [RegisterEventHandler(OnProcessExit(target_action=pd, on_exit=[arm_sp])),
+                    Node(package="ros_gz_bridge", executable="parameter_bridge", output="screen", arguments=WRIST_BRIDGE,
+                         parameters=[{"use_sim_time": True}])]
+    return actions
 
 
 def generate_launch_description():
@@ -111,6 +142,8 @@ def generate_launch_description():
         DeclareLaunchArgument("sensors", default_value="true", description="IMU, RGB-D camera, GT odom"),
         DeclareLaunchArgument("lidar", default_value="false", description="2D lidar on /scan (nav profile)"),
         DeclareLaunchArgument("js_rate", default_value="100", description="/joint_states rate (Hz)"),
+        DeclareLaunchArgument("arm", default_value="false", description="Phase 9: spawn with the arm + gripper + wrist camera"),
+        DeclareLaunchArgument("arm_yaml", default_value="", description="alternative arm.yaml (e.g. + payload mass)"),
         DeclareLaunchArgument("robot_yaml", default_value="",
                               description="alternative robot.yaml (experiments / fault injection)"),
         OpaqueFunction(function=_setup),

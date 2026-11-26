@@ -47,7 +47,8 @@ def _gazebo_setup(context):
         PythonLaunchDescriptionSource(os.path.join(
             get_package_share_directory("gurdy_gazebo"), "launch", "sim.launch.py")),
         launch_arguments={"gui": lc["gui"], "sensors": sensors, "lidar": lidar, "world": world,
-                          "robot_yaml": lc["robot_yaml"], "js_rate": lc["js_rate"]}.items())]
+                          "robot_yaml": lc["robot_yaml"], "js_rate": lc["js_rate"], "arm": lc.get("arm", "false"),
+                          "arm_yaml": lc.get("arm_yaml", "")}.items())]
 
 
 def generate_launch_description():
@@ -97,6 +98,8 @@ def generate_launch_description():
            DeclareLaunchArgument("detector_log", default_value="", description="JSON-lines log of every detector sighting"),
            DeclareLaunchArgument("target_frame", default_value="map", description="frame of the semantic map (odom without SLAM)"),
            DeclareLaunchArgument("estop_gate", default_value="false", description="cmd_vel e-stop gate (gurdy_safety) in front of the controller"),
+           DeclareLaunchArgument("arm", default_value="false", description="Phase 9: arm + gripper + wrist camera (gurdy_with_arm)"),
+           DeclareLaunchArgument("arm_yaml", default_value="", description="Phase 9: alternative arm.yaml"),
            DeclareLaunchArgument("shield", default_value="false",
                                  description="Phase 8b LiDAR safety shield (CBF) on /cmd_vel; needs a /scan (nav:=slam|localization)"),
            DeclareLaunchArgument("model", default_value=""), sim, gait, policy, estop_gate, safety_shield, perception, rviz])
