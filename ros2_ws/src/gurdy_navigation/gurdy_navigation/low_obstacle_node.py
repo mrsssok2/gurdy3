@@ -10,7 +10,15 @@
 Memory: odom-frame points, ttl 10 s, forgotten when the camera sees through them (the camera sees only 60 deg ahead,
 nothing closer than ~0.35 m in front of base_link). Without TF odom <- camera the memory is skipped (current frame only).
 Rate limited to `max_rate_hz` (default 5) because the costmap updates at 5 Hz.
+
+Phase 9f, wrist:=true (default false; needs arm:=true): the wrist RGB-D (/wrist_camera/depth_image + camera_info; it
+renders only while picking, triggered) is a SECOND source with its own self filter: legs + arm + gripper (finger
+opening from /joint_states) + the held object (/fetch/held_object, std_msgs/String JSON {"radius": r, "height": h}, ""
+= nothing held). Its clouds go to /low_obstacles/wrist_marking + /low_obstacles/wrist_clearing (the costmap ray-traces
+them from wrist_camera_optical_frame, see the overlay), and its points (if younger than wrist_timeout) are merged into
+/low_obstacles/shield. So backing up to an object is not blind any more (the body camera looks forward only).
 """
+import json
 import math
 import time
 
@@ -20,6 +28,7 @@ from rclpy.node import Node
 from rclpy.qos import qos_profile_sensor_data
 from sensor_msgs.msg import CameraInfo, Image, JointState, PointCloud2
 from sensor_msgs_py import point_cloud2
+from std_msgs.msg import String
 from tf2_ros import Buffer, TransformListener
 
 from gurdy_core import low_obstacles as LO
@@ -40,6 +49,7 @@ class LowObstacleNode(Node):
         P = self.declare_parameter
         P("robot_yaml", ""); P("arm", False); P("arm_yaml", ""); P("max_rate_hz", 5.0); P("max_range", 1.8)
         P("min_h", 0.025); P("max_h", 0.45); P("memory_ttl", 10.0); P("odom_frame", "odom")
+        P("wrist", False); P("wrist_timeout", 0.5)
         g = lambda k: self.get_parameter(k).value          # noqa: E731
         self.robot = load_robot(g("robot_yaml") or None)
         self.T_bo = LO.T_base_optical(self.robot.sensors["depth_camera"])
@@ -59,9 +69,44 @@ class LowObstacleNode(Node):
         self.create_subscription(CameraInfo, "/camera/camera_info", self.on_info, qos_profile_sensor_data)
         self.create_subscription(JointState, "/joint_states", self.on_js, 10)
         self.create_subscription(Image, "/camera/depth_image", self.on_depth, qos_profile_sensor_data)
+        self.wrist_res, self.wrist_t, self.K_w, self.held = None, None, None, None
+        if g("wrist"):
+            if self.arm is None:
+                from gurdy_core import arm as A
+                self.arm = A.load_arm(g("arm_yaml") or None)
+            self.pub_wmark = self.create_publisher(PointCloud2, "/low_obstacles/wrist_marking", 2)
+            self.pub_wclear = self.create_publisher(PointCloud2, "/low_obstacles/wrist_clearing", 2)
+            self.create_subscription(CameraInfo, "/wrist_camera/camera_info", self.on_winfo, qos_profile_sensor_data)
+            self.create_subscription(Image, "/wrist_camera/depth_image", self.on_wrist, qos_profile_sensor_data)
+            self.create_subscription(String, "/fetch/held_object", self.on_held, 2)
 
     def on_info(self, m):
         self.K = (m.k[0], m.k[4], m.k[2], m.k[5])
+
+    def on_winfo(self, m):
+        self.K_w = (m.k[0], m.k[4], m.k[2], m.k[5])
+
+    def on_held(self, m):
+        try:
+            d = json.loads(m.data) if m.data else None
+            self.held = (float(d["radius"]), float(d.get("height", 0.0))) if d else None
+        except (ValueError, KeyError, TypeError):
+            self.get_logger().warn(f"bad /fetch/held_object {m.data!r}: treated as nothing held", throttle_duration_sec=10.0)
+            self.held = None
+
+    def on_wrist(self, m: Image):
+        from gurdy_core import arm as A
+        if self.K_w is None or m.encoding != "32FC1":
+            return
+        depth = np.frombuffer(m.data, dtype=np.float32).reshape(m.height, m.width)
+        qa = [self.q.get(n, v) for n, v in zip(A.ARM_JOINTS, self.arm.poses["folded"])]
+        opening = 2 * float(self.q.get("arm_finger_left_joint", 0.04))
+        r = LO.extract_wrist(depth, self.K_w, self.robot, self.arm, qa, self.q, opening=max(opening, 0.02), held=self.held)
+        self.wrist_res, self.wrist_t = r, time.monotonic()
+        hdr = m.header
+        hdr.frame_id = "base_link"
+        self.pub_wmark.publish(point_cloud2.create_cloud_xyz32(hdr, r.obstacles.astype(np.float32).tolist()))
+        self.pub_wclear.publish(point_cloud2.create_cloud_xyz32(hdr, r.clearing.astype(np.float32).tolist()))
 
     def on_js(self, m):
         self.q.update(dict(zip(m.name, m.position)))
@@ -89,6 +134,8 @@ class LowObstacleNode(Node):
         self.pub_mark.publish(point_cloud2.create_cloud_xyz32(hdr, r.obstacles.astype(np.float32).tolist()))
         self.pub_clear.publish(point_cloud2.create_cloud_xyz32(hdr, r.clearing.astype(np.float32).tolist()))
         shield = r.obstacles
+        if self.wrist_res is not None and time.monotonic() - self.wrist_t <= float(self.get_parameter("wrist_timeout").value):
+            shield = np.vstack([shield, self.wrist_res.obstacles]) if len(self.wrist_res.obstacles) else shield
         try:
             tr = self.tf.lookup_transform(self.get_parameter("odom_frame").value, "base_link", m.header.stamp,
                                           timeout=rclpy.duration.Duration(seconds=0.05))

@@ -240,3 +240,43 @@ class LowObstacleMemory:
 
     def points(self) -> np.ndarray:
         return np.array([v[:3] for v in self.cells.values()]) if self.cells else np.zeros((0, 3))
+
+
+# ------------------------------------------------------------------ Phase 9f: wrist RGB-D as a second source
+def wrist_params() -> LowObstacleParams:
+    """Wrist camera (arm.yaml): 0.07-1.0 m clip; looking down from <= 0.31 m, so a wider floor band for the RANSAC prior."""
+    return LowObstacleParams(min_range=0.07, max_range=1.0, floor_band=0.08)
+
+
+def wrist_self_capsules(arm, q_arm, opening: float = 0.08, held_radius: float | None = None, held_height: float = 0.0,
+                        margin: float = 0.01) -> list:
+    """Arm + gripper capsules (gurdy_core.arm.arm_capsules, finger opening from the joint states) and, while an object is
+    held, a capsule around it: from the grasp centre down by held_height (a can hangs ~half its height below the
+    fingers), radius = object radius. All in base_link."""
+    from . import arm as A
+    caps = [(p0, p1, r + margin) for _, p0, p1, r in A.arm_capsules(arm, q_arm, opening)]
+    if held_radius is not None:
+        g = A.fk(arm, q_arm)["Gc"]
+        caps.append((g + np.array([0, 0, held_height / 2]), g - np.array([0, 0, held_height]), held_radius + margin))
+    return caps
+
+
+def extract_wrist(depth, K, robot, arm, q_arm, q_legs=None, opening: float = 0.08, held=None, prm: LowObstacleParams | None = None):
+    """One wrist depth frame -> LowObstacleResult in base_link. held = (radius, height) of the object in the gripper."""
+    from . import arm as A
+    prm = prm or wrist_params()
+    T = A.T_base_wrist_optical(arm, q_arm)
+    caps = leg_capsules(robot, q_legs) + wrist_self_capsules(arm, q_arm, opening, *(held or (None, 0.0)))
+    return extract(depth, K, T, prm, caps, tuple(np.array(robot.body_size) / 2))
+
+
+def merge(results, cell: float = 0.02) -> LowObstacleResult:
+    """Combine results of several cameras (all base_link) for the shield: obstacle points concatenated, grid again."""
+    rs = [r for r in results if r is not None]
+    if not rs:
+        return LowObstacleResult(np.zeros((0, 3)), np.zeros(0), np.zeros((0, 3)), (np.array([0, 0, 1.0]), 0.11), False)
+    out = LowObstacleResult(np.vstack([r.obstacles for r in rs]), np.concatenate([r.heights for r in rs]),
+                            np.vstack([r.clearing for r in rs]), rs[0].plane, any(r.plane_fitted for r in rs),
+                            sum(r.n_valid for r in rs), sum(r.n_self for r in rs), sum(r.n_floor for r in rs))
+    out.xy = grid_xy(out.obstacles, cell)
+    return out

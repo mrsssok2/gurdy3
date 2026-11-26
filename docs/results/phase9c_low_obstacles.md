@@ -6,6 +6,10 @@ Defaults are unchanged:
 * `low_obstacle_node` is in no launch file
 * the shield change is a patch against `phase8b-shield`, with `use_depth_obstacles` default false
 
+> **Update (Phase 9f, `docs/results/phase9f_small_items.md`):** the wrist RGB-D is now a second source (`wrist:=true`,
+> own self filter incl. the held object, own costmap sources), so backing up to an object is no longer blind; a held
+> object blinds ~50 % of the wrist view (inside the near clip). The floor was measured at map z = -0.11 m.
+
 ## 1. Problem
 
 The 2D LiDAR scans one plane about 0.16 m above the floor. Everything lower is invisible to SLAM, the Nav2 costmaps,

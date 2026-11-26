@@ -14,7 +14,7 @@ local_costmap:
         enabled: true
         footprint_clearing_enabled: true
         combination_method: 1                                             # max with the layers below
-        observation_sources: low_mark low_clear
+        observation_sources: low_mark low_clear wrist_mark wrist_clear    # wrist_*: Phase 9f, only publish while picking
         low_mark: {topic: /low_obstacles/marking, data_type: PointCloud2, marking: true, clearing: false,
           sensor_frame: camera_optical_frame, min_obstacle_height: -0.3, max_obstacle_height: 0.6,
           obstacle_min_range: 0.0, obstacle_max_range: 1.8, expected_update_rate: 0.0, observation_persistence: 0.0,
@@ -22,6 +22,14 @@ local_costmap:
         low_clear: {topic: /low_obstacles/clearing, data_type: PointCloud2, marking: false, clearing: true,
           sensor_frame: camera_optical_frame, min_obstacle_height: -0.3, max_obstacle_height: 0.6,
           raytrace_min_range: 0.0, raytrace_max_range: 1.9, expected_update_rate: 0.0, observation_persistence: 0.0,
+          inf_is_valid: false}
+        wrist_mark: {topic: /low_obstacles/wrist_marking, data_type: PointCloud2, marking: true, clearing: false,
+          sensor_frame: wrist_camera_optical_frame, min_obstacle_height: -0.3, max_obstacle_height: 0.6,
+          obstacle_min_range: 0.0, obstacle_max_range: 1.0, expected_update_rate: 0.0, observation_persistence: 0.0,
+          inf_is_valid: false}
+        wrist_clear: {topic: /low_obstacles/wrist_clearing, data_type: PointCloud2, marking: false, clearing: true,
+          sensor_frame: wrist_camera_optical_frame, min_obstacle_height: -0.3, max_obstacle_height: 0.6,
+          raytrace_min_range: 0.0, raytrace_max_range: 1.1, expected_update_rate: 0.0, observation_persistence: 0.0,
           inf_is_valid: false}
 collision_monitor:
   ros__parameters:

@@ -16,7 +16,9 @@ from .safety import refuse_reason
 VERB = r"(bring|fetch|get|grab|pick|lift|carry|put|place|drop off|leave|hand|give|deliver|take|move|throw|toss|hurl|fling|chuck|lob)"
 FETCH_VERB_RE = re.compile(rf"\b{VERB}\b", re.I)
 ROOM_RE = re.compile(r"\broom\s+([a-d])\b", re.I)
-PRONOUN_RE = re.compile(r"\b(it|that|this|them)\b", re.I)
+# 'it' / 'them' are always pronouns; 'that' / 'this' only when no noun follows ("bring that to me", not "bring that tall figure")
+PRONOUN_RE = re.compile(r"\b(it|them)\b|\b(that|this)\b(?=\s*(?:$|[,.!?]|to\b|in\b|into\b|over\b|here\b|back\b|home\b|down\b|"
+                        r"please\b|for\b|on\b|at\b|now\b))", re.I)
 TO_USER_RE = re.compile(r"\b(to me|me the|me a|me an|me that|me it|me this|here|over here|back to me|for me)\b|\b(bring|fetch|get|grab)\s+me\b", re.I)
 HOME_RE = re.compile(r"\b(home|back home|to the start|where we started)\b", re.I)
 HAND_RE = re.compile(r"\b(hand (it|that|this|the \w+(?: \w+)?)\s*(to me|over)|hand over|give (it|that|this) (to me|back|here)|give me (it|that|this)|"

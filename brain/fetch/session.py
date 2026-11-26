@@ -14,7 +14,7 @@ from .machine import FetchMachine, Outcome
 from .mock import ROOMS, room_of
 from .replies import describe, outcome_reply, safe
 from .router import find_object, parse
-from .safety import object_allowed
+from .safety import object_allowed, refuse_reason
 from .specs import check
 
 # generic words that also name a small pickable class ("cone" = traffic cone or mini cone)
@@ -23,8 +23,9 @@ SIZE_WORDS = re.compile(r"\b(big|large|huge|tall|traffic|fire|full[- ]size)\b", 
 
 
 class FetchSession:
-    def __init__(self, robot):
+    def __init__(self, robot, picker=None):
         self.r = robot
+        self.picker = picker           # Phase 9f: brain.fetch.picker.FetchPicker for free phrasings (None = router only)
         self.m = FetchMachine(robot)
         self.pending = None            # (intent, candidates) waiting for 'the red one' / 'the one in room C'
         self.calls: list = []          # validated tool calls of the last turn
@@ -89,6 +90,11 @@ class FetchSession:
                 intent = parse(text)
         else:
             intent = parse(text)
+        if intent is None and self.picker is not None:
+            ref = refuse_reason(text)                  # text-level safety BEFORE any model sees the request
+            if ref:
+                return ref[1]
+            intent = self.picker.pick(text, sorted(ROOMS))
         if intent is None:
             return None
         if intent["intent"] == "refuse":

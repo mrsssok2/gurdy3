@@ -4,6 +4,10 @@ Status 2026-11-26: implemented and tested **offline against the mocked robot**, 
 real arm, no LLM.** The DEV suite below was written by the assistant while building the code and is **not held-out**.
 The user writes the blind held-out suite.
 
+> **Update (Phase 9f, `docs/results/phase9f_small_items.md`):** LLM picker scaffolding for free phrasings
+> (`brain/fetch/picker.py`, constrained JSON, colour / room must be the user's own words, safety before and after the
+> model), tested with a FAKE LLM only; and a router fix ('that' / 'this' are pronouns only when no noun follows).
+
 ## 1. How it plugs into the agent (read first: Phases 5–7)
 
 The agent (`brain/agent/graph.py`):
