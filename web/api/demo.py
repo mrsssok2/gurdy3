@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 
-def make_agent():
+def make_agent(sample_history: bool = True):
     from brain.agent.graph import Agent
     from brain.agent.llm import KeywordLLM
     from brain.mock import MockBackend, gazebo_flat_lab
@@ -11,8 +11,14 @@ def make_agent():
     b = MockBackend(gazebo_flat_lab())            # the real Gazebo flat_lab layout, generated from its files
     be = b
     try:                                          # temporal memory (in RAM, per visitor); the browser build has it only if sqlite3 is available
-        from brain.incidents.backend import virtual_wall, with_incidents
-        be = with_incidents(b, None, b.world.map_id, wall=virtual_wall(b))
+        from brain.incidents.backend import IncidentBackend, virtual_wall
+        from brain.incidents.store import IncidentStore
+        wall = virtual_wall(b)
+        store = IncidentStore(":memory:", b.world.map_id, wall)
+        if sample_history:                        # an invented earlier patrol so the Timeline tab is not empty (tagged "sample", see web/api/sample_history.py)
+            from .sample_history import seed
+            seed(store, wall())
+        be = IncidentBackend(b, store)
     except ImportError:
         pass
     return Agent(ToolLayer(be), KeywordLLM(be.known_places, smart=True))

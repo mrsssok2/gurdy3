@@ -226,6 +226,7 @@ dialog h2 { margin: 0 0 6px; } dialog p { color: var(--muted); margin: 0 0 12px;
 ul.timeline { margin: 0; overflow-y: auto; min-height: 0; flex: 1; }
 .timeline li { align-items: flex-start; border-left-color: var(--line); } .timeline li.moved, .timeline li.missing { border-left-color: #FB923C; } .timeline li.estop, .timeline li.alert, .timeline li.task_failed { border-left-color: var(--estop); }
 .timeline .when { order: -1; margin-left: 0; min-width: 44px; }
+.timeline .sample-tag { order: 1; margin-left: auto; color: var(--muted); font-family: var(--mono); font-size: 11px; border: 1px solid currentColor; border-radius: 4px; padding: 0 5px; }
 @media (min-width: 900px) {
   main { grid-template-rows: auto minmax(0, 1fr) minmax(96px, 15%) minmax(150px, 26%); }
   #view-map { grid-row: 1 / span 4; }

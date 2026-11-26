@@ -21,6 +21,8 @@ Pyodide version pinned: 0.27.7 (Python 3.12.7). It is loaded from `cdn.jsdelivr.
 
 Measured 2026-11-19 in headless Chromium: first visit loads **5.6 MiB (CDN) + 0.23 MiB**; chat "enter room B", "yes" walks the robot to room B, E-STOP works, no mic button, demo banner shown, a second browser context starts with an empty chat and a robot at the origin, a reload resets the world, no JavaScript errors, works from a sub-path (`/gurdy3/`) like GitHub Pages. Not tested on a real phone or on Safari/Firefox.
 
+**Timeline tab in the demo (2026-11-26).** The in-browser world has no past, so `web/api/sample_history.py` seeds a short INVENTED earlier patrol (9 events: yellow box moved, room visits, battery alert, no-go set / cleared, blocked path + failed task with a cause link) into each visitor's in-memory incident graph. Each event carries `sample: true` and the panel tags it "sample"; "since you started me" / "away" windows exclude it, "today" includes it. Live events from the visitor's own session are added after it. Test: `web/tests/test_static_demo.py::test_timeline_has_tagged_sample_history`.
+
 ## Step by step: GitHub Pages (your repo `mrsssok2/gurdy3`)
 1. **The repo must be public** (Pages is free for public repositories; for a private repo it needs a paid plan).
 2. **Push** the commits (`git push`). The workflow `.github/workflows/pages.yml` runs on every push to `main` that touches the demo files.

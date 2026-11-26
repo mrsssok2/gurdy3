@@ -573,6 +573,7 @@ async function loadTimeline() {
     const li = document.createElement("li"); li.className = e.type;
     const t = document.createElement("span"); t.textContent = e.text;
     const w = document.createElement("span"); w.className = "when"; w.textContent = e.clock; w.title = e.ago_text;
+    if (e.sample) { const g = document.createElement("span"); g.className = "sample-tag"; g.textContent = "sample"; g.title = "Invented demo history, not something this robot did"; li.append(t, g, w); return li; }
     li.append(t, w); return li;
   }) : [emptyLi("Nothing recorded for this filter " + d.since_text + ".")]));
 }

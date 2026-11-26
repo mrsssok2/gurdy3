@@ -12,12 +12,12 @@
     origin: "The robot refused this web page (its allowed-origins list does not include it).",
     notrobot: "That address answered, but it is not a Gurdy robot server.",
     notready: "The robot server is up but its simulation is not ready yet. Try again in a minute.",
-    badurl: "Enter the robot address, for example https://my-pc.tail1234.ts.net (https, or http://localhost).",
+    badurl: "Enter the robot address, as printed by the robot start script (https, or http://localhost).",
   };
   const ls = { get: (k) => { try { return localStorage.getItem(k) || ""; } catch { return ""; } }, set: (k, v) => { try { localStorage.setItem(k, v); } catch { /* private mode */ } } };
   const ss = { get: (k) => { try { return sessionStorage.getItem(k) || ""; } catch { return ""; } }, set: (k, v) => { try { sessionStorage.setItem(k, v); } catch { /* */ } }, del: (k) => { try { sessionStorage.removeItem(k); } catch { /* */ } } };
 
-  /** "https://host.ts.net/#token=abc" | "host.ts.net" -> {base, token}; base = origin only. Throws on anything that is not https (or http on localhost). */
+  /** "https://<robot-address>/#token=<token>" | "<robot-address>" -> {base, token}; base = origin only. Throws on anything that is not https (or http on localhost). */
   function parseRobotUrl(text) {
     let raw = String(text || "").trim();
     if (!raw) throw new Error("badurl");
@@ -92,7 +92,7 @@
       dlg.id = "remoteDialog";
       dlg.innerHTML = '<form method="dialog" id="remoteForm"><h2>Connect to my robot</h2>' +
         '<p>Paste your robot address and access token. Works only from a device on your Tailscale network. The address is remembered; the token is kept for this tab only.</p>' +
-        '<label for="robotUrl">Robot address</label><input id="robotUrl" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://my-pc.tail1234.ts.net/#token=…">' +
+        '<label for="robotUrl">Robot address</label><input id="robotUrl" type="text" inputmode="url" autocomplete="off" spellcheck="false" placeholder="https://<robot address>">' +
         '<label for="robotToken">Access token <span class="opt">(if not in the address)</span></label><input id="robotToken" type="password" autocomplete="off">' +
         '<p class="err" id="robotErr" hidden></p><div class="row2"><button type="button" class="relbtn" id="robotCancel">Cancel</button><button type="submit" class="send" id="robotGo">Connect</button></div></form>';
       document.body.appendChild(dlg);

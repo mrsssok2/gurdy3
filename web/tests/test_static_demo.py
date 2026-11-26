@@ -53,6 +53,17 @@ def run_driver(cwd: Path, pythonpath: list[str]) -> dict:
 
 @unittest.skipUnless(have("yaml") and have("langgraph"), "needs pyyaml + langgraph (the brain image)")
 class StaticDemoTests(unittest.TestCase):
+    def test_timeline_has_tagged_sample_history(self):
+        from web.static_demo.session import DemoSession
+        s = DemoSession()
+        ev = s.incidents("timeline", {})["data"]["events"]
+        samples = [e for e in ev if e.get("sample")]
+        self.assertGreaterEqual(len(samples), 8)
+        self.assertTrue({e["type"] for e in samples} >= {"object_moved", "path_blocked", "task_failed", "no_go_set"})
+        self.assertEqual([e["wall_t"] for e in ev], sorted(e["wall_t"] for e in ev))
+        self.assertEqual(s.incidents("timeline", {"since": "session"})["data"]["total"], len(ev) - len(samples))      # not part of THIS session
+        self.assertIn("yellow box moved", s.incidents("changes", {})["text"])
+
     def test_session_basics(self):
         from web.static_demo.session import DemoSession
         s = DemoSession()

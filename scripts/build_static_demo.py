@@ -24,7 +24,7 @@ PY_FILES = [
     "brain/__init__.py", "brain/eval/__init__.py", "brain/eval/keyword_parser.py", "brain/data_gen/__init__.py", "brain/data_gen/lexicon.py",
     "brain/voice/__init__.py", "brain/voice/host.py", "brain/voice/vocab.py", "brain/voice/transcript_filter.py",
     "gurdy_core/gurdy_core/__init__.py", "gurdy_core/gurdy_core/vision/__init__.py", "gurdy_core/gurdy_core/vision/classes.py",
-    "web/__init__.py", "web/api/demo.py", "web/api/telemetry.py", "web/api/incidents_api.py", "web/static_demo/__init__.py", "web/static_demo/session.py",
+    "web/__init__.py", "web/api/demo.py", "web/api/telemetry.py", "web/api/incidents_api.py", "web/api/sample_history.py", "web/static_demo/__init__.py", "web/static_demo/session.py",
     "scripts/gen_world_flat_lab.py", "maps/flat_lab.places.yaml",
 ]
 PY_DIRS = {"brain/incidents": ("*.py",), "brain/agent": ("*.py", "*.yaml"), "brain/mock": ("*.py",), "brain/tools": ("*.py",)}

@@ -95,7 +95,7 @@ def fmt_event(e: dict, now: float) -> dict:
         out["from"], out["to"], out["distance_m"] = d.get("from"), d.get("to"), d.get("distance_m")
     elif e["x"] is not None:
         out["x"], out["y"] = round(e["x"], 2), round(e["y"], 2)
-    for k in ("reason", "tool", "kind", "target", "first", "returned", "why", "stayed_s", "text"):
+    for k in ("reason", "tool", "kind", "target", "first", "returned", "why", "stayed_s", "text", "sample"):
         if k in d and d[k] is not None:
             out[k] = d[k]
     return out
