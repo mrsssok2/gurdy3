@@ -122,7 +122,7 @@ function addChat(m) {
 }
 
 // ---------------------------------------------------------------- suggestion chips (empty chat only)
-const SUGGESTIONS = ["Go to room B", "Where are you?", "Find the yellow box", "Go home"];
+const SUGGESTIONS = ["Go to room D", "Where are you?", "Find the fire extinguisher", "Go home"];
 function renderChips() {
   const box = $("chips"), empty = $("chatList").childElementCount === 0;
   if (!empty) { box.replaceChildren(); return; }

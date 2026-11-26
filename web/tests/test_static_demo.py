@@ -62,18 +62,19 @@ class StaticDemoTests(unittest.TestCase):
         self.assertTrue({e["type"] for e in samples} >= {"object_moved", "path_blocked", "task_failed", "no_go_set"})
         self.assertEqual([e["wall_t"] for e in ev], sorted(e["wall_t"] for e in ev))
         self.assertEqual(s.incidents("timeline", {"since": "session"})["data"]["total"], len(ev) - len(samples))      # not part of THIS session
-        self.assertIn("yellow box moved", s.incidents("changes", {})["text"])
+        self.assertIn("toolbox moved", s.incidents("changes", {})["text"])
 
     def test_session_basics(self):
         from web.static_demo.session import DemoSession
         s = DemoSession()
         h = s.hello()
-        self.assertEqual((h["demo"], h["voice"], h["map"]["map_id"], sorted(h["map"]["rooms"])), (True, False, "flat_lab", ["room A", "room B"]))
+        self.assertEqual((h["demo"], h["voice"], h["map"]["map_id"], sorted(h["map"]["rooms"])), (True, False, "lab4", ["room A", "room B", "room C", "room D"]))
         self.assertEqual(s.say("enter room b")["reply"]["text"], "That is outside the area I have mapped. Shall I go?")
         self.assertIn("Going to room B", s.say("yes")["reply"]["text"])
         s.host.agent.layer.backend.advance(40)
         t = s.tick()
         self.assertGreater(t["state"]["pose"]["x"], 1.0)
+        self.assertEqual(len(s.telemetry.map()["walls"]), 12)               # the lab4 walls (outer 4 + two dividers with a doorway in each half)
         self.assertEqual(t["state"]["demo"], True)
         self.assertTrue(any(m["role"] == "robot" for m in s.chat_since(0)))
         self.assertEqual([m["seq"] for m in s.chat_since(0)], sorted(m["seq"] for m in s.chat_since(0)))

@@ -71,7 +71,7 @@ def test_evaluation_mock_world_is_untouched():
     assert w.map_id == "mock_flat_lab"
 
 
-def test_web_demo_uses_the_lab_world():
+def test_web_demo_uses_the_lab4_world():
     from web.api.demo import make_agent
     b = make_agent().layer.backend
-    assert b.world.map_id == "flat_lab" and {o.color for o in b.world.objects} == {"red", "blue", "green", "yellow"}
+    assert b.world.map_id == "lab4" and sorted(b.world.rooms) == ["room A", "room B", "room C", "room D"] and len(b.world.objects) == 10

@@ -69,3 +69,52 @@ def gazebo_flat_lab() -> World:
     bounds = Rect(g.X_MIN - pad, g.Y_MIN - pad, g.X_MAX + pad, g.Y_MAX + pad)
     return World(bounds=bounds, rooms=rooms, walls=walls, obstacles=obstacles, objects=objects, places=places,
                  map_id=spec.get("map_id", "flat_lab"))
+
+
+# ---------------------------------------------------------------------------------------------------------------- lab4
+LAB4_PLACES = ROOT / "maps" / "lab4.places.yaml"
+LAB4_GT = ROOT / "docs" / "results" / "data" / "lab4" / "lab4_gt.json"
+LAB4_DOOR_W = 1.0                          # scripts/gen_world_lab4.py DOOR_W
+# half of the larger footprint side of each class (vision/objects.py footprint(), measured once; keeps this file free of the vision package)
+_LAB4_RADIUS = {"box": 0.20, "traffic_cone": 0.18, "barrel": 0.28, "fire_extinguisher": 0.095, "mannequin": 0.28, "toolbox": 0.225}
+
+
+def lab4_walls(bounds: list[float], doors: dict[str, list[float]], div_x: float, div_y: float, thick: float) -> list[Rect]:
+    """The lab4 wall rectangles, the same construction as scripts/gen_world_lab4.walls(): outer walls plus two dividers with a 1 m gap per half.
+    `doors` = {name: [x, y] gap centre} (A-B / D-C cut the vertical divider, C-A / B-D the horizontal one)."""
+    x0, x1, y0, y1 = bounds
+    w = thick
+    out = [_centre_rect((x0 + x1) / 2, y0, x1 - x0 + w, w), _centre_rect((x0 + x1) / 2, y1, x1 - x0 + w, w),
+           _centre_rect(x0, (y0 + y1) / 2, w, y1 - y0), _centre_rect(x1, (y0 + y1) / 2, w, y1 - y0)]
+    for lo, hi, door in ((y0, div_y, doors["A-B"][1]), (div_y, y1, doors["D-C"][1])):
+        g0, g1 = door - LAB4_DOOR_W / 2, door + LAB4_DOOR_W / 2
+        out += [_centre_rect(div_x, (lo + g0) / 2, w, g0 - lo), _centre_rect(div_x, (g1 + hi) / 2, w, hi - g1)]
+    for lo, hi, door in ((x0, div_x, doors["C-A"][0]), (div_x, x1, doors["B-D"][0])):
+        g0, g1 = door - LAB4_DOOR_W / 2, door + LAB4_DOOR_W / 2
+        out += [_centre_rect((lo + g0) / 2, div_y, g0 - lo, w), _centre_rect((g1 + hi) / 2, div_y, hi - g1, w)]
+    return out
+
+
+def gazebo_lab4() -> World:
+    """Mock of the Gazebo `lab4` world (Gurdy 3.0): four rooms A-D in a ring, doorways A-B, B-D, D-C, C-A, the 10 objects at their ground-truth
+    positions. Generated from the committed lab4 files (`maps/lab4.places.yaml`, `docs/results/data/lab4/lab4_gt.json`, both written by
+    scripts/gen_world_lab4.py); `gazebo_flat_lab()` and `flat_lab()` are untouched. Used by the public demo only."""
+    import json
+    g = _load_generator()
+    gt = json.loads(LAB4_GT.read_text())
+    spec = yaml.safe_load(LAB4_PLACES.read_text())
+    rooms: dict[str, Rect] = {}
+    places: dict[str, tuple[float, float]] = {}
+    for pname, v in spec["places"].items():
+        if "rect" in v:
+            r = Rect(*[float(c) for c in v["rect"]])
+            rooms[pname] = r
+            places[pname] = r.centre
+        else:
+            places[pname] = (float(v["x"]), float(v["y"]))
+    div_x, div_y = rooms["room B"].x0, rooms["room C"].y0
+    x0, x1, y0, y1 = gt["bounds"]
+    walls = lab4_walls(gt["bounds"], gt["doors"], div_x, div_y, g.WALL_T)
+    objects = [GtObject(i + 1, o["class"], o["color"], o["x"], o["y"], _LAB4_RADIUS[o["class"]]) for i, o in enumerate(gt["objects"])]
+    pad = 0.2
+    return World(bounds=Rect(x0 - pad, y0 - pad, x1 + pad, y1 + pad), rooms=rooms, walls=walls, objects=objects, places=places, map_id=spec.get("map_id", "lab4"))

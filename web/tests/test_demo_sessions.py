@@ -81,7 +81,7 @@ class SessionTests(unittest.TestCase):
             for _ in range(8):
                 op, data = b.recv()
                 o = json.loads(data)
-                if o.get("type") == "chat":
+                if o.get("type") == "chat" and o.get("role") != "robot":          # B's own robot may announce what it sees at the start (lab4: a cone)
                     got.append(o)
         except (OSError, TimeoutError):
             pass

@@ -17,6 +17,8 @@ on:
       - "scripts/build_static_demo.py"
       - "scripts/gen_world_flat_lab.py"
       - "maps/flat_lab.places.yaml"
+      - "maps/lab4.places.yaml"
+      - "docs/results/data/lab4/lab4_gt.json"
       - ".github/workflows/pages.yml"
   workflow_dispatch:
 
@@ -42,7 +44,7 @@ jobs:
       - name: Static demo tests (session, langgraph stand-in parity, build output)
         run: PYTHONPATH=.:gurdy_core python -m unittest web.tests.test_static_demo web.tests.test_demo_stage web.tests.test_api_server web.tests.test_demo_sessions
       - name: Phrasing and lab-world tests
-        run: PYTHONPATH=.:gurdy_core python -m pytest -q brain/tests/test_phrasing.py brain/tests/test_lab_world.py
+        run: PYTHONPATH=.:gurdy_core python -m pytest -q brain/tests/test_phrasing.py brain/tests/test_lab_world.py brain/tests/test_lab4_world.py
 
   build:
     needs: test

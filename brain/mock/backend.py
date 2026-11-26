@@ -164,7 +164,7 @@ class MockBackend:
                   "x": o.x + self.rng.gauss(0, OBS_SIGMA), "y": o.y + self.rng.gauss(0, OBS_SIGMA),
                   "first_seen": self.t, "hits": 0, "score": round(self.rng.uniform(0.8, 0.95), 2), "state": "present"}
             self.tracks[tid] = tr
-            self._emit("object_new", "info", f"New object: {o.color} {o.cls.replace('_', ' ')}.", object_id=tid)
+            self._emit("object_new", "info", f"New object: {' '.join(w for w in (o.color, o.cls.replace('_', ' ')) if w)}.", object_id=tid)
         elif math.hypot(tr["x"] - o.x, tr["y"] - o.y) > 0.5:       # the object really moved since it was last seen: the track follows (noise stays below 0.5 m)
             tr["x"], tr["y"] = o.x + self.rng.gauss(0, OBS_SIGMA), o.y + self.rng.gauss(0, OBS_SIGMA)
         tr["hits"] += 1
@@ -692,7 +692,7 @@ class MockBackend:
         vis = [self._obj(t) for t in self.tracks.values()
                if self._visible(self._gt(t["gid"])) and self._gt(t["gid"]).present]
         if vis:
-            text = "I can see " + ", ".join(f"a {o['color']} {o['class'].replace('_', ' ')} ({o['bearing_word']})" for o in vis) + "."
+            text = "I can see " + ", ".join(f"a {o['color']} {o['class'].replace('_', ' ')} ({o['bearing_word']})".replace("a  ", "a ") for o in vis) + "."
         else:
             text = "I do not see any known objects right now."
         return ok(text=text, unverified=True, detections=vis, photo_path=None)
