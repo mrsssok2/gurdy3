@@ -56,9 +56,16 @@ def generate_launch_description():
     sim = OpaqueFunction(function=_gazebo_setup)
     controller = LaunchConfiguration("controller")     # tripod (gait_node) | policy (policy_node, needs sensors:=true)
     gate = LaunchConfiguration("estop_gate")           # true: /cmd_vel -> estop_gate_node -> /cmd_vel_safe -> controller
-    cmd_in = PythonExpression(["'/cmd_vel_safe' if '", gate, "' == 'true' else '/cmd_vel'"])
-    estop_gate = Node(package="gurdy_safety", executable="estop_gate_node", output="screen",
+    shield = LaunchConfiguration("shield")             # true: /cmd_vel -> safety_shield_node -> /cmd_vel_shielded -> (gate)
+    shielded = PythonExpression(["'/cmd_vel_shielded' if '", shield, "' == 'true' else '/cmd_vel'"])
+    # E-STOP gate stays LAST (closest to the controller): /cmd_vel [-> shield] [-> gate] -> controller
+    cmd_in = PythonExpression(["'/cmd_vel_safe' if '", gate, "' == 'true' else ('/cmd_vel_shielded' if '", shield,
+                               "' == 'true' else '/cmd_vel')"])
+    estop_gate = Node(package="gurdy_safety", executable="estop_gate_node", output="screen", remappings=[("/cmd_vel", shielded)],
                       condition=IfCondition(PythonExpression(["'", gate, "' == 'true'"])))
+    safety_shield = Node(package="gurdy_safety", executable="safety_shield_node", output="screen",
+                         condition=IfCondition(PythonExpression(["'", shield, "' == 'true'"])),
+                         parameters=[{"robot_yaml": LaunchConfiguration("robot_yaml")}])
     gait = Node(package="gurdy_gait", executable="gait_node", output="screen", remappings=[("/cmd_vel", cmd_in)],
                 condition=IfCondition(PythonExpression(["'", controller, "' == 'tripod'"])),
                 parameters=[{"robot_yaml": LaunchConfiguration("robot_yaml")}])   # timed by /joint_states stamps
@@ -90,4 +97,6 @@ def generate_launch_description():
            DeclareLaunchArgument("detector_log", default_value="", description="JSON-lines log of every detector sighting"),
            DeclareLaunchArgument("target_frame", default_value="map", description="frame of the semantic map (odom without SLAM)"),
            DeclareLaunchArgument("estop_gate", default_value="false", description="cmd_vel e-stop gate (gurdy_safety) in front of the controller"),
-           DeclareLaunchArgument("model", default_value=""), sim, gait, policy, estop_gate, perception, rviz])
+           DeclareLaunchArgument("shield", default_value="false",
+                                 description="Phase 8b LiDAR safety shield (CBF) on /cmd_vel; needs a /scan (nav:=slam|localization)"),
+           DeclareLaunchArgument("model", default_value=""), sim, gait, policy, estop_gate, safety_shield, perception, rviz])

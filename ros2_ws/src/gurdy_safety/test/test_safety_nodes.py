@@ -50,3 +50,26 @@ def test_leg_health_node_flags_a_leg_that_does_not_follow(ros):
         n._js(js)
     assert pub and pub[-1]["legs"]["middle_right"] == "failed" and pub[-1]["legs"]["front_left"] == "ok"
     n.destroy_node()
+
+
+def test_safety_shield_node_slows_toward_a_wall_and_zeroes_without_scan(ros):
+    import math
+    from geometry_msgs.msg import Twist
+    from sensor_msgs.msg import LaserScan
+    from gurdy_safety.safety_shield_node import SafetyShieldNode
+    n = SafetyShieldNode()
+    out, status = [], []
+    n.pub = type("P", (), {"publish": lambda _s, m: out.append((m.linear.x, m.linear.y, m.angular.z))})()
+    n.status_pub = type("P", (), {"publish": lambda _s, m: status.append(json.loads(m.data))})()
+    cmd = Twist()
+    cmd.linear.x = 0.15
+    n.on_cmd(cmd)                                          # no scan yet -> fail safe
+    assert out[-1] == (0.0, 0.0, 0.0) and status[-1]["state"] == "no_scan"
+    s = LaserScan()                                        # wall 0.40 m ahead: 0.127 m from the front, allowed vx = 2 * 0.027
+    s.angle_min, s.angle_increment, s.range_min, s.range_max = -math.pi, 2 * math.pi / 360, 0.15, 8.0
+    s.ranges = [0.40 / math.cos(-math.pi + i * s.angle_increment) if abs(math.cos(-math.pi + i * s.angle_increment)) > 0.9
+                and math.cos(-math.pi + i * s.angle_increment) > 0 else math.inf for i in range(360)]
+    n.on_scan(s)
+    n.on_cmd(cmd)
+    assert abs(out[-1][0] - 0.054) < 0.005 and status[-1]["state"] == "active" and status[-1]["reduction"] > 0
+    n.destroy_node()

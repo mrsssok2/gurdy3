@@ -23,5 +23,6 @@ setup(
         "leg_health_node = gurdy_safety.leg_health_node:main",
         "alert_monitor_node = gurdy_safety.alert_monitor_node:main",
         "estop_gate_node = gurdy_safety.estop_gate_node:main",
-        "sim_clock_node = gurdy_safety.sim_clock_node:main"]},
+        "sim_clock_node = gurdy_safety.sim_clock_node:main",
+        "safety_shield_node = gurdy_safety.safety_shield_node:main"]},
 )
