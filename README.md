@@ -231,10 +231,3 @@ For a phone on the same Wi-Fi, use `lan https voice` (`docs/phase7_voice.md`, `d
 - Ops and CI: MLflow and GitHub Actions.
 - A small vision-language model.
 
-## How it was built
-
-Designed, tested and evaluated by S. Mahadev, with Claude Code as an AI pair programmer.
-
-## License
-
-MIT. See `LICENSE`.
