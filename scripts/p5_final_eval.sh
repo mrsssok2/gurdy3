@@ -12,6 +12,7 @@
 # Results: brain/runs/final_eval/<timestamp>/{meta.json,status.txt,run.log,missions/<id>.json,logs/,report.md,summary.json}; at the end docs/results/phase5_final_eval.md.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+# EXTRA_LAUNCH_ARGS="shield:=true" adds sim.launch.py arguments to every stack (default empty = unchanged; Phase 8b live check).
 # SUITE=final_suite_lab4 (Gurdy 3.0 held-out, world lab4) selects the suite module, world, saved map, places file and map id; SEED=N seeds the start offset (final_eval_runner --seed).
 export GURDY_FINAL_SUITE=${SUITE:-final_suite}; SEED=${SEED:-}
 read -r WORLD MAP_NAME MAP_ID PLACES_FILE <<<"$(python3 -c "
@@ -68,11 +69,11 @@ run_one() {   # $1 = mission id; returns 0 when a valid result file exists
     chat="$RUN_REL/logs/$id.attempt$attempt.stack"; mkdir -p "$chat"
     log "$id: attempt $attempt/$ATTEMPTS (limit ${limit}s sim, wall limit ${wall}s)"
     t_att=$SECONDS
-    timeout -k 30 "$wall" docker compose run --rm -T --name gurdy3_final_eval -e OLLAMA_URL -e MODEL -e GURDY_DEBUG_NAV -e GURDY_FINAL_SUITE -e WORLD -e MAP_NAME -e MAP_ID -e PLACES_FILE -e SEED -e ID="$id" -e OUT="$out" -e CHAT="$chat" sim bash -c '
+    timeout -k 30 "$wall" docker compose run --rm -T --name gurdy3_final_eval -e OLLAMA_URL -e MODEL -e GURDY_DEBUG_NAV -e GURDY_FINAL_SUITE -e WORLD -e MAP_NAME -e MAP_ID -e PLACES_FILE -e SEED -e EXTRA_LAUNCH_ARGS -e ID="$id" -e OUT="$out" -e CHAT="$chat" sim bash -c '
       cd ~/gurdy2 && source ros2_ws/install/setup.bash && export PYTHONPATH=$HOME/gurdy2:$HOME/gurdy2/gurdy_core:$HOME/gurdy2/sim_mujoco:$PYTHONPATH
       source scripts/lib_nav_start.sh; mkdir -p "$CHAT"; cp "$PLACES_FILE" "$CHAT/places.yaml"
       trap "stop_nav_stack" EXIT
-      start_nav_stack "$CHAT" gui:=false world:=$WORLD perception:=true estop_gate:=true target_frame:=map nav:=localization map:=$MAP_NAME navigation:=true controller:=policy odom_source:=ground_truth > "$CHAT/start.log" 2>&1 < /dev/null \
+      start_nav_stack "$CHAT" gui:=false world:=$WORLD perception:=true estop_gate:=true target_frame:=map nav:=localization map:=$MAP_NAME navigation:=true controller:=policy odom_source:=ground_truth $EXTRA_LAUNCH_ARGS > "$CHAT/start.log" 2>&1 < /dev/null \
         || { echo "Nav2 never became ready"; tail -20 "$CHAT/launch.log"; exit 5; }
       ros2 launch gurdy_safety monitors.launch.py odom_topic:=/odom > "$CHAT/monitors.log" 2>&1 < /dev/null &
       ros2 run gurdy_navigation frontier_explorer_node --ros-args -p serve_action:=true -p clock_topic:=/clock_slow -p log_path:=$CHAT/explore_log.json -p done_path:=$CHAT/explore.done > "$CHAT/explorer.log" 2>&1 < /dev/null &

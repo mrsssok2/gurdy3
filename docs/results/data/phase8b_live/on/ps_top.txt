@@ -1,0 +1,12 @@
+  RSS %CPU CMD
+595600 152 gz sim -r -v 2 /home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/lab4.sdf -s --headless-rendering
+101288 28.2 /usr/bin/python3 /home/ubuntu/gurdy2/ros2_ws/install/gurdy_policy/lib/gurdy_policy/policy_node --ros-args --params-file /tmp/launch_params_7ddnlb1r -r /cmd_vel:=/cmd_vel_shielded
+84772  0.9 /usr/bin/python3 /opt/ros/jazzy/bin/ros2 topic echo --csv /shield/status
+84752  5.7 /usr/bin/python3 /home/ubuntu/gurdy2/ros2_ws/install/gurdy_navigation/lib/gurdy_navigation/odom_tf_node --ros-args
+83472  8.3 /usr/bin/python3 /home/ubuntu/gurdy2/ros2_ws/install/gurdy_safety/lib/gurdy_safety/safety_shield_node --ros-args --params-file /tmp/launch_params_6fijbhp1
+82840 41.1 /opt/ros/jazzy/lib/nav2_bt_navigator/bt_navigator --ros-args --log-level info --ros-args -r __node:=bt_navigator -p use_sim_time:=True --params-file /tmp/launch_params_tnhpautt -r /tf:=tf -r /tf_static:=tf_static
+81652 17.3 /usr/bin/python3 /home/ubuntu/gurdy2/ros2_ws/install/gurdy_navigation/lib/gurdy_navigation/scan_self_filter_node
+80312  3.0 /usr/bin/python3 /home/ubuntu/gurdy2/ros2_ws/install/gurdy_navigation/lib/gurdy_navigation/cmd_vel_min_speed_node --ros-args
+79892  0.4 /usr/bin/python3 -c from ros2cli.daemon.daemonize import main; main() --name ros2-daemon --ros-domain-id 42 --rmw-implementation rmw_fastrtps_cpp
+68496 36.0 /opt/ros/jazzy/lib/nav2_controller/controller_server --ros-args --log-level info --ros-args -p use_sim_time:=True --params-file /tmp/launch_params_tnhpautt -r /tf:=tf -r /tf_static:=tf_static -r cmd_vel:=cmd_vel_nav
+63880 47.1 /opt/ros/jazzy/lib/ros_gz_bridge/parameter_bridge --ros-args --params-file /tmp/launch_params_chym43n1

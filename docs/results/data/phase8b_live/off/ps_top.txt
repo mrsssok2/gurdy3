@@ -1,0 +1,12 @@
+  RSS %CPU CMD
+548168 154 gz sim -r -v 2 /home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/lab4.sdf -s --headless-rendering
+100372 27.2 /usr/bin/python3 /home/ubuntu/gurdy2/ros2_ws/install/gurdy_policy/lib/gurdy_policy/policy_node --ros-args --params-file /tmp/launch_params_oa132l9r -r /cmd_vel:=/cmd_vel
+84228  6.3 /usr/bin/python3 /home/ubuntu/gurdy2/ros2_ws/install/gurdy_navigation/lib/gurdy_navigation/odom_tf_node --ros-args
+81948 37.7 /opt/ros/jazzy/lib/nav2_bt_navigator/bt_navigator --ros-args --log-level info --ros-args -r __node:=bt_navigator -p use_sim_time:=True --params-file /tmp/launch_params_ad1w31fi -r /tf:=tf -r /tf_static:=tf_static
+81184  1.4 /usr/bin/python3 /home/ubuntu/gurdy2/ros2_ws/install/gurdy_navigation/lib/gurdy_navigation/scan_self_filter_node --ros-args --params-file /tmp/launch_params_vyysfck4
+79772  2.6 /usr/bin/python3 /home/ubuntu/gurdy2/ros2_ws/install/gurdy_navigation/lib/gurdy_navigation/cmd_vel_min_speed_node --ros-args
+79532  0.4 /usr/bin/python3 -c from ros2cli.daemon.daemonize import main; main() --name ros2-daemon --ros-domain-id 42 --rmw-implementation rmw_fastrtps_cpp
+67524 32.9 /opt/ros/jazzy/lib/nav2_controller/controller_server --ros-args --log-level info --ros-args -p use_sim_time:=True --params-file /tmp/launch_params_ad1w31fi -r /tf:=tf -r /tf_static:=tf_static -r cmd_vel:=cmd_vel_nav
+62792 47.4 /opt/ros/jazzy/lib/ros_gz_bridge/parameter_bridge --ros-args --params-file /tmp/launch_params_ohu52agm
+62284 32.1 /opt/ros/jazzy/lib/nav2_planner/planner_server --ros-args --log-level info --ros-args -r __node:=planner_server -p use_sim_time:=True --params-file /tmp/launch_params_ad1w31fi -r /tf:=tf -r /tf_static:=tf_static
+62108  0.4 /usr/bin/python3 /opt/ros/jazzy/bin/ros2 launch gurdy_bringup sim.launch.py gui:=false world:=lab4 nav:=localization map:=lab4_map controller:=policy odom_source:=ground_truth shield:=false
