@@ -374,6 +374,18 @@ Question: can a small end-to-end policy distilled from the modular system (LLM b
 
 ---
 
+## Phase 8b — LiDAR safety shield (control barrier function)
+Last motion filter for every velocity source (agent, Nav2, teleop): minimally changes /cmd_vel so no LiDAR point gets
+closer than d_safe to the footprint. Results: docs/results/phase8b_safety_shield.md.
+- [x] Note on the cmd_vel chain + difference to the Nav2 collision monitor (shield before the E-STOP gate)
+- [x] `gurdy_core/safety_shield.py` (CBF + QP, stdlib only) + `gurdy_safety/safety_shield_node` (/cmd_vel -> /cmd_vel_shielded, /shield/status, fail safe on stale / no scan)
+- [x] Launch flag `shield:=false` (default off)
+- [x] Unit tests + 2D kinematic simulator (walls, doorway, corner, turn, sudden obstacle, stale scan): 0 / 52 shielded collisions, doorway slowdown 0-2 %
+- [ ] colcon build + node test in the ROS image
+- [ ] Gazebo test (teleop / agent / Nav2 through the flat_lab doorway, with vs without shield); tune d_safe / alpha from the measured stopping distance
+
+---
+
 ## Phase 8 — Air-ground team (planned, not started)
 A simulated drone scouts from above, maps, detects objects and sends goals to one or more hexapods;
 the LLM brain commands the whole team through tools. Builds on Phases 3–7 (map, Nav2, YOLO, Brain,
