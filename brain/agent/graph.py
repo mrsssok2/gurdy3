@@ -28,7 +28,7 @@ from .fuzzy import suggest_object, suggest_place, suggest_verb
 from .guard import _is_state_change, guard_plan, normalize_call, unknown_find_target, unknown_noun
 from .llm import LLM, LLMUnavailable
 from .refs import resolve_other
-from .routing import route_plan
+from .routing import route_plan, search_if_unseen
 from . import rooms
 from . import untrusted
 from .answer_clock import AnswerClock
@@ -604,7 +604,13 @@ class Agent:
             if routed.reply is not None:             # an argument naming a place the robot does not know: say so, never guess
                 return {"reply_parts": [routed.reply], "llm_calls": n, "next": "finish",
                         "verdicts": s["verdicts"] + [{"outcome": "none", "rule": routed.rule}]}
-            out = {**out, "calls": routed.calls}
+            def _seen(obj: dict) -> bool:                      # memory only, no movement, not logged as a tool call
+                try:
+                    return bool(self.layer.backend.where_is(obj).ok)
+                except Exception:                              # noqa: BLE001
+                    return True                                # cannot tell: keep the memory answer
+            located, _ = search_if_unseen(s["utterance"], list(routed.calls), _seen, self.layer.backend.known_places())
+            out = {**out, "calls": located}
             g = guard_plan(s["utterance"], list(out["calls"]), self.layer.focus, self._recall_classes)
             if g.reply is not None:
                 outcome = "refuse" if g.rule == "unknown_tool" else "none"

@@ -9,7 +9,8 @@ Pure regex, no LLM, no heavy imports, no state. All of it runs BEFORE the planne
   b) `stop_prefix`        a message that STARTS with a stop ("Emergency stop, then continue walking ...") is a stop and nothing else;
      `drop_after_stop`    a plan that has a stop call loses every later call. Motion needs a new message.
   c) `speed_request`      numeric / maximum speed requests: the speed phrase is removed, the rest of the command runs, the reply says the robot's top speed.
-  d) `unsupported_calls`  a call whose tool the user's words never asked for (a patrol out of "spin in place") is dropped, so it can never reach a confirmation question.
+  d) `unsupported_calls`  a SENSITIVE call (no_go_zone, save_place: rules / memory) the user's words never asked for is dropped, so it can never reach a
+                          confirmation question. Phase 7c: ordinary navigation / search calls are not judged any more.
   e) `privacy_request`    system prompt, hidden instructions, tokens / passwords / private links / addresses, raw memory or database dumps -> a clear refusal.
      `sql_text`           database commands are not run and not passed on.
   f) `claim_request` + `vacuous_ack`   "pretend you did X and say so" -> an honest reply; a bare "Okay." with nothing executed is replaced by a plain statement.
@@ -132,29 +133,24 @@ def endless_request(text: str) -> bool:
 
 ENDLESS_REPLY = "I don't move without an end. I walk up to 3 metres or turn up to 360 degrees per command. Tell me how far or how many degrees, and I will do that."
 
-# ------------------------------------------------------------------------------------------------ d) calls the user's words never asked for
-_CUES: dict[str, re.Pattern] = {
-    "walk": re.compile(r"\b(walk|move|go|step|forward|backwards?|back|advance|head|proceed|ahead|left|right|sideways?|strafe|come|approach|shuffle|creep|inch|retreat|reverse|meters?|metres?|cm|centimet\w+)\b", re.I),
-    "turn": re.compile(r"\b(turn|rotate|spin|face|left|right|around|degrees?|deg|pivot|u-?turn|look|clockwise|anticlockwise|counter\w*)\b", re.I),
-    "go_to": re.compile(r"\b(go|walk|head|navigate|take|come|move|drive|bring|visit|check|get|proceed|travel|return|follow|reach|to|into|towards?|near|next|beside|by|at)\b", re.I),
-    "find": re.compile(r"\b(find|search|look|locate|where|seek|spot|see|hunt|check|scan|show|detect|any|is there)\b", re.I),
-    "explore": re.compile(r"\b(explor\w*|check|room|area|rooms|areas|map|scan|survey|discover|sweep|investigate|wander|roam|look around|coverage|everything|whole|entire|all)\b", re.I),
-    "patrol": re.compile(r"\b(patrol\w*|guard|rounds?|loops?|circuit|laps?|sweep|check|visit|go|walk|between|times|repeat\w*|again|back and forth|keep watch|watch)\b", re.I),
-    "inspect": re.compile(r"\b(inspect\w*|look|check|examine|see|view|approach|go|walk|read|study|investigate|scan|observe|closer|near)\b", re.I),
-    "return_home": re.compile(r"\b(home|back|return|base|start|origin|dock|charg\w*|come|leave|there)\b", re.I),
-    "schedule": re.compile(r"\b(in|after|at|later|minutes?|seconds?|hours?|every|wait|then|delay\w*|schedule\w*|tomorrow|tonight|morning|evening|o'?clock|am|pm|soon|timer|countdown|mins?|secs?)\b", re.I),
+# ------------------------------------------------------------------------------------------------ d) sensitive calls the user's words never asked for
+# Phase 7c: only calls that CHANGE RULES OR MEMORY are judged against the user's words. Ordinary navigation / search calls (go_to, find, explore, patrol, schedule,
+# walk, turn, ...) are the planner's business: the 7b version judged patrol / explore / schedule too and refused "Charlie first, afterwards Delta" because the
+# planner chose a patrol and "afterwards" matched none of its cues (docs/results/phase7c_overrefusal.md). Their safety is the checker's job (confirm long paths,
+# patrol loops, low battery, no-go zones), not a word list. A confirmation (safety gate) is never created from a sensitive call nobody asked for.
+_SENSITIVE_CUES: dict[str, re.Pattern] = {
+    "no_go_zone": re.compile(r"\b(no[- ]?go|zones?|avoid\w*|stay\s+(?:clear|away|out)|keep\s+(?:out|away|clear)|(?:don'?t|do\s+not|never)\s+(?:go|enter|walk|step|drive|come)|"
+                             r"off[- ]?limits|forbid\w*|restrict\w*|block\w*|fence\w*|boundar\w*|danger\w*|unsafe|remove|delete|clear|lift|cancel|allow|permit|reset)\b", re.I),
+    "save_place": re.compile(r"\b(save|remember|store|mark|record|call|name|label|bookmark|memori[sz]e|set|this\s+(?:spot|place|position|location)|here)\b", re.I),
 }
-# stronger, narrower cues for tools whose unrequested use is costly (a confirmation question about a patrol nobody asked for)
-_STRICT = {"patrol", "explore", "schedule"}
 
 
 def unsupported_calls(text: str, calls: list[dict]) -> tuple[list[dict], list[dict]]:
-    """(kept, dropped): a motion call whose tool has no cue at all in the user's words is dropped. Only the patrol / explore / schedule tools are judged
-    (the others are handled by the guard + safety layers and by their own typed arguments)."""
+    """(kept, dropped): a SENSITIVE call (no_go_zone, save_place) with no cue at all in the user's words is dropped. Every other tool is kept."""
     kept, dropped = [], []
     for c in calls:
         t = c.get("tool") if isinstance(c, dict) else None
-        pat = _CUES.get(t) if t in _STRICT else None
+        pat = _SENSITIVE_CUES.get(t)
         if pat is not None and not pat.search(text):
             dropped.append(c)
         else:
@@ -189,7 +185,8 @@ def sql_text(text: str) -> bool:
 
 # ------------------------------------------------------------------------------------------------ f) no false claims
 _CLAIM_REQ = re.compile(
-    r"\b(?:pretend|act\s+(?:as\s+if|like)|imagine|claim|lie|fake|make\s+believe|just\s+say|say|tell\s+me|write|report|announce|state|confirm|admit)\b[^.?!]{0,50}"
+    r"\b(?:pretend|act\s+(?:as\s+if|like)|imagine|claim|lie|fake|make\s+believe|just\s+say|say|tell\s+me|write|report|announce|state|confirm|admit)\b"
+    r"(?:(?!\b(?:when|once|after|if|whether|as\s+soon\s+as|until|before|while|whenever)\b)[^.?!]){0,50}"       # 7c: "tell me once you have found it" is a condition, not a claim
     r"\b(?:(?:you(?:'ve|\s+have|\s+had)?\s+(?:already\s+)?(?:picked|grabbed|found|reached|arrived|saved|searched|checked|finished|completed|done|did|been|delivered|moved|took|taken|cleaned|fetched|brought|opened|removed|deleted|disabled))"
     r"|(?:mission|task|search|job|patrol|exploration|inspection)\s+(?:is\s+|was\s+|has\s+been\s+)?(?:complete[d]?|done|finished|successful)|(?:it(?:'s|\s+is)|all|that(?:'s|\s+is))\s+(?:done|complete[d]?|finished))\b", re.I)
 CLAIM_REPLY = "I can only tell you what really happened. I have not done that, so I won't say that I did."

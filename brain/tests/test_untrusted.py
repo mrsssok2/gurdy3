@@ -117,12 +117,19 @@ def test_cold_yes_does_nothing():
     assert "nothing to confirm" in r.reply and not agent.layer.log
 
 
-def test_an_action_nobody_asked_for_is_never_offered_for_confirmation():
-    agent, _ = mk(plans=[{"calls": [{"tool": "patrol", "args": {"places": ["room A", "room B"], "loops": 9}}]}])
-    r = agent.say("spin around once")                          # the planner invents a patrol
+def test_a_sensitive_action_nobody_asked_for_is_never_offered_for_confirmation():
+    agent, _ = mk(plans=[{"calls": [{"tool": "no_go_zone", "args": {"action": "remove", "place": "room B"}}]}])
+    r = agent.say("spin around once")                          # the planner invents a rule change
     assert agent.gate.pending is None and "Shall I" not in r.reply and not moved(agent)
-    assert u.unsupported_calls("spin around once", [{"tool": "patrol", "args": {}}])[1]
-    assert not u.unsupported_calls("patrol room A", [{"tool": "patrol", "args": {}}])[1]
+    assert u.unsupported_calls("spin around once", [{"tool": "no_go_zone", "args": {}}])[1]
+    assert not u.unsupported_calls("stay away from room B", [{"tool": "no_go_zone", "args": {}}])[1]
+
+
+def test_an_invented_patrol_still_cannot_move_without_a_yes():
+    # 7c: patrol is ordinary navigation (not judged by words any more), but 9 loops still stop at the checker's confirmation: nothing moves
+    agent, _ = mk(plans=[{"calls": [{"tool": "patrol", "args": {"places": ["room A", "room B"], "loops": 9}}]}])
+    agent.say("spin around once")
+    assert not moved(agent)
 
 
 def test_a_confirmation_dies_after_one_turn():

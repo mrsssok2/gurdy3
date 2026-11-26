@@ -9,6 +9,11 @@ name an object and ask the robot to go and look for it:
                                                                                    ("find the cone in room D" = go there, then look), an UNKNOWN place is
                                                                                    refused with the list of known places (never guessed)
 
+Phase 7c additions (docs/results/phase7c_overrefusal.md):
+  * a place keyword INSIDE the object ({class: traffic_cone, place: room D}) is lifted out and handled like any other place argument (split into object + room)
+  * "... in room Z" for a room the robot does not know -> said plainly, never guessed, before any tool runs
+  * `search_if_unseen`: `where_is` for an object the robot has never seen, when the user said find / locate -> `find` (go and look) instead of only "I have not seen it"
+
 A pure memory question ("where is the red box?", "where can I find the toolbox?") keeps `where_is`: it answers from memory and never moves.
 No LLM, no state: regexes over the user's words (exact class words and colours only, no fuzzy matching: "charlie" is not "chair").
 """
@@ -23,11 +28,13 @@ from ..tools import TOOLS
 _ACTION = re.compile(
     r"\b(find|look(?:ing)?\s+(?:around\s+)?for|search(?:ing)?(?:\s+for)?|locate|track\s+down|hunt(?:\s+for)?|seek|scout(?:\s+for)?|spot|"
     r"go\s+(?:and\s+)?(?:check|look|see|find)|head\s+(?:over\s+)?(?:and|to)\s+(?:check|look)|check\s+(?:where|if|whether|for|out)|see\s+if|"
-    r"have\s+a\s+look\s+for|keep\s+an\s+eye\s+out\s+for|make\s+sure\s+where|verify\s+where|confirm\s+where)\b", re.I)
+    r"have\s+a\s+look\s+for|keep\s+an\s+eye\s+out\s+for|make\s+sure\s+where|verify\s+where|confirm\s+where)\b"
+    r"|\b(?:need|want|get|have|let'?s\s+have)\b[^.?!]{0,40}\blocated\b", re.I)         # "I need the toolbox located"
 # "where can I find X" is a question about what the robot knows, not an order to search
 _QUESTION_FIND = re.compile(r"\bwhere\s+(?:can|could|do|would|might|should)\s+(?:i|we|you)\s+find\b", re.I)
 _GO_CUE = re.compile(r"\b(go|head|walk|drive|approach|take me|bring me|come|move)\b", re.I)
 _COLOURS = ("red", "blue", "yellow", "green", "white", "orange", "black", "brown", "grey", "gray")
+_OBJECT_KEYS = ("class", "color")
 _PLACE_KEYS = ("place", "area", "room", "location", "where", "in", "near")
 # "find the cone IN room D": the search is restricted to that room (rooms.normalize has already turned "Delta" into "room D")
 _IN_ROOM = re.compile(r"\b(?:in|inside|within|around|at)\s+(?:the\s+)?(room\s+[a-z])\b", re.I)
@@ -102,9 +109,22 @@ def route_plan(utterance: str, calls: list[dict], known_places: list[str]) -> Ro
     objs = named_objects(utterance)
     have_find = any(c["tool"] == "find" for c in calls)
 
+    if any(c["tool"] in ("find", "where_is", "inspect") for c in calls):
+        m = _IN_ROOM.search(utterance)
+        if m and _known(m.group(1), known_places) is None:       # "is there a cone in room D?" and the robot knows no room D: say so
+            return Route([], reply=f"I can't do that. I do not know a place called {m.group(1)}. I know: {', '.join(known_places)}.",
+                         rule="route_unknown_place", changed=True)
     for c in calls:
         tool = c["tool"]
         args = dict(c["args"]) if isinstance(c.get("args"), dict) else {}
+        if tool in ("find", "where_is", "inspect") and isinstance(args.get("object"), dict):      # the planner put the room inside the object: split it out
+            obj = dict(args["object"])
+            for k in [k for k in obj if k in _PLACE_KEYS and k not in _OBJECT_KEYS]:
+                val = obj.pop(k)
+                if k not in args and isinstance(val, str):
+                    args[k] = val
+                rules.append("object_place_lifted")
+            args["object"] = obj
         # ---- an argument the tool does not have, naming a place ("find ... place: room D")
         if tool == "find" and "in_place" in args:             # internal argument: only the router sets it, never the planner
             claimed = args.pop("in_place")
@@ -155,3 +175,26 @@ def route_plan(utterance: str, calls: list[dict], known_places: list[str]) -> Ro
             rules.append("find_in_place")
         out.append({"tool": tool, "args": args})
     return Route(out, rule=",".join(rules), changed=bool(rules))
+
+
+# ---- 7c: a memory question about something the robot has never seen, from a user who wants it FOUND
+_LOCATE = re.compile(r"\b(?:locat(?:e|es|ed|ing|ion)|find|track\s+down|look(?:ing)?\s+for|search(?:ing)?\s+for|where\s+(?:is|are)\b[^?.!]{0,60}\bat)\b", re.I)
+
+
+def search_if_unseen(utterance: str, calls: list[dict], seen, known_places: list[str]) -> tuple[list[dict], bool]:
+    """(calls, changed): a `where_is` whose object the robot has never seen (`seen(object_ref) -> bool`) becomes a `find` when the user said locate / find /
+    "where is it located". An object the robot DOES know keeps the pure memory answer (no movement for a question)."""
+    if not _LOCATE.search(utterance) or any(c.get("tool") == "find" for c in calls):
+        return calls, False
+    out, changed = [], False
+    for c in calls:
+        obj = c.get("args", {}).get("object") if c.get("tool") == "where_is" and isinstance(c.get("args"), dict) else None
+        if isinstance(obj, dict) and obj.get("class") and not seen(obj):
+            new = {"object": obj}
+            if (ip := place_in_utterance(utterance, known_places)):
+                new["in_place"] = ip
+            out.append({"tool": "find", "args": new})
+            changed = True
+        else:
+            out.append(c)
+    return out, changed

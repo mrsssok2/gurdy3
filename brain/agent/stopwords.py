@@ -8,10 +8,14 @@ import re
 from difflib import SequenceMatcher
 
 # phrases that try to switch safety off or hurt things: refused before any tool is considered
-_UNSAFE_REQUEST = re.compile(
-    r"\b(disable|turn off|switch off|ignore|bypass|override|deactivate)\b.{0,30}\b(safety|e-?stop|emergency|no[- ]go|limits?|collision)\b"
-    r"|\b(hit|ram|crash into|push|knock over|kick|smash|run over)\b", re.I)
-
+_UNSAFE_SAFETY = re.compile(r"\b(disable|turn off|switch off|ignore|bypass|override|deactivate)\b.{0,30}\b(safety|e-?stop|emergency|no[- ]go|limits?|collision)\b", re.I)
+# Phase 7c: a harm verb counts only with a THING or PERSON after it ("run over the box", "push him"). "run over to room D", "run over there", "push on to room B",
+# "push forward", "kick off the patrol" and "your RAM usage" are ordinary words; a question about the PAST ("did you hit anything?") is not a request.
+_HARM_OBJECT = (r"(?:(?:into|against|through|at)\s+)?(?:the|a|an|that|this|those|these|my|his|her|their|its|him|them|it|me|us|someone|somebody|anyone|anybody|people|person|"
+                r"pedestrians?|everything|anything|something|all|any|every|each|both|red|blue|yellow|green|white|orange|black|brown|grey|gray|box|boxes|barrel|barrels|wall|walls|"
+                r"chair|chairs|cone|cones|toolbox|mannequin|dummy|extinguisher|table|door)\b")
+_UNSAFE_HARM = re.compile(rf"\b(?:hit|ram|smash|kick|shove|push|knock\s+over|crash\s+into|run\s+over)\s+{_HARM_OBJECT}", re.I)
+_PAST_QUESTION = re.compile(r"^\W*(?:did|have|has|had|was|were|why|what|how|when|where|which|who|is|are)\b", re.I)
 _STRONG_STOP = re.compile(r"\b(stop|halt|freeze|emergency)\b", re.I)
 _WEAK_STOP = re.compile(r"^\W*(stap|stob|stup|top|stopp?|holt|hault|hallt)\W*$", re.I)     # STT confusions, only as a whole utterance
 # a question about stopping ("why did you stop") or a request to switch the e-stop off is not a stop command
@@ -29,7 +33,7 @@ _TOK = re.compile(r"[a-z']+")
 
 def is_unsafe_request(text: str) -> bool:
     """Level-3 text rule: requests to disable safety, hit or push things."""
-    return bool(_UNSAFE_REQUEST.search(text))
+    return bool(_UNSAFE_SAFETY.search(text)) or (bool(_UNSAFE_HARM.search(text)) and not _PAST_QUESTION.search(text))
 
 
 def fuzzy_stop(text: str) -> bool:
