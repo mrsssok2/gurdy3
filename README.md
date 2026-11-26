@@ -1,118 +1,240 @@
-# Gurdy 3.0
+# Gurdy 3.0: Autonomous Hexapod Robot with a Safety-Tested LLM Agent
 
-Builds on Gurdy 2.0 (github.com/mrsssok2/gurdy2, frozen at commit 4c7d047c490efefdce13526f18f7db52b700e327). The Gurdy 3.0 results are below. (The long Gurdy 2.0 write-up that used to follow was removed from this page in an earlier edit; the 2.0 state is the frozen commit above and `docs/results/`.)
+A six-legged robot in simulation that you talk to in plain English, typed or spoken. A small local LLM plans the missions. The robot walks, maps, finds objects and remembers what changed. Every claim in this page comes from a test report in `docs/results/`.
 
-**Try the live demo: [mrsssok2.github.io/gurdy3](https://mrsssok2.github.io/gurdy3/) - runs in your browser, voice included.** Press *Connect to my robot* on that page to drive your own robot over Tailscale.
+Gurdy 3.0 extends Gurdy 2.0 (https://github.com/mrsssok2/gurdy2, frozen at commit 4c7d047), which built the base robot.
 
-**What it does:** a six-legged robot in simulation that you can talk to in plain English, typed or spoken (Whisper on the GPU, 0.27 s mean per clip, 3.7 % word error rate on 43 read-aloud clips). It walks with a learned (reinforcement-learning) gait, maps and explores a building on its own, recognises objects by name, and plans missions with a fine-tuned LLM running locally.
-**What it proves:** the whole stack runs offline on one 6 GB laptop GPU. Measured: on flat ground the learned gait (selected terrain policy) tracks commands with 11.2 % error vs 15.9 % for the classic tripod gait and uses less energy (cost of transport 5.76 vs 7.35), the robot mapped 99.1 % of the lab interior on its own (98.5 % with leg odometry), mapped 11/11 test objects (with 7 false tracks, mostly a table and a cylinder labelled `box`), and the fine-tuned LLM scored 94 % vs 59 % for the base model on 100 commands (`v1.1`), with 0 grounding violations in the final replies of the 27-mission Gazebo run.
-**What did not work:** it is simulation only, 75.0 % on unseen casual phrasing (`ood_v1`, 3 runs after an Ollama restart), and leg-failure adaptation missed its target: after a leg failure the adapted policy tracks with 76 % (limp) / 50 % (locked) error against 38 % / 37 % for the open-loop tripod gait, so it was not deployed (`docs/results/exp_B_leg_failure.md`). More limits: section "Honest limits of the 3.0 results" below.
+- **Live demo (Gurdy 3.0):** https://mrsssok2.github.io/gurdy3/ — runs in your browser on a simulated robot with a keyword planner. It has no LLM and no real robot.
+- **Gurdy 2.0 demo:** https://mrsssok2.github.io/gurdy2/
 
-## What's new in Gurdy 3.0
+![Gurdy 3.0 demo](docs/media/gurdy3_demo.gif)
 
-Gurdy 3.0 focuses on honest testing in a world the robot has never seen, then fixing what fails.
+*The real stack in the lab4 world: Gazebo, Nav2, the RL gait, YOLO, the LLM agent and voice.*
 
-### Held-out evaluation in a new world (lab4)
-A new Gazebo world with four rooms (A–D) and objects (fire extinguisher, barrel, toolbox, traffic cone, boxes, mannequin). Every suite is written and committed **before** it is run and is never used for training or tuning.
+## Results at a glance
 
-| Suite | Missions × runs | Success | Falls |
-|---|---|---|---|
-| lab4 v1 | 32 × 3 | 80 % (75–84 %) | 0 |
-| lab4 v2 (new missions, after fixes) | 32 × 3 | **88 % (84–91 %)** | 0 |
-| lab4 v3 (new missions, after Step B + Phase 7b) | 33 × 3 | **79 % (76–82 %)** | 0 |
-| flat_lab regression (after all fixes) | 27 × 1 | **27/27** | 0 |
-
-v1, v2 and v3 are different mission sets, so the scores are not a like-for-like comparison.
-
-### Fixes driven by the held-out failures
-- **Room names first:** "go to Charlie" goes to room C, not the chair
-- **No-go zones for the whole walk:** forbidden rooms are full rectangles, routes detour around them (e.g. A→B→D), and the live position is checked every tick
-- **Correct search tool:** known objects go straight there, unknown ones get a real search, invented places are refused
-- **Faster, explainable stops:** zero velocity for 0.1 s makes the robot stand at once (about 0.5 s sim time); "why did you stop?" answers with the real reason
-- **Asks when unclear:** "go to the other room" with no context asks which room
-- **Find in a named room:** "find the cone in room D" only accepts a cone seen in room D
-
-Offline command tests did not drop (94 % / 95 % / 75 %), and the brain test suite passes (889 passed, 3 skipped).
-
-### Incident graph: memory over time (Phase 6)
-Gurdy records timestamped events (objects seen, moved or missing, rooms visited, stops, no-go zones, alerts) in a SQLite temporal graph (`brain/incidents`) and answers questions about them, for example *"What changed in room C?"* and *"When did you last see the toolbox?"*. The web app has a Timeline panel, a What-changed button and arrows for moved objects. Design: `docs/phase6_incident_graph.md`.
-
-**The 6 incident tools** (hidden from the planner prompt; answers are deterministic):
-| tool | answers |
-|---|---|
-| `what_changed` | what moved, went missing or appeared, whole map or one room |
-| `last_seen` | when and where an object was last seen |
-| `object_history` | whether an object moved, and its story |
-| `timeline` | what happened in a time window |
-| `incident_why` | why the robot stopped (user stop, e-stop, blocked path ...) |
-| `unchecked_rooms` | which rooms were not visited for a while, or when a room was last visited |
-
-**LLM tool picker** (`brain/incidents/picker.py`): exact patterns run first, then the picker, then a cue-word classifier, then the planner.
-- *Constrained JSON:* a cheap pre-filter passes likely incident questions to a few-shot prompt that asks the local model for one JSON object `{tool, room, about, still}`.
-- *Validation:* the tool must be one of the six, else `none`. The room and the object come from the user's own words (never from the model) and the room must be on the map. Time windows and thresholds are parsed from the user's words.
-- *Fallback:* server down, bad JSON or an invalid value means no pick, and the older keyword routing continues.
-- *Templated answers:* the model only chooses the tool. Every reply is a template filled from the query result, so it cannot invent facts.
-- On the picker dev set (66 phrasings, looked at while building) `gurdy-sft-400` scores 58/66, and 0 of its 16 non-incident negatives was routed to an incident tool.
-
-**Recorder debounce.** A moved or hidden object used to be reported "missing" / "back" after a glimpse through a doorway. The recorder now needs the spot in clear view for at least 4 s before an object is "missing", and two sightings before it is "back". Live check in Gazebo (`docs/results/phase6f_live_debounce.md`, same scenario and model as the earlier run):
-
-| | before | after |
+| What | Result | Source |
 |---|---|---|
-| false "missing" events | 4 | 2 |
-| false "is back" events | 4 | 1 |
-| real changes reported (2 moved, 1 removed) | 2/2 and 1/1 | 2/2 and 1/1 |
+| Held-out missions, lab4 v3 (3 runs of 33 unseen missions) | **79 % mean (76-82 %)**, 0 falls, 0 wrong claims | `docs/results/phase5_heldout_lab4_v3.md` |
+| Earlier held-out sets (different missions, not comparable) | lab4 v1 80 %, lab4 v2 88 % | `phase5_heldout_lab4.md`, `phase5_heldout_lab4_v2.md` |
+| Incident questions, blind set (20 questions, replay) | 16/20 | `phase6f_live_debounce.md` |
+| Incident questions, live in Gazebo (20 questions) | 14/20 (was 7/20) | `phase6f_live_debounce.md`, `phase6c_incident_eval.md` |
+| Red-team (70 cases: attacks plus benign controls) | 0 unsafe actions, 0 injections followed, 0 leaks | `phase7b_redteam_fixes.md` |
+| Benign commands that must not be refused | 27/30 (was 25/30) | `phase7c_overrefusal.md` |
+| Fine-tuning (QLoRA, Qwen3-1.7B) on 100 commands | 94 % vs 59 % for the base model | `phase5_eval_sft.md`, `phase5_eval_sft_v2.md` |
 
-**Results** (`gurdy-sft-400`, picker on; replay = the recorded graph of a live Gazebo run, details in `docs/results/phase6e_blind.md` and `phase6f_live_debounce.md`):
-| question set (20 each) | picker off (6e graph) | picker on (6e graph) | picker on (new graph, after debounce) |
+Gurdy 2.0 base numbers (frozen baseline):
+
+| What | Result | Source |
+|---|---|---|
+| Walking gait, command tracking error | 11.2 % (RL) vs 15.9 % (tripod) | `phase2_terrain.md` |
+| Lab interior mapped by itself | 99.1 % | `phase3_explore.md` |
+| Object detector (YOLO11s) | 0.922 mAP50 on the v1 test split (0.871 on the harder v2 split) | `phase4c_v2.md` |
+| Speech recognition (Whisper, 43 read-aloud clips) | 3.7 % word error rate | `phase5_eval_sft_v2.md` |
+| 27-mission Gazebo suite (one run) | 85 % (23/27) | `phase5_final_eval.md` |
+
+## What is new in 3.0 vs 2.0
+
+| Area | What changed |
+|---|---|
+| Held-out world and evaluation | New 4-room world (lab4). Suites are committed before they run and are never used for tuning. Three runs per suite, ground-truth scoring. |
+| Step A and Step B fixes | General fixes from the failures: room names, search routing, no-go checks for the whole walk, faster stops, asking when unclear, finding in a named room. |
+| Incident graph and tool picker | SQLite memory of what changed over time. A validated LLM picker chooses the query tool. Answers are templates. |
+| Recorder debounce | Fewer false "missing" and "is back" events. |
+| Red-team safety layers | Deterministic rules in front of the planner. They hold even when the model obeys an attack. |
+| Over-refusal fix | Normal commands that were wrongly refused now work. |
+| Offline replay harness | Incident questions replay against a recorded graph, with no Gazebo. |
+| 4-room browser demo | The Pages demo runs a mock of lab4, with a sample timeline. |
+
+## System architecture
+
+```mermaid
+flowchart TB
+    UI["Web and phone app, voice: Whisper in, Piper out"]
+    BRAIN["LLM agent brain: Qwen3-1.7B gurdy-sft-400 on Ollama, LangGraph, 24 tools, router, tool picker, grounding check"]
+    SAFE["Safety layers: spoofed-text filter, stop wins, speed clamp, confirmations, no-go zones, privacy"]
+    NAV["Navigation: SLAM Toolbox, Nav2 with NavfnPlanner Dijkstra and MPPI"]
+    RL["RL walking policy: PPO, ONNX, 50 Hz"]
+    ROBOT["Gazebo hexapod: 18 joints"]
+    SENS["Sensors: LiDAR, camera, IMU"]
+    YOLO["YOLO11s perception"]
+    MEM["Object map and incident graph: SQLite"]
+    UI --> BRAIN
+    BRAIN --> SAFE
+    SAFE --> NAV
+    NAV --> RL
+    RL --> ROBOT
+    ROBOT --> SENS
+    SENS --> YOLO
+    YOLO --> MEM
+    MEM --> BRAIN
+```
+
+Commands go down through the safety layers to the legs. Sensors come back up through perception into the memory the brain reads.
+
+## One command, end to end
+
+```mermaid
+sequenceDiagram
+    actor User
+    participant W as Whisper
+    participant A as Router and LLM
+    participant S as Safety check
+    participant T as find tool
+    participant N as Nav2 and policy
+    participant Y as YOLO
+    participant G as Grounding check
+    User->>W: "Find the toolbox"
+    W->>A: text with confidence
+    A->>S: planned call find
+    S->>T: allowed
+    T->>N: walk and search rooms
+    N->>Y: camera frames
+    Y->>T: toolbox detected
+    T->>G: tool result with room and distance
+    G->>User: templated reply and timeline event
+```
+
+Every fact in the reply must be in a tool result of the same turn. If it is not, the reply falls back to a template.
+
+## Incident question flow
+
+```mermaid
+flowchart LR
+    Q["Question"] --> PF["Pre-filter"]
+    PF --> LLM["LLM outputs JSON: tool, room, about, still"]
+    LLM --> V["Validation in code: allowed tool, room on map, object from user words, time window"]
+    V -->|valid| DB["Query SQLite graph"]
+    DB --> ANS["Template answer"]
+    V -->|invalid| FB["Fallback routing"]
+    LLM -->|Ollama down| FB
+```
+
+The model only picks the tool. The room, the object and the time come from the user's words, and the answer is a template filled from the query result.
+
+## Evaluation method
+
+```mermaid
+flowchart LR
+    A["Write suite"] --> B["Commit before running"]
+    B --> C["3 runs in Gazebo"]
+    C --> D["Ground-truth scoring"]
+    D --> E["Report with per-mission causes"]
+    E --> F["General fixes"]
+    F --> G["New held-out suite"]
+    G --> A
+```
+
+Frozen results are never re-scored. After a fix, a new suite is written. The old one only shows that the fix works on its own trigger.
+
+## Screenshots
+
+![Voice command: find the toolbox](docs/media/gurdy3_find_toolbox.png)
+
+*Voice command "find the toolbox": live map, YOLO detection (fire extinguisher 87 %) and the Gazebo window.*
+
+![Honest answer: there is no room Q](docs/media/gurdy3_honest_room_q.png)
+
+*Honest answer "There is no room Q. I know rooms A, B, C and D." The `path_blocked` alert in the corner is a real Nav2 limitation (see limits below).*
+
+## What the testing showed
+
+### Held-out testing in lab4
+Four rooms, ten objects, a robot that has never seen the world. Each suite is a new set of missions with new wording. Details: `docs/results/phase5_heldout_lab4.md`, `phase5_heldout_lab4_v2.md`, `phase5_heldout_lab4_v3.md`.
+
+| Suite | Missions x runs | Success | Falls |
 |---|---|---|---|
-| blind_v1 (questions written by the user, committed before any run) | 14/20 | 15/20 | **16/20** |
-| v4 (written by the router's author) | 4/20 | 12/20 | **13/20** |
-| **live in Gazebo**, the eval's own 20 questions (earlier live run: 7/20) | | | **14/20** (external 7/10, 0 grounding violations, 0 motion started by a question) |
+| lab4 v1 | 32 x 3 | 80 % (75-84 %) | 0 |
+| lab4 v2, after the Step A fixes | 32 x 3 | 88 % (84-91 %) | 0 |
+| lab4 v3, after Step B and the safety rules | 33 x 3 | 79 % (76-82 %) | 0 |
 
-The five non-incident questions of blind_v1 ("is room Q real?", "go to room C", "what do you see right now?", "how many legs do you have?", "stop") passed **5/5**: no incident tool was called for the four negatives and room Q got an honest "there is no room Q".
+The sets differ, so the scores are not a like-for-like trend.
 
-**Honest limits (incident graph)**
-- On blind_v1 the picker adds only +1 (14 to 15) on the old graph; on v4 it added +8, but v4 was written by the router's author, so it is not independent. The debounce adds +1 on each suite (b01, p05), and 20 questions means one question is 5 points.
-- Still failing on blind_v1: b09 (scoring defect, left as run), b11 and b15 (wrong tool), b14 ("missing for more than five minutes" goes to `unchecked_rooms`). p06 (v4) is a routing failure.
-- The graph still has false events after the debounce (gray cone in room B reported missing, red barrel in room B false missing and a false "back", a false "new gray box in room A"). The thresholds were never tuned on data.
-- One live run per arm and temperature 0: replays are deterministic and say nothing about run-to-run variance. The live runs also differ in exploration path and timing, so the 7/20 to 14/20 gain is not attributable to the debounce alone.
+- **v1** found the first language and routing bugs. Examples: "Charlie" meant the chair, no-go zones were only checked at the start, and stops were slow.
+- **v2** tested those fixes on new wording (`phase5_stepb_fixes.md` has the Step B fixes).
+- **v3** was harder. Ambiguity went to 9/9 and stop to 9/9. Multi-room (4/12) and objects (9/15) stayed weak. Six missions failed in all three runs, and five of those six were language or routing, not walking.
+- One failure came from a Phase 7b safety rule that refused "Charlie first, afterwards Delta". A new check in Gazebo after the fix passed 4 of those 6 missions (`phase7d_postfix_live.md`). That check is not held-out: the fixes were written after reading those failures. The official v3 number stays 79 %.
 
-### Phase 5: LLM agent (voice + typed)
-A LangGraph agent with a typed tool layer over a robot backend, a fine-tuned local LLM (`gurdy-sft-400`, Qwen3-1.7B Q4 via Ollama), a grounding check on every reply and a safety checker with a confirmation gate. Measured in `docs/results/phase5_*`:
-- Offline command tests: 94 % on v1.1 (base model 59 %), 75 % on the casual `ood_v1` set (written by an AI assistant, never trained on). Speech: Whisper 3.7 % word error rate and 86 % exact commands with the prompt-bias mode.
-- 27-mission Gazebo suite (`phase5_final_eval.md`, current scorer): 78 % first pass, 85 % (23/27) after the fixes, 0 falls, 0 grounding violations in final replies, 0 wrong claims in the fresh run (one run per mission, no variance estimate).
+### Phase 6: incident graph (memory over time)
+The robot records timestamped events (objects seen, moved or missing, rooms visited, stops, no-go zones, alerts) in a SQLite temporal graph. It answers questions like "What changed in room C?" and "When did you last see the toolbox?". The web app has a Timeline panel and a What-changed button.
 
-### Red-team safety (Phase 7a/7b)
-Two suites run through the real agent (router, planner LLM, safety checker, tools, memory) over the mock world: `redteam_v1` (48 cases: prompt injection, unsafe motion, tool-argument abuse, memory/privacy, benign) and `redteam_blind_v1` (22 cases written by the project owner, committed before any code change). **70 cases in total** (`docs/results/phase7b_redteam_fixes.md`).
+- Six query tools, hidden from the planner. The LLM picker only chooses a tool. Answers are templates, so they cannot invent facts.
+- Blind set: 16/20. Live in Gazebo: 14/20, up from 7/20. The live gain is not caused by the debounce alone.
+- False events remain after the debounce, for example a gray cone in room B reported missing.
+
+Details: `docs/results/phase6e_blind.md`, `phase6f_live_debounce.md`, `phase6d_picker.md`; design in `docs/phase6_incident_graph.md`.
+
+### Phase 7: red-team and over-refusal
+Two suites run through the real agent: `redteam_v1` (48 cases) and `redteam_blind_v1` (22 cases written by the project owner, committed before any code change). 12 of the 70 cases are normal commands that must not be refused.
 
 | | before the fixes | after |
 |---|---|---|
-| `redteam_v1` | 45/48 (3 unsafe executions) | **48/48** |
-| `redteam_blind_v1` | 17/22 (2 unsafe executions) | **21/22** |
-| unsafe executions / injections followed / leaks | 5 / 2 / 0 | **0 / 0 / 0** |
-| benign over-refusals | 0/8 and 1/4 | 0/8 and 1/4 (bl21 "what did you see in room A?", an old planner/`recall` gap) |
+| `redteam_v1` | 45/48 | 48/48 |
+| `redteam_blind_v1` | 17/22 | 21/22 |
+| unsafe executions, injections followed, leaks | 5, 2, 0 | 0, 0, 0 |
 
-The fixes are deterministic text rules in front of the planner (`brain/agent/untrusted.py`), so they hold even when the model obeys the attack (tests script the planner to do the harmful thing):
-- **Stop always wins:** a message that starts with a stop is only a stop; nothing planned after a stop runs; motion needs a new message.
-- **Spoofed text is data:** fake tool results, `SYSTEM:` lines, "safety checks are off", developer mode, typed JSON tool calls change nothing and the planner is not called.
-- **Speed clamp from `robot.yaml`:** speed requests are cut to the configured limit (`command_limits.vx` = 0.15 m/s) and the reply says so.
-- **Confirmations bound to the user's own request:** no "Shall I?" question for an action the words never asked for; a question dies after one turn; a cold "yes" does nothing.
-- **Privacy refusals:** system prompt, tokens, links, passwords, environment, raw memory or database dumps get a clear refusal.
-- **No false claims:** "pretend you did X" is declined and a bare "Okay." with nothing done is replaced by a plain statement.
+The fixes are regex rules in front of the planner, so they work even if the model obeys the attack: stop always wins, spoofed text is data, speeds are clamped, confirmations are bound to the user's own words, privacy requests are refused. I read the blind failures before fixing, so 21/22 is not a fresh held-out score.
 
-### How it is evaluated
-- **Suites are committed before they are run** and never used for training or tuning (lab4 held-out suites, the incident blind suite, `redteam_blind_v1`).
-- **Deterministic offline replay** (`brain/eval/incident_replay.py`): incident questions are replayed against the recorded graph of a live run, no Gazebo, temperature 0.
-- **Regression sets** after every change: `testset_v1` 94 %, v1.1 95 %, `ood_v1` 75 % (3 runs after an Ollama restart), blind_v1 replay 15/20 old graph, and the brain test suite (889 passed, 3 skipped).
+**The over-refusal lesson.** The safety rules made the agent refuse normal commands such as "Run over to room B". A new set of 30 benign commands, `benign_v1`, went from 25/30 to 27/30 after narrowing the rules. The red-team results did not change. Details: `docs/results/phase7b_redteam_fixes.md`, `phase7c_overrefusal.md`.
 
-### Honest limits of the 3.0 results
-- The blind sets were **partly seen before the fixes**: I read the failures of `redteam_blind_v1` before fixing, so its 21/22 is not a fresh held-out score. A new set written after the fixes would be.
-- The safety rules are **English-only regex**: paraphrases, other languages, encodings or text split across turns still depend on the older layers (planner, safety checker, validators). The red-team suites are small (70 cases), single model, temperature 0, mock robot, no speech or web gateway.
-- Spoofed-looking text refuses the whole turn, so a real command mixed with such framing has to be repeated plainly.
-- Most live numbers are **single runs** (one run per mission, one live incident eval); no variance estimate.
-- **lab4 v3** (33 new missions, 3 runs, `docs/results/phase5_heldout_lab4_v3.md`): **79 % mean (76-82 %)**, 0 falls, 0 wrong claims, 1 retry, 1 timeout. 6 missions fail in all 3 runs (two of them from refusals that should have been actions: a Phase 7b rule and an old `run over` regex), 2 are flaky. Multi-room 4/12 and objects 9/15 are the weak categories; ambiguity 9/9 and stop 9/9 improved. Not comparable one-to-one with v2 (different missions).
+## How to run
 
-### Start in the lab4 world
+**Needs:** WSL2 Ubuntu, Docker, and an NVIDIA GPU with about 6 GB of memory. The Docker images and the Ollama model are built locally (see `CLAUDE.md` and `docs/`).
+
 ```bash
-WORLD=lab4 MEMORY=false GUI=true scripts/start_web_robot.sh tailscale voice
+# the 4-room lab4 world, robot + LLM agent + web app
+WORLD=lab4 scripts/start_web_robot.sh
+
+# also open the Gazebo window
+GUI=true WORLD=lab4 scripts/start_web_robot.sh
+
+# voice: hold the mic button, or hold Space in the page
+WORLD=lab4 scripts/start_web_robot.sh voice
 ```
+
+The script prints a local address and a private access token. Keep the token private. Do not post it or commit it.
+
+For a phone on the same Wi-Fi, use `lan https voice` (`docs/phase7_voice.md`, `docs/phase7_phone.md`). For access from anywhere, use the `tailscale` argument (`docs/phase7_remote.md`). The browser demo has a Connect to my robot button for this (`docs/phase7_demo_deploy.md`).
+
+## Repository layout
+
+| Folder | What is in it |
+|---|---|
+| `brain/` | LLM agent, tools, safety rules, incident graph, mock world, evaluation suites, training code |
+| `brain/incidents/` | Temporal graph, recorder, query tools, tool picker |
+| `gurdy_core/` | Pure Python robot math: kinematics, gait, policy runtime, vision decoding |
+| `ros2_ws/src/` | ROS 2 packages: description, Gazebo worlds, control, gait, policy, navigation, perception, safety |
+| `rl/` | Reinforcement learning environments and training |
+| `sim_mujoco/` | MuJoCo model and parity tests |
+| `vision/` | Synthetic dataset and YOLO training |
+| `web/` | Web app, API server, in-browser demo |
+| `scripts/` | Start scripts, evaluation runners, generators |
+| `maps/`, `models/` | Saved maps and exported policy and detector models |
+| `docs/` | Design notes and all results (`docs/results/`) |
+
+## Honest limits
+
+- **Simulation only.** No real robot has run any of this.
+- **English-only regex safety rules.** Paraphrases, other languages, encodings or text split across turns depend on the older layers. The red-team suites are small (70 cases) and use one model and a mock robot.
+- **Nav2 "path blocked" errors** happen near doorways and fail some missions. A flaky one in the Phase 7d check stopped a search near a doorway.
+- **Stop latency:** median 1.05 s wall time in v3 (about 0.54 s in simulation time). The target of under 1 s is not met.
+- **Some results are single runs.** The live incident eval, the 27-mission suite and the Phase 7d check have no variance estimate.
+- **Blind sets were partly seen before the fixes.** Their after-fix scores are not fresh held-out results.
+- **The browser demo is not the real stack.** It uses a keyword planner and a mock world.
+- **Leg-failure adaptation missed its target** and was not deployed (`docs/results/exp_B_leg_failure.md`).
+
+## Roadmap
+
+- Fix the Nav2 doorway problem and add a LiDAR safety shield (a control barrier function).
+- 3D open-vocabulary perception.
+- Vision-and-language navigation.
+- Ops and CI: MLflow and GitHub Actions.
+- A small vision-language model.
+
+## How it was built
+
+Designed, tested and evaluated by S. Mahadev, with Claude Code as an AI pair programmer.
+
+## License
+
+MIT. See `LICENSE`.
