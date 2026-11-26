@@ -1,0 +1,17 @@
+# Phase 9e. pick_ik (ros-jazzy-pick-ik; availability in the gurdy2/ros image TO VERIFY): a 5-DOF arm cannot reach an
+# arbitrary 6-D pose, so position is weighted fully and orientation only partly (rotation_scale). Seeding / fallback:
+# the fetch backend computes our analytic IK (gurdy_core.arm.ik / plan_grasp: top-down or side approach, both elbow
+# branches, joint limits + capsule collisions checked) and sends it as the START of a joint-space goal or, if pick_ik
+# fails, plans directly to that joint goal (no IK needed). pick_ik is used for small Cartesian corrections.
+arm:
+  kinematics_solver: pick_ik/PickIkPlugin
+  kinematics_solver_timeout: 0.05
+  kinematics_solver_attempts: 3
+  mode: global
+  position_scale: 1.0
+  rotation_scale: 0.3
+  position_threshold: 0.002
+  orientation_threshold: 0.05
+  cost_threshold: 0.0001
+  minimal_displacement_weight: 0.001
+  gd_step_size: 0.0001

@@ -2,8 +2,9 @@
 #   params = gurdy_navigation.param_overlay.apply_overlay(nav2_params, this file)   (deep merge; lists are replaced)
 # Adds the body-depth-camera low obstacles (low_obstacle_node) to the LOCAL costmap only (rolling 4 x 4 m window, odom
 # frame: marks persist while the robot walks past; the global costmap / planner stays LiDAR-only at first) and to the
-# collision monitor. Height windows are wide on purpose: the node already removed floor and self points, and the
-# z of the floor in the odom frame (0 or -0.11) still has to be confirmed in Gazebo.
+# collision monitor. Height windows are wide on purpose: the node already removed floor and self points (with a fitted
+# floor plane, never a fixed height). Floor measured in Gazebo on 2026-11-26 at map z = -0.11 m (base_link level = map 0),
+# so the -0.3 .. 0.6 window contains floor-level obstacles with margin for walking tilt.
 local_costmap:
   local_costmap:
     ros__parameters:

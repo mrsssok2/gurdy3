@@ -7,6 +7,7 @@
   <xacro:arg name="arm" default="false"/>
   <xacro:arg name="arm_yaml" default="$(find gurdy_description)/config/arm.yaml"/>
   <xacro:arg name="arm_fallback_model" default=""/>   <!-- DetachableJoint FALLBACK target; empty = real contact only -->
+  <xacro:arg name="moveit_collision" default="false"/> <!-- true ONLY for MoveIt's robot_description: leg collision proxies -->
 
   <xacro:include filename="gurdy.urdf.xacro"/>
 
@@ -14,5 +15,8 @@
     <xacro:include filename="gurdy_arm.xacro"/>
     <xacro:gurdy_arm parent="base_link" arm_yaml="$(arg arm_yaml)" sim_gazebo="$(arg sim_gazebo)"
                      fallback_model="$(arg arm_fallback_model)"/>
+    <xacro:if value="$(arg moveit_collision)">
+      <xacro:leg_collision_proxies cfg="${cfg}"/>
+    </xacro:if>
   </xacro:if>
 </robot>

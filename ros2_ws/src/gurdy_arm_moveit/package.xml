@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<package format="3">
+  <name>gurdy_arm_moveit</name>
+  <version>0.1.0</version>
+  <description>Phase 9e: MoveIt 2 configuration for the Gurdy arm (SRDF generated offline, pick_ik, controllers, move_group launch behind arm:=true). NOT run yet.</description>
+  <maintainer email="noreply@example.com">S. Mahadev</maintainer>
+  <license>MIT</license>
+  <exec_depend>gurdy_description</exec_depend>
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>moveit_ros_move_group</exec_depend>
+  <exec_depend>moveit_kinematics</exec_depend>
+  <exec_depend>moveit_planners_ompl</exec_depend>
+  <exec_depend>moveit_simple_controller_manager</exec_depend>
+  <exec_depend>pick_ik</exec_depend>
+  <exec_depend>joint_trajectory_controller</exec_depend>
+  <exec_depend>effort_controllers</exec_depend>
+  <test_depend>python3-pytest</test_depend>
+  <export><build_type>ament_python</build_type></export>
+</package>

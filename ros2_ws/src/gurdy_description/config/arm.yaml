@@ -56,3 +56,8 @@ poses:                             # named joint states (rad): yaw, shoulder, el
                                              # xy offset <= 1 cm and >= 0.1 rad from every limit); carried object above
                                              # the front of the body at z ~0.12; all arm parts >= 4 cm above the lidar plane
   ready:  [0.0, 1.20, -1.60, -1.00, 0.0]     # pre-grasp, camera looking down behind the robot
+  servo_view: [0.0, 1.95, -1.95, -1.15, 0.0]  # Phase 9e final approach: wrist camera 0.27 m above the floor, 66 deg down,
+                                             # view centre 0.335 m behind base_link (highest such pose with >= 0.1 rad limit
+                                             # margin and >= 1.5 cm clearance; the `ready` view at 0.22 m was too close for tall objects)
+  servo_view_far: [0.0, 1.80, -1.625, -1.15, 0.0]  # same for the side-grasp classes (zone 0.35 m behind): camera 0.31 m up,
+                                             # 56 deg down, view centre 0.44 m behind (a 15 cm object's top face stays in the image)

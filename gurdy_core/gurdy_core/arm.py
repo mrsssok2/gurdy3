@@ -427,3 +427,32 @@ def search_folded(a, robot, payload: float = 0.10, step: float = 0.1, max_xy: fl
                     out.append((float(info["com"][2]), q, info))
     out.sort(key=lambda t: t[0])
     return out
+
+
+# ------------------------------------------------------------------ frames (Phase 9e: wrist camera for visual servoing)
+def _rot(axis, ang):
+    c, s = math.cos(ang), math.sin(ang)
+    if axis == "x":
+        return np.array([[1, 0, 0], [0, c, -s], [0, s, c]])
+    if axis == "y":
+        return np.array([[c, 0, s], [0, 1, 0], [-s, 0, c]])
+    return np.array([[c, -s, 0], [s, c, 0], [0, 0, 1]])
+
+
+def T_base_palm(a: ArmGeom, q) -> np.ndarray:
+    """arm_palm_link pose in base_link (x = approach direction, URDF chain: yaw about z, pitches about -y, roll about x)."""
+    f = fk(a, q)
+    R = _rot("z", a.yaw0 + q[0]) @ _rot("y", -f["a3"]) @ _rot("x", q[4])
+    T = np.eye(4)
+    T[:3, :3], T[:3, 3] = R, f["W"] + a.Lw * R[:, 0]
+    return T
+
+
+def T_base_wrist_optical(a: ArmGeom, q) -> np.ndarray:
+    """wrist_camera_optical_frame in base_link (arm.yaml wrist_camera pos / pitch_down, optical z forward, x right, y down)."""
+    cam = a.cam
+    T_pc = np.eye(4)
+    T_pc[:3, :3], T_pc[:3, 3] = _rot("y", float(cam.get("pitch_down", 0.0))), cam["pos"]
+    T_co = np.eye(4)
+    T_co[:3, :3] = _rot("z", -math.pi / 2) @ _rot("y", 0.0) @ _rot("x", -math.pi / 2)    # URDF rpy (-pi/2, 0, -pi/2)
+    return T_base_palm(a, q) @ T_pc @ T_co

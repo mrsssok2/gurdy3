@@ -210,14 +210,44 @@ def test_gazebo_variant_has_arm_control_camera_and_optional_fallback():
 
 def test_srdf_draft_matches_urdf_and_named_poses(ar):
     a, _ = ar
-    root = ET.fromstring(_expand(arm="true"))
+    root = ET.fromstring(_expand(arm="true", moveit_collision="true"))
     links = {l.get("name") for l in root.findall("link")}
     joints = {j.get("name") for j in root.findall("joint")}
-    s = ET.parse(DESC / "config/gurdy_arm.srdf").getroot()
+    s = ET.parse(ROOT / "ros2_ws/src/gurdy_arm_moveit/config/gurdy.srdf").getroot()     # Phase 9e: generated SRDF
     for d in s.findall("disable_collisions"):
         assert d.get("link1") in links and d.get("link2") in links
     for gs in s.findall("group_state"):
         vals = {j.get("name"): float(j.get("value")) for j in gs.findall("joint")}
         assert set(vals) <= joints
-        if gs.get("group") == "arm":
+        if gs.get("group") == "arm" and gs.get("name") != "pre_grasp":       # pre_grasp: per-object placeholder
             assert [vals[n] for n in A.ARM_JOINTS] == pytest.approx(list(a.poses[gs.get("name")]))
+
+
+def test_wrist_camera_frame_matches_urdf(ar):
+    a, _ = ar
+    root = ET.fromstring(_expand(arm="true"))
+    joints = {j.find("child").get("link"): j for j in root.findall("joint")}
+
+    def chain_fk(q, tip):
+        chain, link = [], tip
+        while link in joints:
+            chain.append(joints[link])
+            link = joints[link].find("parent").get("link")
+        T = np.eye(4)
+        for j in reversed(chain):
+            o = j.find("origin")
+            Tj = np.eye(4)
+            Tj[:3, :3] = _rpy(*[float(v) for v in (o.get("rpy") or "0 0 0").split()])
+            Tj[:3, 3] = [float(v) for v in (o.get("xyz") or "0 0 0").split()]
+            if j.get("type") == "revolute":
+                R = np.eye(4)
+                R[:3, :3] = _axis_R([float(v) for v in j.find("axis").get("xyz").split()], q.get(j.get("name"), 0.0))
+                Tj = Tj @ R
+            T = T @ Tj
+        return T
+    rng = np.random.default_rng(4)
+    for _ in range(30):
+        q = np.array([rng.uniform(*a.limits[j]) for j in A.ARM_JOINTS])
+        Tu = chain_fk(dict(zip(A.ARM_JOINTS, q)), "wrist_camera_optical_frame")
+        assert np.allclose(Tu, A.T_base_wrist_optical(a, q), atol=1e-9)
+        assert np.allclose(chain_fk(dict(zip(A.ARM_JOINTS, q)), "arm_palm_link"), A.T_base_palm(a, q), atol=1e-9)
