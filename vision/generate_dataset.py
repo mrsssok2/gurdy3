@@ -34,7 +34,7 @@ from PIL import Image
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "gurdy_core"))
-from gurdy_core.vision.classes import CLASSES, GZ_LABEL_OFFSET  # noqa: E402
+from gurdy_core.vision.classes import CLASSES, CLASSES_V3, GZ_LABEL_OFFSET  # noqa: E402
 from vision import scene as S  # noqa: E402
 from vision.augment import augment_rgb  # noqa: E402
 from vision.textures import write_textures  # noqa: E402
@@ -52,16 +52,39 @@ def cmd_plan(a):
         import yaml
         d = yaml.safe_load(open(a.robot_yaml))["sensors"]["depth_camera"]
         cam = {k: d[k] for k in ("width", "height", "hfov", "range", "pitch_down")}
+    v3 = a.profile.startswith("v3")
+    if v3:                                          # Phase 9b: 12 classes; the class list travels with the dataset
+        from vision import scene_small as SS
+        (out / "classes.json").write_text(json.dumps(list(SS.class_names(a.profile))))
     for i in range(a.scenes):
-        sc = S.sample_scene(a.seed * 100003 + i, a.views, cam, a.profile)
+        sc = (SS.sample_scene_v3(a.seed * 100003 + i, a.views, a.profile, cam) if v3
+              else S.sample_scene(a.seed * 100003 + i, a.views, cam, a.profile))
         sc["index"], sc["split"] = i, S.split_for_scene(i)
         (out / "worlds" / f"scene_{i:04d}.json").write_text(json.dumps(sc))
         mesh_dir = out / "assets" / "meshes" / f"s{i:04d}"
         mesh_dir.mkdir(exist_ok=True)
+        writer = SS.world_sdf_v3 if v3 else S.world_sdf
         (out / "worlds" / f"scene_{i:04d}.sdf").write_text(
-            S.world_sdf(sc, str(mesh_dir.resolve()), str((out / "assets" / "textures").resolve())))
+            writer(sc, str(mesh_dir.resolve()), str((out / "assets" / "textures").resolve())))
     print(f"planned {a.scenes} scenes -> {out}/worlds  (train/val/test scenes: "
           f"{[sum(S.split_for_scene(i) == s for i in range(a.scenes)) for s in SPLIT_NAMES]})")
+
+
+def _n_classes(sc) -> int:
+    """Number of label ids accepted from the boundingbox camera for this scene (v3 profiles: 12, else the 7 old ones)."""
+    return len(CLASSES_V3) if str(sc.get("profile", "")).startswith("v3") else len(CLASSES)
+
+
+def _gt_for_view(sc, view):
+    if str(sc.get("profile", "")).startswith("v3"):
+        from vision import scene_small as SS
+        return SS.gt_for_view_v3(sc, view)
+    return S.gt_for_view(sc, view)
+
+
+def _dataset_classes(out: Path):
+    f = out / "classes.json"
+    return json.loads(f.read_text()) if f.exists() else list(CLASSES)
 
 
 def rpy_to_quat(r, p, y):
@@ -167,7 +190,7 @@ def render_scene(sc: dict, out: Path, a) -> tuple:
             rgb, depth = _img(rgb_m, 3), _img(depth_m, 0)
             H, W = rgb.shape[:2]
             boxes = [(b.label - GZ_LABEL_OFFSET, b.box.min_corner.x, b.box.min_corner.y, b.box.max_corner.x, b.box.max_corner.y)
-                     for b in bb.annotated_box if 0 <= b.label - GZ_LABEL_OFFSET < len(CLASSES)]
+                     for b in bb.annotated_box if 0 <= b.label - GZ_LABEL_OFFSET < _n_classes(sc)]
             lines = S.yolo_lines(boxes, W, H)
             if not lines and rng.random() > a.negative_keep:
                 continue
@@ -180,7 +203,7 @@ def render_scene(sc: dict, out: Path, a) -> tuple:
             Image.fromarray(d_mm).save(out / "depth" / split / f"{name}.png")
             (out / "meta" / split / f"{name}.json").write_text(json.dumps({
                 "scene": idx, "view": vi, "cam_pos": view["pos"], "cam_rpy": view["rpy"], "camera": sc["camera"],
-                "gt": S.gt_for_view(sc, view), "stamp_ns": rgb_m.header.stamp.sec * 10**9 + rgb_m.header.stamp.nsec}))
+                "gt": _gt_for_view(sc, view), "stamp_ns": rgb_m.header.stamp.sec * 10**9 + rgb_m.header.stamp.nsec}))
             n_ok += 1
     finally:
         srv.terminate()
@@ -279,15 +302,16 @@ def cmd_render(a):
 def cmd_finalize(a):
     out = Path(a.out).resolve()
     counts = {s: len(list((out / "images" / s).glob("*.png"))) for s in SPLIT_NAMES if (out / "images" / s).exists()}
-    inst = np.zeros(len(CLASSES), int)
+    names_list = _dataset_classes(out)
+    inst = np.zeros(len(names_list), int)
     for f in (out / "labels").glob("*/*.txt"):
         for ln in f.read_text().split("\n"):
             if ln.strip():
                 inst[int(ln.split()[0])] += 1
-    names = "\n".join(f"  {i}: {n}" for i, n in enumerate(CLASSES))
+    names = "\n".join(f"  {i}: {n}" for i, n in enumerate(names_list))
     (out / "dataset.yaml").write_text(f"path: {out}\ntrain: images/train\nval: images/val\ntest: images/test\nnames:\n{names}\n")
-    (out / "stats.json").write_text(json.dumps({"images": counts, "instances": dict(zip(CLASSES, map(int, inst)))}, indent=1))
-    print("images", counts, "instances", dict(zip(CLASSES, map(int, inst))))
+    (out / "stats.json").write_text(json.dumps({"images": counts, "instances": dict(zip(names_list, map(int, inst)))}, indent=1))
+    print("images", counts, "instances", dict(zip(names_list, map(int, inst))))
 
 
 def main():
@@ -295,7 +319,8 @@ def main():
     sub = ap.add_subparsers(dest="cmd", required=True)
     p = sub.add_parser("plan"); p.add_argument("--out", required=True); p.add_argument("--scenes", type=int, default=200)
     p.add_argument("--views", type=int, default=12); p.add_argument("--seed", type=int, default=0)
-    p.add_argument("--profile", default="v1", choices=["v1", "v2"], help="scene sampler profile (v2: distractor families, more mannequins)")
+    p.add_argument("--profile", default="v1", choices=["v1", "v2", "v3-body", "v3-wrist"],
+                   help="scene sampler profile (v2: distractor families, more mannequins; v3-*: + small pickable classes, Phase 9b)")
     p.add_argument("--robot-yaml", default=str(Path(__file__).resolve().parents[1] / "ros2_ws/src/gurdy_description/config/robot.yaml"), help="camera intrinsics source")
     p.set_defaults(fn=cmd_plan)
     p = sub.add_parser("render"); p.add_argument("--out", required=True); p.add_argument("--start", type=int, default=0)

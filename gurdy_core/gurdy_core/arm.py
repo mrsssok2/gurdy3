@@ -308,8 +308,9 @@ def _hull(pts):
 # Pickable test objects (NEW, small and light; the existing lab classes are all too big / heavy, see the plan).
 PICKABLE = {
     "small_box":      {"shape": "box", "size": (0.05, 0.05, 0.05), "mass": 0.05, "grasp": "top", "grip_w": 0.05},
-    "mini_toolbox":   {"shape": "box", "size": (0.12, 0.05, 0.075), "mass": 0.08, "grasp": "top", "grip_w": 0.02,
-                       "grasp_h": 0.068},                 # handle on top (bar 0.02 wide, top at 0.075)
+    "mini_toolbox":   {"shape": "box", "size": (0.12, 0.05, 0.095), "mass": 0.08, "grasp": "top", "grip_w": 0.02,
+                       "grasp_h": 0.09},                  # raised handle (bar 0.02 wide, top at 0.095; body top 0.06, so the
+                                                          # finger tips 2 cm below the grasp centre stay 1 cm above the body)
     "can":            {"shape": "cyl", "radius": 0.033, "height": 0.12, "mass": 0.06, "grasp": "side", "grip_w": 0.066},
     "mini_cone":      {"shape": "cone", "radius": 0.04, "height": 0.10, "mass": 0.03, "grasp": "side", "grip_w": 0.045,
                        "grasp_h": 0.05},

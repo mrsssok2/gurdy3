@@ -117,12 +117,12 @@ class's approach angles, and grasp + pre-grasp (5 cm back along the approach) co
 | object | grasp | feasible area | x range at y = 0 | largest disc inside | coverage of a 2 / 5 / 12 cm disc |
 |---|---|---|---|---|---|
 | small_box 5 cm cube, 50 g | top | 204 cm² | −0.32 .. −0.21 | r 6.0 cm at (−0.27, −0.02) | 100 / 100 / 45 % |
-| mini_toolbox 12 × 5 × 7.5 cm, 80 g | top (handle) | 67 cm² | −0.32 .. −0.26 | r 4.0 cm | 100 / 75 / 15 % |
+| mini_toolbox 12 × 5 × 9.5 cm (raised handle, Phase 9b model), 80 g | top (handle) | 45 cm² | −0.30 .. −0.26 | r 3.0 cm | 100 / 51 / 10 % |
 | can r 3.3 cm, h 12 cm, 60 g | side | 257 cm² | −0.39 .. −0.31 | r 5.0 cm | 100 / 99 / 45 % |
 | mini_cone r 4 cm, h 10 cm, 30 g | side | 253 cm² | −0.39 .. −0.31 | r 5.0 cm | 100 / 99 / 45 % |
 | mini_extinguisher r 2.5 cm, h 15 cm, 80 g | side | 298 cm² | −0.40 .. −0.31 | r 5.1 cm | 100 / 100 / 50 % |
 
-**So the arm cannot absorb Nav2's 12 cm error: only 15–50 % of that disc is reachable.** Every pick needs a **final
+**So the arm cannot absorb Nav2's 12 cm error: only 10–50 % of that disc is reachable.** Every pick needs a **final
 approach**:
 1. Nav2 goal 0.5 m from the object, facing away.
 2. Arm to `ready`, wrist camera on.
