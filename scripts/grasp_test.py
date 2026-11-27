@@ -2,7 +2,7 @@
 """Phase 9 first grasp test in Gazebo lab4_fetch, ROS side (NOT RUN YET). Started by scripts/grasp_test.sh inside the sim
 container with the stack up (arm:=true world:=lab4_fetch controller:=tripod, optionally move_group).
 
-    python3 scripts/grasp_test.py OUT_DIR [--classes small_box can ...] [--tries 3] [--step teleport|walk] [--yaw gt|none]
+    python3 scripts/grasp_test.py OUT_DIR [--classes small_box can ...] [--tries 3] [--step teleport|walk] [--yaw wrist|gt|none]
                                           [--moveit auto|off] [--grip-effort 3.0]
 
 Per try (5 classes x 3 tries by default; object = the lab4_fetch instance of the class, gurdy_core.grasp_test):
@@ -11,8 +11,11 @@ Per try (5 classes x 3 tries by default; object = the lab4_fetch instance of the
   1. arm -> view pose (servo_view / servo_view_far), wrist camera triggered
   2. visual servo (gurdy_core.visual_servo.VisualServo, wrist depth + fitted floor + object3d): body steps are
      `teleport` (default: exact steps, isolates the grasp from walking) or `walk` (closed loop /cmd_vel 0.05 m/s on GT odom)
-  3. grasp plan at the servo's estimate (gurdy_core.grasp_test.grasp_plan); wrist roll from the object's GT yaw relative to
-     the robot (`--yaw gt`, an ORACLE input: yaw from the wrist view is not wired yet) or 0 (`--yaw none`)
+  3. grasp plan at the servo's estimate (gurdy_core.grasp_test.grasp_plan). Wrist roll from the object yaw:
+     `--yaw wrist` (DEFAULT): gurdy_core.wrist_yaw.estimate_yaw on a fresh wrist frame (cube: min-area rectangle of the top
+     face; mini toolbox: handle direction; symmetric classes: none); below `--yaw-min-conf` the roll falls back to 0.
+     `--yaw gt`: ground truth (comparison only, an oracle). `--yaw none`: roll 0. Every try records the wrist estimate
+     and its error vs ground truth whatever the mode.
   4. pre-grasp (MoveIt if /move_action answers, else a direct joint goal) -> grasp (direct, slow straight line)
   5. close: CONTACT physics only (effort on both finger joints, `--grip-effort` N each; no DetachableJoint / attach)
   6. lift 5 cm (5 IK waypoints, direct), hold 5 s; object pose sampled from /world/lab4_fetch/dynamic_pose/info
@@ -45,6 +48,7 @@ import gen_world_lab4 as L4  # noqa: E402
 from gurdy_core import arm as A  # noqa: E402
 from gurdy_core import grasp_test as G  # noqa: E402
 from gurdy_core.visual_servo import VIEW_POSE, ServoParams, VisualServo  # noqa: E402
+from gurdy_core import wrist_yaw as WY  # noqa: E402
 
 WORLD, ROBOT_MODEL = "lab4_fetch", "gurdy"
 BASE_Z = 0.115
@@ -279,8 +283,15 @@ def one_try(rig: Rig, obj: dict, k: int, a) -> dict:
         return {**rec, "outcome": "missed", "detail": f"servo {sres.code}", "time_s": None}
     est = np.array(sres.obs.xy)
     rec["est_xy_base"] = [round(float(v), 4) for v in est]
-    # 3. plan
-    yaw_b = None if a.yaw == "none" else math.atan2(math.sin(obj.get("yaw", 0.0) - yaw), math.cos(obj.get("yaw", 0.0) - yaw))
+    # 3. yaw (wrist estimate always recorded and compared with ground truth) + plan
+    gt_b = math.atan2(math.sin(obj.get("yaw", 0.0) - yaw), math.cos(obj.get("yaw", 0.0) - yaw))
+    try:
+        dpt, Kw, Tw = rig.wrist_view()
+        ye = WY.estimate_yaw(dpt, Kw, Tw, cls, xy_hint=est)
+    except Exception as e:                                          # noqa: BLE001
+        ye = WY.YawEstimate(None, 0.0, "none", WY.PERIOD.get(cls), reason=f"wrist view: {e!r}")
+    rec["yaw"] = G.yaw_record(cls, ye, gt_b, a.yaw, a.yaw_min_conf)
+    yaw_b = rec["yaw"]["used"]
     plan = G.grasp_plan(ARM, RB, cls, est, yaw_b)
     rec["plan"] = plan.to_dict()
     if not plan.ok:
@@ -340,7 +351,8 @@ def main():
     ap.add_argument("--classes", nargs="*", default=list(G.SMALL))
     ap.add_argument("--tries", type=int, default=3)
     ap.add_argument("--step", choices=("teleport", "walk"), default="teleport")
-    ap.add_argument("--yaw", choices=("gt", "none"), default="gt")
+    ap.add_argument("--yaw", choices=("wrist", "gt", "none"), default="wrist", help="wrist estimate (default), ground truth (comparison), 0")
+    ap.add_argument("--yaw-min-conf", type=float, default=0.5, help="below this wrist-yaw confidence the roll is 0")
     ap.add_argument("--moveit", choices=("auto", "off"), default="auto")
     ap.add_argument("--grip-effort", type=float, default=3.0, help="N per finger (joint effort limit 10 N)")
     a = ap.parse_args()
@@ -371,8 +383,10 @@ def main():
                     rows.append(r)
                     fh.write(json.dumps(r, default=float) + "\n")
                     fh.flush()
+                    y = r.get("yaw") or {}
                     print(f"  {cls} try {k + 1}: {r['outcome']} {r.get('detail', '')} (lifted {r.get('lifted')}, sank {r.get('sank')}, "
-                          f"time {r.get('time_s')} s sim)", flush=True)
+                          f"time {r.get('time_s')} s sim; yaw {y.get('method')} conf {y.get('confidence')} err {y.get('err_deg')} deg, "
+                          f"used {y.get('used_src')})", flush=True)
         summ = G.summarize(rows)
         (out / "summary.json").write_text(json.dumps(summ, indent=1) + "\n")
         for cls in a.classes:
@@ -381,7 +395,8 @@ def main():
                 continue
             print(f"{'PASS' if s['pass'] else 'FAIL'} grasp_{cls} {s['success']}/{s['tries']} success, {s['slipped']} slipped, "
                   f"{s['dropped']} dropped, {s['missed']} missed, {s['error']} errors, {s['knocked']} knocked, "
-                  f"mean time {s['mean_time_s']} s sim", flush=True)
+                  f"mean time {s['mean_time_s']} s sim, wrist yaw err median {s['yaw_err_median_deg']} / max {s['yaw_err_max_deg']} deg "
+                  f"({s['yaw_low_conf']} low confidence)", flush=True)
     finally:
         rig.poses.close()
         rig.destroy_node()

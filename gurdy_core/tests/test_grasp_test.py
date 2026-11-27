@@ -146,3 +146,46 @@ pose {
     p = G.PoseTextParser()
     out = [r for r in (p.feed(line) for line in text.splitlines()) if r]
     assert out == [("f_red_cube", 1.2, -1.4, 0.0), ("gurdy", 0.5, 0.0, 0.112)]
+
+
+# ------------------------------------------------------------------ wrist yaw in the grasp test
+from gurdy_core import wrist_yaw as WY  # noqa: E402
+
+
+def _est(yaw, conf, method="rect"):
+    return WY.YawEstimate(yaw, conf, method, WY.PERIOD.get("small_box"))
+
+
+def test_yaw_record_modes():
+    r = G.yaw_record("small_box", _est(0.10, 0.9), gt_yaw_base=0.10 + math.pi / 2 + math.radians(2))
+    assert r["used_src"] == "wrist" and r["used"] == pytest.approx(0.10) and r["err_deg"] == pytest.approx(2.0, abs=0.01)
+    r = G.yaw_record("small_box", _est(0.10, 0.3), 0.5)
+    assert r["used_src"] == "low_confidence" and r["used"] is None and r["err_deg"] is not None   # error still reported
+    r = G.yaw_record("small_box", _est(0.10, 0.9), 0.5, mode="gt")
+    assert r["used_src"] == "gt" and r["used"] == pytest.approx(0.5)
+    assert G.yaw_record("small_box", _est(0.10, 0.9), 0.5, mode="none")["used"] is None
+    r = G.yaw_record("can", WY.YawEstimate(None, 1.0, "symmetric"), 0.5)
+    assert r["used_src"] == "symmetric" and r["err_deg"] is None and r["used"] is None
+
+
+def test_summary_reports_yaw_error_per_class():
+    rows = [{"class": "small_box", "outcome": "success", "time_s": 30.0, "yaw": {"err_deg": e, "used_src": s}}
+            for e, s in ((1.0, "wrist"), (3.0, "wrist"), (20.0, "low_confidence"))]
+    s = G.summarize(rows)["small_box"]
+    assert s["yaw_err_median_deg"] == 3.0 and s["yaw_err_max_deg"] == 20.0 and s["yaw_low_conf"] == 1
+    assert G.summarize([{"class": "can", "outcome": "missed"}])["can"]["yaw_err_median_deg"] is None
+
+
+def test_wrist_yaw_drives_the_toolbox_roll_end_to_end():
+    sys.path.insert(0, str(ROOT / "gurdy_core/tests"))
+    from servo_sim import SimRobot
+    for deg in (0, 30, 75, 140):
+        r = SimRobot("mini_toolbox", CLASS_INFO["mini_toolbox"][3], yaw_obj=0.3 + math.radians(deg), depth_noise=0.02, seed=deg)
+        d, K, T = r.wrist_view()
+        xy = r.obj_rel()
+        rec = G.yaw_record("mini_toolbox", WY.estimate_yaw(d, K, T, "mini_toolbox", xy_hint=xy), math.radians(deg))
+        assert rec["used_src"] == "wrist" and rec["err_deg"] <= 2.0
+        p = G.grasp_plan(ARM, ROBOT, "mini_toolbox", xy, rec["used"])
+        f = G._finger_axis_xy(ARM, p.grasp)
+        across = np.array([math.cos(math.radians(deg) + math.pi / 2), math.sin(math.radians(deg) + math.pi / 2)])
+        assert abs(float(f @ across)) > 0.97, deg                      # fingers close across the handle

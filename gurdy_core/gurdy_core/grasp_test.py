@@ -1,5 +1,6 @@
 """Phase 9 grasp test, pure part (numpy, no ROS): robot placement next to a small object, grasp / lift waypoints from the
-analytic IK, and the outcome classification of one try. The ROS runner is scripts/grasp_test.py (Gazebo lab4_fetch).
+analytic IK, the yaw bookkeeping (wrist estimate vs ground truth) and the outcome classification of one try. The ROS
+runner is scripts/grasp_test.py (Gazebo lab4_fetch).
 
 Placement: the arm picks BEHIND the robot (rear mount turned 180 deg). The robot is put so that the object lies at the
 class grasp-zone centre (visual_servo.CLASS_INFO, base_link) PLUS a known offset per try, so the visual servo has to
@@ -9,7 +10,8 @@ objects (footprint circle 0.34 m, >= 5 cm margin).
 Grasp: plan_grasp (gurdy_core.arm: limits + collision model, top grasp for box-like classes, side grasp for the rest)
 gives q_grasp and the approach angle; the pre-grasp is pulled back 5 cm along the approach; the lift is a straight
 vertical line of `n` IK waypoints (+5 cm). For top grasps the wrist roll is chosen numerically so the finger axis (palm y)
-is across the object's SHORT side (yaw from ground truth in the first version: an oracle input, see the runner).
+is across the object's SHORT side; the yaw comes from the wrist view (gurdy_core.wrist_yaw), ground truth only as a
+comparison mode.
 
 Outcome of one try (object pose samples from Gazebo, finger joint positions):
   missed    the object never rose >= 60 % of the lift (fingers closed on nothing or it slid out at once)
@@ -27,6 +29,7 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from . import arm as A
+from . import wrist_yaw as WY
 from .visual_servo import CLASS_INFO
 
 FOOT_R = 0.34
@@ -189,12 +192,37 @@ def classify(z_rest: float, lift_z: list, hold_z: list, xy_rest=None, xy_at_clos
     return TryResult("success", top, sank, end, knocked)
 
 
+def yaw_record(cls: str, est, gt_yaw_base: float, mode: str = "wrist", min_conf: float = 0.5) -> dict:
+    """Per-try yaw bookkeeping: the wrist estimate, its error vs ground truth (modulo the class symmetry; None for symmetric
+    classes or no estimate), and the yaw actually USED for the roll in this mode (wrist below min_conf -> None = roll 0)."""
+    period = WY.PERIOD.get(cls)
+    err = None
+    if est.yaw is not None and period:
+        err = round(math.degrees(WY.circ_err(est.yaw, gt_yaw_base, period)), 2)
+    if mode == "gt":
+        used, src = (gt_yaw_base if period else None), "gt"
+    elif mode == "none":
+        used, src = None, "none"
+    elif est.method == "symmetric":
+        used, src = None, "symmetric"
+    elif est.yaw is not None and est.confidence >= min_conf:
+        used, src = est.yaw, "wrist"
+    else:
+        used, src = None, "low_confidence"
+    return {"mode": mode, **est.to_dict(), "gt_base": round(float(gt_yaw_base), 4), "err_deg": err,
+            "used": None if used is None else float(used), "used_src": src}
+
+
 def summarize(rows: list, min_success: int = 2) -> dict:
     """Per class: counts, mean time of successful tries, PASS when >= min_success of the tries succeeded and none dropped."""
     out = {}
     for r in rows:
         c = out.setdefault(r["class"], {"tries": 0, "success": 0, "slipped": 0, "dropped": 0, "missed": 0, "error": 0,
-                                        "knocked": 0, "times": []})
+                                        "knocked": 0, "times": [], "yaw_errs": [], "yaw_low_conf": 0})
+        y = r.get("yaw") or {}
+        if y.get("err_deg") is not None:
+            c["yaw_errs"].append(y["err_deg"])
+        c["yaw_low_conf"] += int(y.get("used_src") == "low_confidence")
         c["tries"] += 1
         c[r["outcome"]] = c.get(r["outcome"], 0) + 1
         c["knocked"] += int(bool(r.get("knocked")))
@@ -203,6 +231,9 @@ def summarize(rows: list, min_success: int = 2) -> dict:
     for c in out.values():
         c["mean_time_s"] = round(sum(c["times"]) / len(c["times"]), 1) if c["times"] else None
         c["pass"] = c["success"] >= min_success and c["dropped"] == 0
+        e = sorted(c.pop("yaw_errs"))
+        c["yaw_err_median_deg"] = round(float(np.median(e)), 2) if e else None
+        c["yaw_err_max_deg"] = e[-1] if e else None
         del c["times"]
     return out
 

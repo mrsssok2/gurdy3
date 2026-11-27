@@ -27,8 +27,9 @@ Branch `phase8c-wire`. Host-venv tests only; nothing has run in Gazebo, MoveIt o
    0.05 m/s on GT odom.
 3. **Plan.** `grasp_plan` at the servo's estimate: `arm.plan_grasp` (limits + collision model), pre-grasp −5 cm along the
    approach, 5 vertical IK waypoints for the lift. Top grasps pick the wrist roll numerically so the fingers close across
-   the short side. The object yaw comes from **ground truth** (`--yaw gt`, an oracle input: the wrist-view yaw is not
-   wired yet); `--yaw none` = roll 0.
+   the short side. The object yaw comes from the **wrist view** (`--yaw wrist`, default; section "Wrist-view yaw"). Below
+   `--yaw-min-conf` (0.5) the roll falls back to 0. `--yaw gt` uses ground truth (comparison only); `--yaw none` = roll 0.
+   Each try records the wrist estimate, its confidence and its error vs ground truth in every mode.
 4. **Approach.** Pre-grasp with **MoveIt** if `/move_action` answers (a failure falls back to a direct goal; logged per
    try), else a direct `FollowJointTrajectory` goal. The final straight approach and the lift always use direct goals.
 5. **Close.** Contact physics only: `gripper_controller` (JointGroupEffortController) −3 N per finger (`--grip-effort`;
@@ -51,6 +52,42 @@ the hold.
 **PASS per class:** ≥ 2/3 success and 0 drops (proposed). Lines `PASS|FAIL grasp_<class> ...` go into
 `docs/results/data/grasp_test/summary.txt`. The run dir holds `tries.jsonl` (servo log, plan, fingers, z samples, MoveIt vs
 direct per move), `summary.json`, the logs and `rtf.txt`.
+
+## Wrist-view yaw (`gurdy_core/gurdy_core/wrist_yaw.py`, added 2026-11-27)
+
+* **Points.** The wrist depth goes to base_link points, then the RANSAC floor plane (the same as the servo), then the
+  floor frame. The object's points are 1 cm .. class height + 3 cm above the floor, within the footprint radius + 3 cm
+  of the servo estimate.
+* **small_box** (yaw mod 90°): minimum-area rectangle of the top-face points (top 1.2 cm), 0.5° grid. Confidence =
+  distinctness of the minimum (area ratio 1.1 → 1.35; a full face gives ~1.4) × point count × 0.5 if the face touches
+  the image border.
+* **mini_toolbox** (mod 180°): principal axis of the handle bar (points above 8 cm). Its elongation (std ratio 2 → 3.5)
+  gives the confidence. Without handle points, the body top (4.5–6.8 cm) is used instead (method `body`).
+* **can, mini_cone, mini_extinguisher:** no yaw (symmetric, side grasp with roll 0).
+* **Report.** `tries.jsonl` has `yaw` = {method, yaw, confidence, partial, gt_base, err_deg, used, used_src}. The console
+  shows the per-try error, and the PASS/FAIL line has the class median / max yaw error and the low-confidence count.
+
+Synthetic wrist frames (`tests/servo_sim.py`: view pose, flat floor, depth noise σ = k·z², object at the zone centre,
+5° steps):
+
+| class | noise k | frames | error median / max (deg) | min confidence |
+|---|---|---|---|---|
+| small_box | 0 | 19 | 1.0 / 2.5 | 1.00 |
+| small_box | 0.02 | 19 | 1.5 / 2.5 | 1.00 |
+| small_box | 0.05 | 19 | 1.0 / 3.0 | 1.00 |
+| mini_toolbox | 0 | 36 | 0.0 / 0.1 | 1.00 |
+| mini_toolbox | 0.02 | 36 | 0.0 / 0.1 | 1.00 |
+| mini_toolbox | 0.05 | 36 | 0.0 / 0.2 | 1.00 |
+
+These are upper bounds: ideal geometry and no edge artefacts. Tests (`gurdy_core/tests/test_wrist_yaw.py`, 88) also
+cover:
+* body tilt 0.03 rad + heavy noise: ≤ 4° / ≤ 3°
+* a partial view: flagged, confidence halved
+* a toolbox with no visible handle: body top ≤ 3°
+* symmetric classes, an empty floor, no hint, a second cube 12 cm away
+
+An end-to-end test (`test_grasp_test.py`) checks wrist frame → yaw → grasp plan → fingers across the toolbox handle at
+0 / 30 / 75 / 140°.
 
 ## Run (after day_0927 01_build, 04_arm_spawn, 09_wrist_camera PASS)
 
@@ -80,6 +117,6 @@ MOVEIT=off scripts/grasp_test.sh v1_direct                  # without move_group
 ## Honest limits
 
 * The body steps are teleports, so locomotion error is excluded (`--step walk` tests it).
-* The object yaw for the top-grasp roll is an oracle (ground truth).
+* The wrist-view yaw is tested on synthetic frames only (ideal geometry); the Gazebo error is in the report per try.
 * One world, one instance per class, 3 tries: too few for rates; this is a first functional test.
 * The time is sim time, which includes waiting phases (settle, the 5 s hold).
