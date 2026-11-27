@@ -28,6 +28,7 @@ class FetchSession:
         self.picker = picker           # Phase 9f: brain.fetch.picker.FetchPicker for free phrasings (None = router only)
         self.m = FetchMachine(robot)
         self.pending = None            # (intent, candidates) waiting for 'the red one' / 'the one in room C'
+        self.queue: list = []          # remaining items of a multi-object request ("the red can and the blue cube"), in order
         self.calls: list = []          # validated tool calls of the last turn
         self.last: Outcome | None = None
 
@@ -87,8 +88,10 @@ class FetchSession:
                 intent, chosen = res
             else:
                 self.pending = None
+                self.queue = []                        # a new request replaces the rest of an interrupted list
                 intent = parse(text)
         else:
+            self.queue = []
             intent = parse(text)
         if intent is None and self.picker is not None:
             ref = refuse_reason(text)                  # text-level safety BEFORE any model sees the request
@@ -97,6 +100,33 @@ class FetchSession:
             intent = self.picker.pick(text, sorted(ROOMS))
         if intent is None:
             return None
+        if intent["intent"] == "multi_pick":           # one gripper: holding two things is impossible -> ask, never guess
+            names = " or ".join(f"the {(o.get('color') + ' ') if o.get('color') else ''}{label(o['class'])}" for o in intent["objects"])
+            return f"I can only hold one thing at a time. Which one should I pick up: {names}?"
+        if intent["intent"] == "multi":                # several objects: one after another, in the order they were said
+            self.queue = list(intent["items"][1:])
+            intent = intent["items"][0]
+        return self._run_queue(self._run(intent, chosen))
+
+    # ---- multi-object requests: one after another; stop at the first item that does not end as asked
+    def _run_queue(self, reply: str | None) -> str | None:
+        parts = [reply]
+        while self.queue and self.pending is None and self.last is not None and self.last.status in ("placed", "handed_over"):
+            nxt = self.queue.pop(0)
+            self.last = None
+            parts.append(self._run(nxt, None))
+        if self.queue and self.pending is None:
+            rest = " and ".join(self._name(i["object"]) for i in self.queue)
+            self.queue = []
+            parts.append(f"I stopped there, so I haven't done {rest} yet.")
+        return " ".join(p for p in parts if p)
+
+    @staticmethod
+    def _name(o: dict) -> str:
+        return f"the {(o['color'] + ' ') if o.get('color') else ''}{label(o['class'])}"
+
+    def _run(self, intent: dict, chosen) -> str | None:
+        self.last = None
         if intent["intent"] == "refuse":
             return intent["reply"]
         if intent["intent"] == "hand_over":
