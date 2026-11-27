@@ -107,6 +107,7 @@ class Plan:
     length_m: float = 0.0
     summary: str = ""
     notes: list = field(default_factory=list)
+    goal_landmark: dict | None = None      # "the room with the red barrel": the object that defines the goal room (re-observed)
 
     @property
     def answered(self) -> bool:
@@ -246,8 +247,11 @@ def _relation_point(rel, objs, prev, world):
         if rel == "next_to":                             # any free side, nearest to the walker first
             cands += [(L["x"] + sx * OFFSET, L["y"] + sy * OFFSET) for sx, sy in ((lx, ly), (-lx, -ly), (ux, uy))]
     ignore = {o["id"] for o in objs}
+    sig = [o.get("sigma", 0.0) for o in objs]
+    ref = math.hypot(*sig) / 2 if rel == "between" else sig[0]          # the midpoint of two noisy points
+    clear = 0.4 + world.margin + (world.sigma_k * ref if rel == "between" else 0.0)
     for x, y in cands:
-        if world.free(x, y, ignore=ignore) and all(math.hypot(x - o["x"], y - o["y"]) >= 0.4 for o in objs):
+        if world.free(x, y, ignore=ignore, ref_sigma=ref) and all(math.hypot(x - o["x"], y - o["y"]) >= clear for o in objs):
             return x, y
     return None
 
@@ -363,7 +367,8 @@ def validate(raw, text: str, world: VLNWorld) -> Plan:
                            for t_ in [2 * math.pi * i / 16 for i in range(16)]]
                 else:
                     raw = [(L["x"] - ux * kk, L["y"] - uy * kk) for kk in (STOP_STANDOFF, 0.5, 0.8)]
-                cand = [(x, y) for x, y in raw if world.free(x, y, ignore={L["id"]}) and world.room_of(x, y) == room]
+                cand = [(x, y) for x, y in raw if world.free(x, y, ignore={L["id"]}, ref_sigma=L.get("sigma", 0.0))
+                        and world.room_of(x, y) == room]
             for c in cand:
                 seq = [pos, *pts, c]
                 ln = sum(math.dist(p, q) for p, q in zip(seq, seq[1:])) + (math.dist(c, nxt) if nxt else 0.0)
@@ -381,7 +386,7 @@ def validate(raw, text: str, world: VLNWorld) -> Plan:
             pos = (dx, dy)
         L = objs[0] if objs else None
         wps.append({"x": round(c[0], 3), "y": round(c[1], 3), "kind": a, "room": room, "label": label,
-                    **({"landmark": {"id": L["id"], "class": L["class"], "x": L["x"], "y": L["y"]}} if L and kind == "point" else {})})
+                    **({"landmark": _lm(L, world)} if L and kind == "point" else {})})
         length += math.dist(pos, c)
         pos, cur = c, room
         rooms_seq += rooms[1:]
@@ -393,8 +398,13 @@ def validate(raw, text: str, world: VLNWorld) -> Plan:
     checks += [{"type": "room_order", "rooms": rooms_seq}, {"type": "never_in", "rooms": sorted(avoid)}]
     summary = "; ".join(("go past " if w["kind"] == "pass" else "through " if w["kind"] == "door" else
                          "into " if w["kind"] == "enter" else "stop at ") + w["label"] for w in wps)
+    gl = steps[-1][4][0] if steps[-1][1] == "room" and steps[-1][4] else None
     return Plan(True, waypoints=wps, goal=goal, rooms=rooms_seq, avoid=sorted(avoid), checks=checks, length_m=round(length, 2),
-                summary=summary, notes=notes)
+                summary=summary, notes=notes, goal_landmark=_lm(gl, world) if gl else None)
+
+
+def _lm(o, world):
+    return {"id": o["id"], "class": o["class"], "color": o.get("color") or "", "x": o["x"], "y": o["y"], "label": _obj_label(o, world)}
 
 
 def _not_found(ref):

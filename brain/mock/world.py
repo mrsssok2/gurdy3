@@ -14,6 +14,13 @@ RES = 0.1            # grid cell, m
 ROBOT_RADIUS = 0.25  # planning inflation (footprint + margin)
 
 
+def zone_hit(z, x: float, y: float) -> bool:
+    """A no-go zone as a tuple: circle (x, y, r) or rectangle (x0, y0, x1, y1)."""
+    if len(z) == 4:
+        return z[0] <= x <= z[2] and z[1] <= y <= z[3]
+    return math.hypot(x - z[0], y - z[1]) <= z[2]
+
+
 @dataclass
 class Rect:
     x0: float
@@ -110,7 +117,7 @@ class World:
         n = max(2, int(math.hypot(q[0] - p[0], q[1] - p[1]) / 0.0125))
         for k in range(1, n + 1):
             x, y = p[0] + (q[0] - p[0]) * k / n, p[1] + (q[1] - p[1]) * k / n
-            if not self.is_free(x, y) or any(math.hypot(x - z[0], y - z[1]) <= z[2] for z in zones):
+            if not self.is_free(x, y) or any(zone_hit(z, x, y) for z in zones):
                 return False
         return True
 
@@ -135,12 +142,12 @@ class World:
     def plan(self, start: tuple[float, float], goal: tuple[float, float], zones=()) -> list[tuple[float, float]] | None:
         """A* on the inflated grid (8-connected), then string-pulled. Returns waypoints (start excluded) or None.
 
-        `zones` = circles (x, y, r) that must not be entered.
+        `zones` = circles (x, y, r) or rectangles (x0, y0, x1, y1) that must not be entered.
         """
         s, g = self._cell(*start), self._cell(*goal)
         zone_cells: set[tuple[int, int]] = set()
         for z in zones:
-            zone_cells |= self._raster_disc(*z)
+            zone_cells |= self._raster_rect(Rect(*z)) if len(z) == 4 else self._raster_disc(*z)
         bad = self.blocked_cells | zone_cells
         if g in bad or not self.bounds.contains(*goal):
             return None

@@ -365,7 +365,9 @@ then Phase 5b VLN, Phase 8, Phase 9, Phase 10 below. Nothing in Part 2 blocks "G
 ## Phase 5b — End-to-end Vision-Language-Navigation experiment (planned, not started)
 Question: can a small end-to-end policy distilled from the modular system (LLM brain + Nav2 + YOLO) match it?
 - [x] Modular VLN design + plan validator (LLM picks a constrained JSON plan, code validates against words + map, grounds landmarks, routes around avoided rooms), metrics code (SR / SPL / oracle / wrong room / avoid violation / false claims), DEV set 45 (not held-out, oracle 45/45) — `docs/results/vln_plan.md`, branch `phase10-vln-prep` (2026-11-27)
-- [ ] DEV run with gurdy-sft-400 / base (Ollama); `Agent._vln_route` + execution (legs, temporary no-go zones, progress monitor); Gazebo runner on the user's blind VLN suite
+- [x] `Agent._vln_route` + execution on the MOCK behind a flag (temporary zones, room order, pass check, re-observation, pose-checked arrival, e-stop); DEV end to end on the mock 45/45 (2026-11-27)
+- [x] Sigma-aware clearance + RosBackend execution code (temporary zones, world from places + /map + semantic map), FakePort tests (2026-11-27; not run in ROS)
+- [ ] DEV run with gurdy-sft-400 / base (Ollama); Gazebo runner on the user's blind VLN suite (no new VLN features before the Gazebo tests)
 - [ ] Record the modular system completing English missions as demonstrations (camera frames + instruction + `/cmd_vel`, plus outcome labels)
 - [ ] Train a small VLN policy (camera + instruction → `/cmd_vel`) by imitation / distillation
 - [ ] Compare modular vs end-to-end: success rate, time, collisions, unseen rooms, unseen phrasings

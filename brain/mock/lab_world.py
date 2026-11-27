@@ -117,4 +117,6 @@ def gazebo_lab4() -> World:
     walls = lab4_walls(gt["bounds"], gt["doors"], div_x, div_y, g.WALL_T)
     objects = [GtObject(i + 1, o["class"], o["color"], o["x"], o["y"], _LAB4_RADIUS[o["class"]]) for i, o in enumerate(gt["objects"])]
     pad = 0.2
-    return World(bounds=Rect(x0 - pad, y0 - pad, x1 + pad, y1 + pad), rooms=rooms, walls=walls, objects=objects, places=places, map_id=spec.get("map_id", "lab4"))
+    w = World(bounds=Rect(x0 - pad, y0 - pad, x1 + pad, y1 + pad), rooms=rooms, walls=walls, objects=objects, places=places, map_id=spec.get("map_id", "lab4"))
+    w.doors = {k: (float(v[0]), float(v[1])) for k, v in gt["doors"].items()}     # doorway centres (VLN routing: brain/vln/world.py)
+    return w

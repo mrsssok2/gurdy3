@@ -47,6 +47,7 @@ class RosBackend:
         self.places: dict[str, dict] = {}          # name -> {x, y, kind, rect?}
         self.zones: list[dict] = []
         self.zones_version = 0           # bumped when a zone is added / removed: running navigation steps re-check their path
+        self.doors: dict[str, tuple] = {}            # doorway centres from the places file (optional; VLN detects them on /map otherwise)
         self._scanned: dict[str, float] = {}       # room -> time its full-circle scan ended without the search ending (sweep order)
         self.task: _Task | None = None
         self.next_task = 1
@@ -85,8 +86,38 @@ class RosBackend:
         if not self._recent(typ, DEDUP_S):
             self._emit(typ, severity, text, src=src, **data)
 
+    # ---- temporary zones (not a tool): an executor's zones for ONE walk (VLN avoided rooms). Same enforcement as the
+    # user's zones (goals, Nav2 path check + re-check via zones_version, straight walks), but: never written to the places
+    # file, removed by tag at the end of the walk, all removed on e-stop, and expired by `ttl_s` in tick() in case the
+    # executor never comes back (a crash of the process loses them anyway: memory only).
+    def add_temp_zone(self, rect, tag: str, name: str, ttl_s: float = 1800.0) -> int:
+        x0, y0, x1, y1 = (float(v) for v in rect)
+        zid = 1 + max((z["id"] for z in self.zones), default=0)
+        self.zones.append({"id": zid, "name": name, "x": round((x0 + x1) / 2, 2), "y": round((y0 + y1) / 2, 2),
+                           "r": round(math.hypot(x1 - x0, y1 - y0) / 2, 2), "rect": [x0, y0, x1, y1],
+                           "temporary": True, "tag": tag, "expires": self.now() + ttl_s})
+        self.zones_version += 1
+        return zid
+
+    def remove_temp_zones(self, tag: str | None) -> int:
+        """Remove the temporary zones of `tag` (None = all temporary zones)."""
+        n = len(self.zones)
+        self.zones = [z for z in self.zones if not (z.get("temporary") and (tag is None or z.get("tag") == tag))]
+        if len(self.zones) != n:
+            self.zones_version += 1
+        return n - len(self.zones)
+
+    def _expire_temp_zones(self) -> None:
+        now = self.now()
+        old = [z for z in self.zones if z.get("temporary") and z.get("expires", 1e18) < now]
+        if old:
+            self.zones = [z for z in self.zones if z not in old]
+            self.zones_version += 1
+            self._emit("zone_expired", "warning", f"Temporary no-go zone {old[0]['name']} expired and was removed.")
+
     def tick(self) -> None:
         """Advance task state machines, schedules and the alert topic. Call at ~2-10 Hz."""
+        self._expire_temp_zones()
         for a in self.p.drain_alerts():
             if self._recent(a.get("type", "alert"), DEDUP_S):      # the backend already reported the same thing itself
                 continue
@@ -115,13 +146,16 @@ class RosBackend:
                 self.places[name] = {"x": (x0 + x1) / 2, "y": (y0 + y1) / 2, "kind": v.get("kind", "room"), "rect": [x0, y0, x1, y1]}
             else:
                 self.places[name] = {"x": v["x"], "y": v["y"], "kind": v.get("kind", "waypoint")}
-        self.zones = list(d.get("no_go_zones") or [])
+        self.zones = [z for z in (d.get("no_go_zones") or []) if not z.get("temporary")]
+        self.doors = {k: (float(v[0]), float(v[1])) for k, v in (d.get("doors") or {}).items()}   # optional: doorway centres (VLN)
 
     def _save_places(self) -> None:
         if not self.places_file:
             return
         import yaml
-        out = {"map_id": self.p.map_id(), "places": {}, "no_go_zones": self.zones}
+        out = {"map_id": self.p.map_id(), "places": {}, "no_go_zones": [z for z in self.zones if not z.get("temporary")]}
+        if getattr(self, "doors", None):
+            out["doors"] = {k: [round(v[0], 3), round(v[1], 3)] for k, v in self.doors.items()}
         for n, v in self.places.items():
             out["places"][n] = ({"rect": v["rect"], "kind": v["kind"]} if "rect" in v
                                 else {"x": round(v["x"], 3), "y": round(v["y"], 3), "kind": v["kind"]})
@@ -886,10 +920,13 @@ class RosBackend:
             self._emit("user_stop", "info", "You told me to stop.", src="user", tool=tool)
 
     def estop(self, active: bool) -> Result:
-        """Not a tool: the safety layer / e-stop button calls this. Latches /estop and cancels the task."""
+        """Not a tool: the safety layer / e-stop button calls this. Latches /estop and cancels the task; temporary zones of
+        the walk that was running (VLN) are removed too."""
         self.p.set_estop(active)
         if active and self.task:
             self._finish(self.task, "estop")
+        if active:
+            self.remove_temp_zones(None)
         self._emit("estop", "critical" if active else "info", "Emergency stop " + ("engaged." if active else "released."), src="safety")
         return ok(estop=active)
 

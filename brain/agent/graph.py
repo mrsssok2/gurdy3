@@ -74,8 +74,11 @@ class TurnResult:
 
 class Agent:
     def __init__(self, layer: ToolLayer, llm: LLM, safety: SafetyChecker | None = None,
-                 executor: MissionExecutor | None = None, alerts: AlertManager | None = None, clock: AnswerClock | None = None):
+                 executor: MissionExecutor | None = None, alerts: AlertManager | None = None, clock: AnswerClock | None = None,
+                 vln=None):
         self.layer, self.llm = layer, llm
+        self.vln = vln                  # brain.vln.planner.VLNPlanner or None (default OFF: navigation text goes to the planner as before)
+        self.vln_last = None            # last VLN run (VLNResult) for tests / evaluation
         self.safety = safety or SafetyChecker(layer)
         self.executor = executor or MissionExecutor(layer, self.safety)
         self.clock = clock or AnswerClock()      # wall-clock timeouts for every pending question (see answer_clock.py)
@@ -505,6 +508,8 @@ class Agent:
         if is_unsafe_request(text):
             return {"reply_parts": ["I will not do that."], "next": "finish",
                     "verdicts": [{"outcome": "refuse", "rule": "unsafe_request"}]}
+        if self.gate.pending is None and (vr := self._vln_route(text)) is not None:
+            return vr
         if self.gate.pending is None and _BARE_YES_NO.match(text):
             return {"reply_parts": ["There's nothing to confirm right now."], "next": "finish",
                     "verdicts": [{"outcome": "none", "rule": "nothing_pending"}]}
@@ -558,6 +563,37 @@ class Agent:
             return None
         return {"reply_parts": [reply], "next": "finish", "calls": list(fs.calls), "has_query": False,
                 "verdicts": [{"outcome": "none", "rule": "fetch"}]}
+
+    # ---- VLN (behind the `vln` flag): instruction -> validated plan -> walk with checks (brain/vln)
+    def _vln_route(self, text: str) -> dict | None:
+        if self.vln is None:
+            return None
+        be = self.layer.backend
+        if getattr(be, "task", None) is not None:
+            return None                                       # busy: the normal routing answers (busy / stop / ...)
+        from ..vln.executor import VLNExecutor
+        from ..vln.world import VLNWorld
+        verdict = [{"outcome": "none", "rule": "vln"}]
+        try:
+            world = VLNWorld.from_backend(be)
+            plan = self.vln.plan(text, world)
+            if plan is None:
+                return None                                   # not navigation / rejected: the planner handles the text as before
+            if not plan.ok:
+                return {"reply_parts": [plan.reply], "next": "finish", "verdicts": verdict, "has_query": False}
+            res = VLNExecutor(be, lambda: VLNWorld.from_backend(be)).run(plan, self.vln.last_raw, text)
+        except Exception as e:                                # noqa: BLE001  (a VLN bug must not take the agent down)
+            self.errors.append(f"vln route failed: {e}")
+            try:
+                be.stop()
+            except Exception:                                 # noqa: BLE001
+                pass
+            return {"reply_parts": ["Something went wrong with that walk, so I stopped."], "next": "finish",
+                    "verdicts": [{"outcome": "none", "rule": "vln_error"}]}
+        self.vln_last = res
+        reply = res.reply if not plan.notes or not res.ok else plan.notes[0] + " " + res.reply
+        return {"reply_parts": [reply], "next": "finish", "verdicts": verdict, "has_query": False,
+                "calls": [{"tool": "go_to", "args": {"point": {"x": w["x"], "y": w["y"]}}} for w in plan.waypoints]}
 
     # ---- incident questions (temporal memory): routed without the planner, answered from the graph, grounded
     def _incident_route(self, text: str) -> dict | None:
