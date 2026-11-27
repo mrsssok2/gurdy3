@@ -44,3 +44,24 @@ def test_dropped_on_the_way_is_not_held_at_the_end():
 
 def test_raw_json_reply_is_unwrapped():
     assert R.unwrap('{"reply": "I picked up the blue can.", "seq": 2}') == "I picked up the blue can."
+
+
+def test_grip_widths_match_the_arm_model():
+    from gurdy_core import arm as A
+    assert R.GRIP_W == {c: A.PICKABLE[c]["grip_w"] for c in R.GRIP_W}
+
+
+def test_held_5s_later_with_gt_yaw():
+    held = {**t("1.0 0.0 0.0 0.0", "0.17 0.0 0.17 0.0", "0.0 0.0 0.107 0.0"), "can_5s": "0.17 0.0 0.17 0.0", "robot_5s": "0.0 0.0 0.107 0.0"}
+    assert R.gt_verdict(held, [HELD], "small_box")["success"]
+    slipped = {**held, "can_5s": "0.15 0.0 0.0 0.0"}                   # fell to the floor between the samples
+    g = R.gt_verdict(slipped, [HELD], "small_box")
+    assert not g["success"] and "not held 5 s after the reply" in g["why"]
+    turned = {**held, "robot_after": "0.0 0.0 0.107 3.1416", "robot_5s": "0.0 0.0 0.107 3.1416", "can_after": "-0.127 0.0 0.17 0",
+              "can_5s": "-0.127 0.0 0.17 0"}                         # robot faces -x: the folded grasp centre is at world -0.127
+    assert R.gt_verdict(turned, [HELD], "small_box")["held_at_end"]
+
+
+def test_no_attempt_reason_names_the_reply():
+    g = R.gt_verdict(t("1 0 0", "1 0 0", "0 0 0.1", reply="I don't know any red cube, and I won't guess another object."), [])
+    assert not g["success"] and "I don't know any red cube" in g["why"]

@@ -12,7 +12,7 @@
 # Ctrl+C stops the current step (the trap removes the container). Check `docker ps` first: nothing else may run.
 set -uo pipefail
 cd "$(dirname "$0")/.."
-OUT=docs/results/data/day_0927
+OUT=${DAY0927_OUT:-docs/results/data/day_0927}     # DAY0927_OUT: other output dir (overnight runs), default unchanged
 SUMMARY=$OUT/summary.txt
 NAME=gurdy3_day0927
 mkdir -p "$OUT"
@@ -112,11 +112,11 @@ walk_step() {   # walk_step STEP LAUNCH_ARGS   (WALK_S = seconds per phase, defa
 step_05_walk_no_arm()      { walk_step 05_walk_no_arm ""; }
 step_06_walk_arm_folded()  { walk_step 06_walk_arm_folded "arm:=true"; }
 step_07_walk_arm_object()  {   # folded + 0.08 kg in the palm (design payload limit) via an arm.yaml variant
-  python3 - <<'EOF'
-import yaml, pathlib
+  DAY0927_OUT="$OUT" python3 - <<'EOF'
+import os, yaml, pathlib
 p = pathlib.Path("ros2_ws/src/gurdy_description/config/arm.yaml"); d = yaml.safe_load(p.read_text())
 d["links"]["palm"]["mass"] = round(d["links"]["palm"]["mass"] + d["payload"]["max_kg"], 4)
-out = pathlib.Path("docs/results/data/day_0927/arm_payload.yaml"); out.parent.mkdir(parents=True, exist_ok=True)
+out = pathlib.Path(os.environ["DAY0927_OUT"]) / "arm_payload.yaml"; out.parent.mkdir(parents=True, exist_ok=True)
 out.write_text(yaml.safe_dump(d))
 EOF
   walk_step 07_walk_arm_object "arm:=true arm_yaml:=/home/ubuntu/gurdy2/$OUT/arm_payload.yaml"

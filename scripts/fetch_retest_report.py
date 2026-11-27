@@ -46,7 +46,10 @@ def try_attempts(run: Path, v: str, t: dict, att_all: list) -> list:
 
 
 FOLDED_GC = (0.127, 0.0, 0.124)        # base_link grasp centre of the `folded` pose (gurdy_core grasp_centre; tested)
-CAN_W, FINGER_CLOSED, FLOOR_Z = 0.066, 0.004, 0.0
+GRIP_W = {"small_box": 0.05, "mini_toolbox": 0.02, "can": 0.066, "mini_cone": 0.045, "mini_extinguisher": 0.05}   # = arm.PICKABLE grip_w (tested)
+CAN_W, FINGER_CLOSED, FLOOR_Z = GRIP_W["can"], 0.004, 0.0
+LIFT_Z, HELD_XY, HELD_DZ = 0.03, 0.10, 0.03   # lifted: model origin (its base) > 3 cm above the floor; held: <= 10 cm from the folded
+                                              # grasp centre and sunk <= 3 cm between the two samples
 
 
 def _base(robot_xy, yaw, p):
@@ -55,34 +58,49 @@ def _base(robot_xy, yaw, p):
     return (c * dx + s * dy, -s * dx + c * dy)
 
 
-def gt_verdict(t: dict, att: list) -> dict:
-    """-> {'lifted', 'between_fingers', 'held_at_end', 'success', 'why', 'evidence'} from ground truth + sim finger joints."""
+def gt_verdict(t: dict, att: list, cls: str = "can") -> dict:
+    """-> {'lifted', 'between_fingers', 'held_at_end', 'success', 'why', 'evidence'} from ground truth + sim finger joints.
+    t: can_before / can_after (at the reply) [/ can_5s, robot_5s: 5 s later] / robot_after as "x y [z [yaw]]" strings (gz poses)."""
     b, f, r1 = xyz(t["can_before"]), xyz(t["can_after"]), xyz(t["robot_after"])
+    f5, r5 = xyz(t.get("can_5s")), xyz(t.get("robot_5s"))
     last = att[-1] if att else {}
-    yaw = (last.get("robot") or [0, 0, 0.0])[2]
     out = {"lifted": None, "between_fingers": None, "held_at_end": None}
+
+    def yaw_of(r):
+        return r[3] if r and len(r) >= 4 else (last.get("robot") or [0, 0, 0.0])[2]     # GT yaw if logged, else the agent's pose
+
+    def d_fold(c, r):
+        cb = _base(r, yaw_of(r), c)
+        return math.hypot(cb[0] - FOLDED_GC[0], cb[1] - FOLDED_GC[1]), cb
     if b and f and r1:
-        cb = _base(r1, yaw, f)
-        d_fold = math.hypot(cb[0] - FOLDED_GC[0], cb[1] - FOLDED_GC[1])
-        out["held_at_end"] = d_fold <= 0.10 and (len(f) < 3 or f[2] > FLOOR_Z + 0.05)
+        d1, cb = d_fold(f, r1)
         if len(f) >= 3:
-            out["lifted"] = f[2] > FLOOR_Z + 0.03
-            out["evidence"] = f"can z {f[2]:.3f} m at the end, {d_fold:.3f} m from the folded grasp centre"
+            out["lifted"] = f[2] > FLOOR_Z + LIFT_Z
+            out["evidence"] = f"can z {f[2]:.3f} m at the reply, {d1:.3f} m from the folded grasp centre"
+            if f5 and r5 and len(f5) >= 3:
+                d5, _ = d_fold(f5, r5)
+                out["held_at_end"] = d5 <= HELD_XY and f5[2] > FLOOR_Z + LIFT_Z and f[2] - f5[2] <= HELD_DZ
+                out["evidence"] += f"; 5 s later z {f5[2]:.3f} m, {d5:.3f} m"
+            else:
+                out["held_at_end"] = d1 <= HELD_XY and out["lifted"]
         else:
-            out["lifted"] = math.dist(b[:2], f[:2]) >= 0.10 and d_fold <= 0.10
-            out["evidence"] = (f"x/y only: can moved {math.dist(b[:2], f[:2]):.2f} m from its rest, ends {d_fold:.3f} m from the folded "
+            out["lifted"] = math.dist(b[:2], f[:2]) >= 0.10 and d1 <= HELD_XY
+            out["held_at_end"] = d1 <= HELD_XY
+            out["evidence"] = (f"x/y only: can moved {math.dist(b[:2], f[:2]):.2f} m from its rest, ends {d1:.3f} m from the folded "
                                f"grasp centre (base {cb[0]:.3f}, {cb[1]:.3f})")
     fl = last.get("fingers_lifted")
     if fl:
-        out["between_fingers"] = min(fl) > FINGER_CLOSED and sum(fl) >= 0.5 * CAN_W
+        out["between_fingers"] = min(fl) > FINGER_CLOSED and sum(fl) >= 0.5 * GRIP_W.get(cls, CAN_W)
     checks = [("lifted", "not lifted off the floor"), ("between_fingers", "not between the fingers after the lift"),
-              ("held_at_end", "not held at the end")]
+              ("held_at_end", "not held 5 s after the reply" if f5 else "not held at the end")]
     out["success"] = all(out[k] for k, _ in checks)
     out["why"] = "" if out["success"] else "; ".join(w + (" (no data)" if out[k] is None else "") for k, w in checks if not out[k])
     if not out["success"] and last.get("reason"):
         out["why"] += f" [last attempt: {last['outcome']}: {last['reason']}]"
-    if not att and t["reply"].startswith("TIMEOUT"):
-        out["why"] = "timeout before any grasp attempt"
+    if not att and not out["success"]:
+        r = unwrap(t.get("reply", ""))
+        out["why"] = ("timeout before any grasp attempt" if r.startswith("TIMEOUT") else
+                      f"no grasp attempt; robot said: {r[:120] or '(nothing)'}")
     return out
 
 
