@@ -48,7 +48,11 @@ FINGER_CLOSED = 0.004              # m per finger: below this nothing is between
 class FetchConfig:
     nav_timeout_s: float = 240.0
     carry_timeout_s: float = 600.0
-    search_timeout_s: float = 300.0
+    # search time limit: None = sized from the map (RosBackend.search_budget_s: the room sweep from the current pose, incl. the
+    # extra viewpoints of search_view_radius_m), clamped to [search_min_s, search_max_s]; a number = that fixed limit (was 300 s)
+    search_timeout_s: float | None = None
+    search_min_s: float = 300.0
+    search_max_s: float = 2400.0
     search_view_radius_m: float | None = None       # multi-viewpoint room sweep for unseen objects (None = one viewpoint per room)
     handover_timeout_s: float = 20.0
     poll_s: float = 0.2
@@ -58,6 +62,16 @@ class FetchConfig:
     attempt_log: str | None = None  # JSONL file: one record per grasp attempt (also kept in RosFetchRobot.attempts)
     gt: str = "off"                 # off | log (record Gazebo ground truth next to the estimates) | use (grasp at the GT pose)
     approach: str = "nav"           # nav (Nav2 stand-off + turn + back-up) | teleport (gz set_pose to the grasp-zone pose, as grasp_test)
+    # "bring me X" demo delivery (phase 9k, default OFF = hand-over waits for the user to take it, as before):
+    # carry back to the REQUESTER (saved place 'me' / 'user' / 'requester', else the robot pose when the command came, else
+    # home), present at the hand-over pose, open the gripper only when the body is stationary, and claim delivery only when
+    # the state (fingers held it until the release, open after) and, with ground truth, the object's GT pose confirm it
+    bring_me: bool = False
+    still_mps: float = 0.01         # stationary: |v| below this ...
+    still_s: float = 1.0            # ... for this long (sim s) before the gripper opens
+    still_timeout_s: float = 15.0
+    gt_held_m: float = 0.10         # GT: a held object is within this of the grasp centre (xy)
+    gt_release_m: float = 0.15      # GT: after the release it lies within this of the release point (xy) and on the floor
 
 
 def task_engine(backend):
@@ -90,9 +104,16 @@ class RosFetchRobot:
         self.attempts: list = []      # per grasp attempt diagnostics (cfg.attempt_log)
         self._att = None
         self.truth = None
+        self.handover_code: str | None = None    # why the last hand_over() returned False (cfg.bring_me; None = not taken)
         if self.cfg.gt != "off" or self.cfg.approach == "teleport":
             from .gz_truth import GzTruth
             self.truth = GzTruth()
+        elif self.cfg.bring_me:          # Gazebo: GT confirms the delivery too; no gz CLI (real robot) -> state only
+            try:
+                from .gz_truth import GzTruth
+                self.truth = GzTruth()
+            except (OSError, ImportError):
+                self.truth = None
 
     # ------------------------------------------------------------------ state
     @property
@@ -247,16 +268,27 @@ class RosFetchRobot:
         if self.cfg.search_view_radius_m:
             eng.search_view_radius_m = self.cfg.search_view_radius_m
         try:
-            r = self.b.find(object=dict(ref), approach=False, max_time_s=self.cfg.search_timeout_s)
+            limit = self.search_limit_s()
+            if hasattr(self, "log"):                     # (tests build a bare robot with __new__)
+                self.log.append({"t": round(self.now(), 1), "search_limit_s": limit})
+            r = self.b.find(object=dict(ref), approach=False, max_time_s=limit)
             if not getattr(r, "ok", False):
                 return False
             t0 = self.now()
-            while self.engine.task is not None and self.now() - t0 < self.cfg.search_timeout_s + 30:
+            while self.engine.task is not None and self.now() - t0 < limit + 30:
                 self._wait(self.cfg.poll_s)
         finally:
             eng.search_view_radius_m = prev            # also on an e-stop (FetchAborted)
         m = self.engine.missions[-1] if self.engine.missions else {}
         return bool((m.get("result") or {}).get("found"))
+
+    def search_limit_s(self) -> float:
+        """cfg.search_timeout_s if set, else the map-sized sweep budget (call with search_view_radius_m already applied)."""
+        if self.cfg.search_timeout_s is not None:
+            return float(self.cfg.search_timeout_s)
+        f = getattr(self.engine, "search_budget_s", None)
+        budget = f() if callable(f) else self.cfg.search_min_s
+        return float(min(max(budget, self.cfg.search_min_s), self.cfg.search_max_s))
 
     def find(self, name):
         o = self.objects.get(name)
@@ -487,7 +519,7 @@ class RosFetchRobot:
             t0 = self.now()
             while True:
                 self._check()
-                if self.carrying and self._dropped():
+                if self.carrying and (self._dropped() or self._gt_lost()):
                     self.p.nav_cancel(h)
                     self.p.send_cmd(0.0, 0.0, 0.0)
                     name, self.carrying = self.carrying, None
@@ -506,6 +538,128 @@ class RosFetchRobot:
                 self._wait(self.cfg.poll_s)
         finally:
             self.arm.set_speed_limit(None)
+
+    # ------------------------------------------------------------------ "bring me X" (cfg.bring_me)
+    handover_text = "Here you are: {what}."
+
+    def note_requester(self):
+        """Called by FetchSession when a 'bring me' request starts: where the robot must come back to. Off -> unchanged (home)."""
+        if not self.cfg.bring_me:
+            return
+        self.handover_text = "Here's your {what}."
+        xy = next((xy for n in ("me", "user", "requester") if (xy := self._place_xy(n))), None)
+        src = "saved place"
+        if xy is None and self.p.pose() is not None:
+            xy, src = self.robot, "robot pose at the command"
+        if xy is None:
+            xy, src = tuple(self._place_xy("home") or HOME), "home"
+        self.user = (float(xy[0]), float(xy[1]))
+        self.log.append({"t": round(self.now(), 1), "requester": [round(v, 3) for v in self.user], "source": src})
+
+    def _gt_obj(self):
+        """GT (x, y) of the carried object near the grasp centre, or None (no truth / not found within 0.6 m)."""
+        if self.truth is None or not self.carrying or self.carrying not in self._objects:
+            return None
+        gc = self._world(self._gc_base()[:2])
+        r = self.truth.nearest(self._objects[self.carrying].cls, gc)
+        return None if r is None else (r[1], r[2], gc)
+
+    def _gc_base(self):
+        q = self.arm.arm_q()
+        return self.A.fk(self.ARM, np.asarray(q if q is not None else self.ARM.poses["folded"], float))["Gc"]
+
+    def _gt_lost(self) -> bool:
+        """With ground truth (cfg.bring_me only): the carried object is no longer at the grasp centre (fell out although the
+        fingers did not close fully, e.g. jammed). Two polls in a row, so one stale pose sample does not count."""
+        if not (self.cfg.bring_me and self.truth is not None and self.carrying):
+            return False
+        g = self._gt_obj()
+        far = g is None or math.hypot(g[0] - g[2][0], g[1] - g[2][1]) > self.cfg.gt_held_m
+        self._gt_far = (getattr(self, "_gt_far", 0) + 1) if far else 0
+        return self._gt_far >= 2
+
+    def _stationary(self) -> bool:
+        """|v| < still_mps for still_s (zero command held meanwhile); False after still_timeout_s."""
+        t0 = self.now()
+        since = None
+        while self.now() - t0 < self.cfg.still_timeout_s:
+            self.p.send_cmd(0.0, 0.0, 0.0)
+            v = self.p.speed()
+            if v is not None and abs(v) < self.cfg.still_mps:
+                since = self.now() if since is None else since
+                if self.now() - since >= self.cfg.still_s:
+                    return True
+            else:
+                since = None
+            self._wait(self.cfg.poll_s)
+        return False
+
+    def _lost_on_the_way(self, why):
+        name, self.carrying = self.carrying, None
+        self.handover_code = "DROPPED"
+        o = self._objects.pop(name, None)
+        self.log.append({"t": round(self.now(), 1), "deliver": "lost", "why": why})
+        return o
+
+    def deliver_release(self) -> bool:
+        """cfg.bring_me hand-over: back to the requester, present, stationary check, open, confirm. True ONLY when confirmed.
+        On False, `handover_code` says why: DROPPED (lost before the release), NOT_STATIONARY / NOT_RELEASED (still holding),
+        DELIVERY_UNCONFIRMED (opened, but the state / GT does not show the object at the release point)."""
+        self.handover_code = None
+        x, y, _ = self.p.pose()
+        ux, uy = self.user
+        self._turn_to(math.atan2(uy - y, ux - x) + math.pi)        # the arm is at the back: back towards the user
+        if self._dropped() or self._gt_lost():
+            self._lost_on_the_way("before presenting")
+            return False
+        self._move_arm([self.handover_pose()], 3.0, big=True)
+        self._wait(0.5)
+        f_before = self.arm.fingers()
+        g_before = self._gt_obj()
+        held_state = f_before is not None and min(f_before) > FINGER_CLOSED
+        held_gt = g_before is None if self.truth is None else \
+            math.hypot(g_before[0] - g_before[2][0], g_before[1] - g_before[2][1]) <= self.cfg.gt_held_m
+        if not held_state or not held_gt:
+            self.fold_arm()
+            self._lost_on_the_way(f"at the hand-over pose (fingers {f_before}, gt {g_before})")
+            return False
+        if not self._stationary():
+            self.fold_arm()
+            self.handover_code = "NOT_STATIONARY"
+            self.log.append({"t": round(self.now(), 1), "deliver": "not stationary"})
+            return False
+        release_xy = self._world(self._gc_base()[:2])
+        name, o = self.carrying, self._objects.get(self.carrying)
+        self.arm.gripper(+GRIP_EFFORT)                               # open: only now, standing still
+        self._wait(1.0)
+        f_after = self.arm.fingers()
+        # open = clearly wider than while holding (a jammed gripper still reads the object's width, which is > FINGER_CLOSED)
+        opened = f_after is not None and min(f_after) > min(f_before) + 0.003
+        rec = {"t": round(self.now(), 1), "deliver": "released", "fingers_before": f_before, "fingers_after": f_after,
+               "release_xy": [round(v, 3) for v in release_xy]}
+        if not opened:
+            self.handover_code = "NOT_RELEASED"
+            self.log.append({**rec, "deliver": "gripper did not open"})
+            self.arm.gripper(-GRIP_EFFORT)
+            self.fold_arm()
+            return False
+        self.carrying = None
+        self.fold_arm()                    # a held object would follow the arm: GT is read AFTER folding
+        ok = True
+        if self.truth is not None and o is not None:
+            self._wait(0.5)
+            r = self.truth.nearest(o.cls, release_xy)
+            rec["gt_after"] = None if r is None else [round(r[1], 3), round(r[2], 3)]
+            ok = r is not None and math.hypot(r[1] - release_xy[0], r[2] - release_xy[1]) <= self.cfg.gt_release_m
+        self.log.append({**rec, "confirmed": ok})
+        self._objects.pop(name, None)
+        if o is not None:
+            o.x, o.y = release_xy
+            o.with_user = True
+            self._with_user[name] = o
+        if not ok:
+            self.handover_code = "DELIVERY_UNCONFIRMED"
+        return ok
 
     def _place_plan(self):
         from gurdy_core import grasp_test as G
@@ -553,6 +707,8 @@ class RosFetchRobot:
         timeout_s = timeout_s or self.cfg.handover_timeout_s
         if not self.carrying:
             return False
+        if self.cfg.bring_me:
+            return self.deliver_release()
         x, y, _ = self.p.pose()
         ux, uy = self.user
         self._turn_to(math.atan2(uy - y, ux - x) + math.pi)        # the arm is at the back: back towards the user

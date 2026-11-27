@@ -79,6 +79,7 @@ class FetchSession:
 
     def handle(self, text: str) -> str | None:
         self.calls = []
+        self._requester_noted = False
         chosen = None
         if self.pending:
             res = self._resolve_pending(text)
@@ -191,6 +192,9 @@ class FetchSession:
             if mode == "user":
                 self._call("bring_to", {"target": "user"})
                 self._call("hand_over", {})
+                if callable(getattr(self.r, "note_requester", None)) and not getattr(self, "_requester_noted", False):
+                    self._requester_noted = True      # once per request: a second item of "X and Y to me" goes to the same spot
+                    self.r.note_requester()          # real robot, bring_me flag: come back to where the request came from
             elif mode == "home":
                 self._call("bring_to", {"target": "home"})
                 self._call("place", {"room": "home"})
@@ -220,4 +224,5 @@ class FetchSession:
         self.last = out
         held = self.r.carrying is not None                 # verified by an earlier VERIFY_GRASP of this session
         confirmed = out.confirmed | ({"picked"} if held else set())
-        return safe(outcome_reply(out, self.r.objects), confirmed, held)
+        text = getattr(self.r, "handover_text", "Here you are: {what}.")
+        return safe(outcome_reply(out, self.r.objects, text), confirmed, held)

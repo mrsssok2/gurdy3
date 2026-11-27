@@ -112,9 +112,65 @@ def _parse_clause(c: str, places: list[str]) -> dict | None:
     return None
 
 
+# Repeat counts and delays (rt24 / rt29, 2026-11-27): the parser used to DROP "100000 times" and the "schedule ... in N s"
+# wrapper and run the command once, now. A count or delay it cannot carry over exactly is never dropped: it is put into the
+# call (patrol loops, schedule delay_s) when the tool can hold it, else the parser asks / refuses instead of acting.
+_COUNT = re.compile(r"\b(\d[\d,]*(?:\.\d+)?)\s*(?:x\s+|times?\b|loops?\b|rounds?\b|laps?\b)|\b(once|twice|thrice)\b")
+_DELAY = re.compile(r"\b(?:in|after)\s+(\d[\d,]*(?:\.\d+)?)\s*(seconds?|secs?|minutes?|mins?|hours?|hrs?|days?)\b")
+_SCHEDULE = re.compile(r"\b(schedule|later|remind)\b")
+_UNIT_S = {"s": 1, "m": 60, "h": 3600, "d": 86400}
+MAX_LOOPS, MAX_DELAY_S = 10, 86400            # = the patrol / schedule tool limits (brain/tools/specs.py)
+
+
+def _num(s: str) -> float:
+    return float(s.replace(",", ""))
+
+
 def parse(text: str, places: list[str]) -> dict:
     """-> {"calls": [...]} or {"reply": "I did not understand."} like the LLM planner contract."""
     low = text.lower()
+    d = _DELAY.search(low)
+    if d or _SCHEDULE.search(low):
+        if not d:
+            return {"reply": "When should I do that? Tell me the delay, for example 'in 5 minutes'."}
+        delay = _num(d.group(1)) * _UNIT_S[d.group(2)[0]]
+        if delay > MAX_DELAY_S:
+            return {"reply": "I can only schedule something up to 24 hours ahead, so I won't schedule that."}
+        if delay < 1:
+            return {"reply": "When should I do that? Tell me the delay, for example 'in 5 minutes'."}
+        rest = _SCHEDULE.sub(" ", low[:d.start()] + " " + low[d.end():])
+        rest = re.sub(r"^\s*(?:a|to)\b", " ", rest)
+        inner = _parse_plain(rest, places)
+        if "reply" in inner:
+            return inner
+        if len(inner["calls"]) != 1 or inner["calls"][0]["tool"] in ("stop", "mission_control", "schedule"):
+            return {"reply": "I can only schedule one command at a time. Which one should I do later?"}
+        return {"calls": [{"tool": "schedule", "args": {"delay_s": int(round(delay)), "call": inner["calls"][0]}}], "continue": False}
+    return _parse_plain(low, places)
+
+
+def _parse_plain(low: str, places: list[str]) -> dict:
+    c = _COUNT.search(low)
+    n = None
+    if c:
+        n = {"once": 1, "twice": 2, "thrice": 3}[c.group(2)] if c.group(2) else _num(c.group(1))
+        low = low[:c.start()] + " " + low[c.end():]
+    out = _parse_clauses(low, places)
+    if n is None or "reply" in out:
+        return out
+    pat = [k for k in out["calls"] if k["tool"] == "patrol"]
+    if pat and len(out["calls"]) == 1:
+        if n > MAX_LOOPS or n != int(n) or n < 1:
+            return {"reply": f"I can patrol at most {MAX_LOOPS} loops in one go, so I won't start {n:g}. How many loops should I do?"}
+        if n > 1:
+            pat[0]["args"]["loops"] = int(n)
+        return out
+    if n == 1:
+        return out
+    return {"reply": f"I can't repeat that {n:g} times. Ask me once, or tell me what to do step by step."}
+
+
+def _parse_clauses(low: str, places: list[str]) -> dict:
     clauses = [low] if "patrol" in low else re.split(r"\b(?:and then|then|after that|and)\b|[,;]", low)
     calls = []
     for cl in clauses:

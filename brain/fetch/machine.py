@@ -111,8 +111,15 @@ class FetchMachine:
                 obj.with_user = True                        # no longer on the floor: not a pick-up candidate
                 out.status, out.where = "handed_over", "you"
                 out.confirmed.add("handed_over")
+                return out
+            code = getattr(self.r, "handover_code", None)   # real robot, bring_me delivery: why it was not confirmed
+            if code == "DROPPED" or (code is None and not self.r.carrying):
+                out.status, out.code, out.where = "failed", "DROPPED", room_of(*self.r.robot)
+                out.confirmed.add("dropped")
+            elif code == "DELIVERY_UNCONFIRMED":
+                out.status, out.code, out.where = "failed", code, room_of(*self.r.robot)
             else:
-                out.status, out.code = "holding", "NOT_TAKEN"
+                out.status, out.code = "holding", code or "NOT_TAKEN"
             return out
         if self._log(out, "PLACE", self.r.release()):
             out.status, out.where = "placed", "home" if mode == "home" else room

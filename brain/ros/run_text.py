@@ -39,6 +39,12 @@ def main() -> None:
     ap.add_argument("--fetch-log", default=None, metavar="JSONL", help="one diagnostics record per grasp attempt")
     ap.add_argument("--fetch-gt", choices=("off", "log", "use"), default="off",
                     help="Gazebo ground truth of the target: log it next to the estimates, or use it for the grasp (variant B)")
+    ap.add_argument("--fetch-bring-me", action="store_true", help="Phase 9k demo: 'bring me X' returns to the requester, opens "
+                    "the gripper only when stationary, claims delivery only when state + Gazebo GT confirm it (default off)")
+    ap.add_argument("--fetch-search-s", type=float, default=None, metavar="S", help="fixed fetch search limit (default: sized "
+                    "from the map's room sweep, 300-2400 s)")
+    ap.add_argument("--fetch-search-radius", type=float, default=None, metavar="M", help="multi-viewpoint room sweep radius "
+                    "for fetch searches (default: one viewpoint per room)")
     ap.add_argument("--fetch-approach", choices=("nav", "teleport"), default="nav",
                     help="teleport = gz set_pose to the grasp-zone pose instead of the Nav2 approach (variant A; sim only)")
     a = ap.parse_args()
@@ -68,10 +74,13 @@ def main() -> None:
             print("--fetch: arm_controller not answering (stack started with arm:=true?): fetch stays OFF")
         else:
             from .fetch_robot import FetchConfig
-            cfg = FetchConfig(attempt_log=a.fetch_log, gt=a.fetch_gt, approach=a.fetch_approach)
+            cfg = FetchConfig(attempt_log=a.fetch_log, gt=a.fetch_gt, approach=a.fetch_approach, bring_me=a.fetch_bring_me,
+                              search_timeout_s=a.fetch_search_s, search_view_radius_m=a.fetch_search_radius)
             be.fetch_session = FetchSession(RosFetchRobot(be, arm, cfg))
             if a.fetch_log or a.fetch_gt != "off" or a.fetch_approach != "nav":
                 print(f"fetch diagnostics: log {a.fetch_log}, gt {a.fetch_gt}, approach {a.fetch_approach}")
+            if a.fetch_bring_me:
+                print(f"fetch bring-me delivery: ON (ground truth {'yes' if be.fetch_session.r.truth else 'no: state only'})")
             print(f"fetch: ON (MoveIt {'yes' if arm.moveit_available() else 'no: direct joint goals'})")
     if a.ollama:
         from ..agent.ollama_llm import OllamaLLM

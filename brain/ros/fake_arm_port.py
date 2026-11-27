@@ -6,7 +6,8 @@ contact-like grasp rules:
     in height of the object's grasp point; the fingers stop at half the grip width; otherwise they close to 0
   * a held object follows the grasp centre; opening (effort > 0) puts it down where it is (on the floor)
   * faults: miss {names} (the fingers slide off), slip {names} (falls out on the lift), drop_carry {names} (falls out
-    after 0.5 m of walking), user_takes (bool, default True: while presenting with a light grip the user takes it after 2 s)
+    after 0.5 m of walking), drop_silent {names} (falls out after 0.5 m but the fingers stay at its width: jammed, only
+    ground truth sees it), jam (bool: the gripper does not open), user_takes (bool, default True: while presenting with a light grip the user takes it after 2 s)
 World objects: [{name, class, color, x, y, yaw}] (world = map frame); their semantic-map entries are kept in FakePort.objects
 (id = index + 1, so the fetch robot's names are obj1, obj2, ...). `unseen` names are NOT in the semantic map until the fake
 explorer reveals them (FakePort.reveal, during an explore action). `estop_at`: latch the e-stop at that sim time.
@@ -118,6 +119,8 @@ class FakeArmPort:
         return True
 
     def gripper(self, effort):
+        if effort > 0 and self.faults.get("jam") and self.held is not None:
+            return                                                  # jammed: stays closed on the object
         if effort > 0:
             self._put_down()
             self.finger, self.present_t = (0.04, 0.04), None
@@ -169,9 +172,12 @@ class FakeArmPort:
         self._follow()
         if self.held is not None:
             x, y = self.f.pose()[:2]
-            if self.held["name"] in self.faults.get("drop_carry", set()) and math.hypot(x - self.held_since_xy[0], y - self.held_since_xy[1]) > 0.5:
+            walked = math.hypot(x - self.held_since_xy[0], y - self.held_since_xy[1])
+            if self.held["name"] in self.faults.get("drop_carry", set()) and walked > 0.5:
                 self._put_down()
                 self.finger = (0.0, 0.0)
+            elif self.held["name"] in self.faults.get("drop_silent", set()) and walked > 0.5:
+                self._put_down()                                    # fingers keep their width
             elif self.present_t is not None and self.faults.get("user_takes", True) and self.f.now() - self.present_t >= 2.0:
                 o, self.held = self.held, None
                 o["x"], o["y"], o["z0"] = self.user[0], self.user[1], 0.0
