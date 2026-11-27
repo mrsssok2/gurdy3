@@ -94,6 +94,55 @@ Nothing had to be made configurable. The change adds what was missing; the defau
 * **Not done:** a real model. Tomorrow: an Ollama client for the picker (the 6d client pattern, JSON format), a dev set of
   free phrasings scored like `picker_dev`, then the user's blind suite.
 
+### 3b. Real Ollama client + DEV set (2026-11-27, branch `phase8c-wire`; NOT run against Ollama)
+
+* **Client** `OllamaFetchLLM` (`brain/fetch/picker.py`), same transport as the 6d incident picker:
+  * `POST {OLLAMA_URL}/api/chat`. Default URL `http://127.0.0.1:11435`; a trailing slash is tolerated; containers get
+    `OLLAMA_URL` from `scripts/lib_ollama.sh`.
+  * model: `GURDY_FETCH_PICKER_MODEL` / `GURDY_PICKER_MODEL` / **gurdy-sft-400**
+  * `stream` false, `think` false, temperature 0, `num_ctx` 2048, `num_predict` 96, `keep_alive` 30m
+  * timeout 20 s
+* **Strict JSON:**
+  * Ollama JSON mode (`format: "json"`) by default. `schema=True` / `--schema` sends a strict JSON schema instead (enums,
+    `additionalProperties` false). It is off by default because grammars derailed the fine-tuned model for the planner
+    (`phase5_eval_sft.md`); the eval compares both.
+  * `parse_reply` is strict. The only repair it accepts is a single `{...}` inside extra text (counted as `repaired`);
+    two objects are rejected.
+* **Fallback:** timeout, HTTP error, server down or non-JSON -> `None`. The deterministic router / planner continues,
+  and the picker never raises (tested with a local fake HTTP server, plus a dead port through `FetchSession`).
+* **Counters** (`FetchPicker.stats()`): calls, failures, bad_json, invalid, none, repaired, latency p50 / max.
+* **Not wired into the agent** (as before): `FetchSession(picker=FetchPicker())` must be passed explicitly.
+* **DEV set** `brain/eval/fetch_picker_dev.py`, 40 cases, **NOT held-out** (written by the assistant):
+  * 12 bring to the user, 7 bring to a room / home, 1 pick and hold, 7 about what the robot holds (hand over / place),
+    13 not fetch (unknown object "stapler", coffee, photo, go / move / patrol / explore, status, find, a question).
+  * Exact intent scoring; one accepted alternative reading.
+  * Checked by tests: no case is handled by the deterministic router, so every case reaches the picker; disjoint from
+    the prompt examples, the picker tests and `fetch_dev_v1.yaml`; an oracle fake model scores 40/40, so every
+    expectation is reachable under the validation rules; an always-"none" model gives 0 false and 0 wrong actions.
+* **Pre-filter widened** (`FETCHY`): while writing the set, 4 phrasings never reached the model: "can I have the ...",
+  "I could really use ...", "would you mind ferrying ...", "... should end up in room B". The pre-filter now also
+  matches `could <word> use`, `can/could i have`, `ferry*`, `send`, `return`, `end up`, `should go`, `belong(s) in`.
+  The DEV pre-filter numbers are therefore optimistic.
+* **Eval in one command** (host, no Docker; starts Ollama on :11435 if needed and checks that the exact model is
+  installed):
+  ```bash
+  scripts/fetch_picker_dev.sh                                   # gurdy-sft-400, JSON mode
+  scripts/fetch_picker_dev.sh --model gurdy-sft-400 --schema    # strict schema
+  RESTART=1 scripts/fetch_picker_dev.sh                         # restart Ollama first (6d stale-server flake; not while another session uses it)
+  ```
+  Output: `docs/results/data/fetch_picker/dev_<ts>.{json,log}`, with `ok`, per group, `false_fetch` (a non-fetch text
+  turned into an action: the dangerous error), `wrong_fetch`, `missed` (safe fall-through), `prefilter_miss`, counters,
+  and the WRONG lines with the raw model text.
+* **Router findings (NOT fixed, outside the picker; the picker never sees these because the router answers first).**
+  Candidate phrasings that the deterministic router parses WRONGLY:
+  * "could you hand the green cone to me" -> `hand_over` (the object is lost)
+  * "please fetch that blue tin you saw in room A" -> `pick` (should be fetch to the user)
+  * "the yellow mini toolbox, carry it to room A for me" -> fetch to the user (room A ignored)
+  * "can you lift the blue can and wait" -> pick `can` without the colour (`blue` dropped)
+  * "take the red can and the blue cube to me" -> only the blue cube (two objects; it should ask or refuse)
+* Tests: `brain/tests/test_fetch_picker_dev.py` 18 (fake HTTP server only). Brain suite 1047 passed / 3 skipped; fetch
+  DEV `fetch_dev_v1` still 42/42.
+
 ## Files
 
 | item | files |
