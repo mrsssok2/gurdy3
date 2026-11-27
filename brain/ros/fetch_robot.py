@@ -28,6 +28,7 @@ Primitives (each returns what FetchMock returns; every wait loop checks the e-st
 """
 from __future__ import annotations
 
+import json
 import math
 from dataclasses import dataclass
 
@@ -53,6 +54,19 @@ class FetchConfig:
     poll_s: float = 0.2
     yaw_min_conf: float = 0.5
     use_moveit: bool = True        # if available
+    # retest diagnostics (2026-11-27 fetch dry run), all OFF by default:
+    attempt_log: str | None = None  # JSONL file: one record per grasp attempt (also kept in RosFetchRobot.attempts)
+    gt: str = "off"                 # off | log (record Gazebo ground truth next to the estimates) | use (grasp at the GT pose)
+    approach: str = "nav"           # nav (Nav2 stand-off + turn + back-up) | teleport (gz set_pose to the grasp-zone pose, as grasp_test)
+
+
+def task_engine(backend):
+    """The innermost backend (follows the wrappers' `_inner`): the one whose tick() runs the task state machine."""
+    seen = set()
+    while getattr(backend, "_inner", None) is not None and id(backend) not in seen:
+        seen.add(id(backend))
+        backend = backend._inner
+    return backend
 
 
 class RosFetchRobot:
@@ -72,8 +86,20 @@ class RosFetchRobot:
         self._servo = None
         self._plan = None
         self._rest = None             # (x, y) world where the object stood before the grasp
+        self._floor = None            # MoveIt floor (fitted plane), added once before the first grasp
+        self.attempts: list = []      # per grasp attempt diagnostics (cfg.attempt_log)
+        self._att = None
+        self.truth = None
+        if self.cfg.gt != "off" or self.cfg.approach == "teleport":
+            from .gz_truth import GzTruth
+            self.truth = GzTruth()
 
     # ------------------------------------------------------------------ state
+    @property
+    def engine(self):
+        """The RosBackend itself (run_text wraps it: incidents, memory): the one whose tick() runs the task machine."""
+        return task_engine(self.b)
+
     def now(self) -> float:
         return self.p.now()
 
@@ -129,8 +155,14 @@ class RosFetchRobot:
             if dt <= 1e-6:
                 return
             self.arm.wait(dt)
-            if hasattr(self.b, "tick"):
-                self.b.tick()
+            # Tick the TASK ENGINE, not the wrapper: IncidentBackend.tick() only samples for its recorder and never ticks the
+            # wrapped RosBackend, and the agent's pump (poll_events -> RosBackend.tick) is blocked by the agent lock while a
+            # fetch runs. Without this a search stalled after its first Nav2 step (Gazebo dry run 2026-11-27, 2 of 2).
+            # Events are not consumed here: the pump hands them to the wrappers / agent when the fetch returns.
+            if hasattr(self.engine, "tick"):
+                self.engine.tick()
+            if self.engine is not self.b and hasattr(self.b, "tick"):
+                self.b.tick()                    # the incident recorder still samples pose / objects during the fetch
 
     def _nav(self, x, y, yaw, timeout):
         h = self.p.nav_send(x, y, yaw)
@@ -210,19 +242,20 @@ class RosFetchRobot:
     def search(self, ref: dict) -> bool:
         """Look for an object nobody has seen (RosBackend.find: room sweep + explore). True when the map has one now.
         cfg.search_view_radius_m (default None) switches the backend's multi-viewpoint room sweep on for this search only."""
-        prev = getattr(self.b, "search_view_radius_m", None)
+        eng = self.engine                       # set on the RosBackend: on a wrapper it would only shadow the attribute
+        prev = getattr(eng, "search_view_radius_m", None)
         if self.cfg.search_view_radius_m:
-            self.b.search_view_radius_m = self.cfg.search_view_radius_m
+            eng.search_view_radius_m = self.cfg.search_view_radius_m
         try:
             r = self.b.find(object=dict(ref), approach=False, max_time_s=self.cfg.search_timeout_s)
             if not getattr(r, "ok", False):
                 return False
             t0 = self.now()
-            while self.b.task is not None and self.now() - t0 < self.cfg.search_timeout_s + 30:
+            while self.engine.task is not None and self.now() - t0 < self.cfg.search_timeout_s + 30:
                 self._wait(self.cfg.poll_s)
         finally:
-            self.b.search_view_radius_m = prev          # also on an e-stop (FetchAborted)
-        m = self.b.missions[-1] if self.b.missions else {}
+            eng.search_view_radius_m = prev            # also on an e-stop (FetchAborted)
+        m = self.engine.missions[-1] if self.engine.missions else {}
         return bool((m.get("result") or {}).get("found"))
 
     def find(self, name):
@@ -255,6 +288,14 @@ class RosFetchRobot:
         cands = self._approach_candidates(o, zone)
         if not cands:
             return False, f"no free spot next to the {o.cls}"
+        if self.cfg.approach == "teleport" and self.truth is not None:
+            # retest variant A: put the robot where grasp_test starts (object in the class zone behind it), no Nav2
+            _, yaw, grasp_xy, _ = cands[0]
+            bx, by = o.x - (math.cos(yaw) * zone[0] - math.sin(yaw) * zone[1]), o.y - (math.sin(yaw) * zone[0] + math.cos(yaw) * zone[1])
+            ok = self.truth.teleport(bx, by, yaw)
+            self._wait(3.0)
+            self.log.append({"t": round(self.now(), 1), "teleport": [round(bx, 3), round(by, 3), round(yaw, 3)], "ok": ok})
+            return (True, o.room) if ok else (False, "teleport failed")
         for _, yaw, grasp_xy, stand in cands[:3]:
             ok, why = self._nav(stand[0], stand[1], yaw + math.pi, self.cfg.nav_timeout_s)   # facing the object
             if not ok:
@@ -295,25 +336,98 @@ class RosFetchRobot:
         self.log.append({"t": round(self.now(), 1), "servo": res.code, "steps": res.steps, "residual": res.residual})
         return res.ok, res.residual if res.residual is not None else 0.99
 
+    def _gt_xy(self, cls, xy_world):
+        if self.truth is None:
+            return None
+        r = self.truth.nearest(cls, xy_world)
+        return None if r is None else (round(r[1], 4), round(r[2], 4))
+
+    def _end_attempt(self, outcome: str, reason: str = ""):
+        a, self._att = self._att, None
+        if a is None:
+            return
+        a.update(outcome=outcome, reason=reason, t_end=round(self.now(), 1))
+        if self._plan is not None and a.get("rest_world"):
+            a["gt_after"] = self._gt_xy(a["cls"], a["rest_world"])
+        self.attempts.append(a)
+        if self.cfg.attempt_log:
+            with open(self.cfg.attempt_log, "a") as fh:
+                fh.write(json.dumps(a, default=float) + "\n")
+
     def grasp(self, name):
+        """Same pipeline as scripts/grasp_test.py (25/25 there): fitted floor in MoveIt (once), the target as a MoveIt obstacle
+        for the big moves, settle at the pre-grasp + centre correction (measured-FK), straight approach, contact-only squeeze.
+        One diagnostics record per attempt (self.attempts, cfg.attempt_log)."""
         from gurdy_core import grasp_test as G
         from gurdy_core import wrist_yaw as WY
         o = self.objects[name]
-        xy = np.array(self._servo.obs.xy) if self._servo and self._servo.obs and self._servo.obs.xy else self._base((o.x, o.y))
+        moveit = self.cfg.use_moveit and self.arm.moveit_available()
+        if moveit and self._floor is None and hasattr(self.arm, "add_floor"):
+            self._floor = self.arm.add_floor(0.005)
+            self.log.append({"t": round(self.now(), 1), "floor": {k: self._floor.get(k) for k in ("added", "fitted", "z0")}})
+        sv = self._servo
+        xy_servo = np.array(sv.obs.xy) if sv and sv.obs and sv.obs.xy else None
+        xy = xy_servo if xy_servo is not None else self._base((o.x, o.y))
+        rp = self.p.pose()
+        a = self._att = {"t": round(self.now(), 1), "attempt": len(self.attempts) + 1, "object": name, "cls": o.cls,
+                         "robot": [round(v, 4) for v in rp] if rp else None, "map_world": [round(o.x, 4), round(o.y, 4)],
+                         "servo": {"code": sv.code, "steps": sv.steps, "residual": sv.residual} if sv else None,
+                         "est_base": [round(float(v), 4) for v in xy], "est_source": "servo" if xy_servo is not None else "map",
+                         "dist_robot_obj_m": round(float(np.hypot(*xy)), 4)}
+        if self.truth is not None:
+            gt = self._gt_xy(o.cls, self._world(xy))
+            a["gt_world"] = gt
+            if gt is not None:
+                gb = self._base(gt)
+                a["gt_base"] = [round(float(v), 4) for v in gb]
+                a["est_err_m"] = round(float(np.hypot(*(np.asarray(xy) - gb))), 4)
+                if self.cfg.gt == "use":
+                    xy = np.asarray(gb)                          # retest variant B: grasp at the ground-truth pose
+                    a["est_source"] = "gt"
         v = self.arm.wrist_view()
         ye = WY.estimate_yaw(*v, o.cls, xy_hint=xy) if v else WY.YawEstimate(None, 0.0, "none")
         yaw = ye.yaw if (ye.yaw is not None and ye.confidence >= self.cfg.yaw_min_conf) else None
         plan = G.grasp_plan(self.ARM, self.RB, o.cls, xy, yaw)
+        a.update(yaw=ye.to_dict(), plan_ok=plan.ok, plan_reason=plan.reason)
         self.log.append({"t": round(self.now(), 1), "yaw": ye.to_dict(), "plan": plan.ok, "reason": plan.reason})
         if not plan.ok:
+            self._plan = None
+            self._end_attempt("missed", f"no grasp plan: {plan.reason}")
             return False
         self._plan, self._rest = plan, self._world(xy)
+        a["rest_world"] = [round(float(v), 4) for v in self._rest]
         self.arm.gripper(+GRIP_EFFORT)
         self._wait(0.5)
-        if not self._move_arm([plan.pre], 3.0, big=True) or not self._move_arm([plan.grasp], 2.0):
+        tgt = moveit and hasattr(self.arm, "target_in_scene") and self.arm.target_in_scene(o.cls, xy, True)
+        a["target_in_scene"] = bool(tgt)
+        try:
+            if not self._move_arm([plan.pre], 3.0, big=True):
+                self._end_attempt("missed", "pre-grasp move failed")
+                return False
+            if hasattr(self.arm, "settle"):
+                a["settle_pre_rad"] = round(self.arm.settle(plan.pre), 4)
+                q_meas = self.arm.arm_q()
+                if q_meas is not None:
+                    delta = G.centre_correction(self.ARM, plan.pre, q_meas)
+                    a["centre_shift_m"] = [round(float(d), 4) for d in delta]
+                    if float(np.linalg.norm(delta[:2])) > 0.001:
+                        p2 = G.grasp_plan(self.ARM, self.RB, o.cls, np.asarray(xy, float) + delta[:2], yaw)
+                        a["centre_replan_ok"] = p2.ok
+                        if p2.ok:
+                            plan = self._plan = p2
+                            self._move_arm([plan.pre], 1.0)
+                            self.arm.settle(plan.pre, timeout=1.5)
+        finally:
+            if tgt:
+                self.arm.target_in_scene(o.cls, xy, False)       # the final straight approach goes INTO it
+        if not self._move_arm([plan.grasp], 2.0):
+            self._end_attempt("missed", "approach move failed")
             return False
+        if hasattr(self.arm, "settle"):
+            a["settle_grasp_rad"] = round(self.arm.settle(plan.grasp, timeout=1.5), 4)
         self.arm.gripper(-GRIP_EFFORT)
         self._wait(1.5)
+        a["fingers_closed"] = self.arm.fingers()
         return True
 
     def _standing_at_rest(self, cls) -> int | None:
@@ -341,9 +455,16 @@ class RosFetchRobot:
         standing = self._standing_at_rest(o.cls) if fingers_ok else None
         gone = standing is not None and standing < 15
         self.log.append({"t": round(self.now(), 1), "verify": {"fingers": f, "fingers_ok": fingers_ok, "standing_points": standing}})
+        if self._att is not None:
+            self._att.update(fingers_lifted=f, fingers_ok=fingers_ok, standing_points=standing)
         if fingers_ok and gone:
             self.carrying = name
+            self._end_attempt("success")
             return True
+        why = ("fingers fully closed: nothing between them" if f is not None and min(f) <= FINGER_CLOSED else
+               "fingers wider than the object" if f is not None and not fingers_ok else
+               "fingers unknown" if f is None else "something still stands at the old spot (not lifted)")
+        self._end_attempt("missed" if not fingers_ok else "not_lifted", why)
         self.arm.gripper(+GRIP_EFFORT)
         self._wait(0.5)
         self._move_arm([p.pre], 1.5)

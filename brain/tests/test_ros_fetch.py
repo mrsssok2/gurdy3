@@ -16,10 +16,13 @@ ROOT = Path(__file__).resolve().parents[2]
 SMALL = [o for o in json.loads((ROOT / "docs/results/data/lab4_fetch/lab4_fetch_gt.json").read_text())["objects"] if o["pickable"]]
 
 
-def rig(faults=None, moveit=True, **kw):
+def rig(faults=None, moveit=True, wrapped=False, **kw):
     fp = FakePort(pose=(0.0, 0.0, 0.0))
     arm = FakeArmPort(fp, SMALL, faults=faults, moveit=moveit, **kw)
     be = RosBackend(fp, ROOT / "maps/lab4_fetch.places.yaml")
+    if wrapped:                                   # exactly as brain/ros/run_text.py builds it: the fetch robot gets the WRAPPED backend
+        from brain.incidents.backend import with_incidents
+        be = with_incidents(be, None, "lab4_fetch")
     rob = RosFetchRobot(be, arm)
     be.fetch_session = FetchSession(rob)
     return be.fetch_session, rob, arm, fp
@@ -126,6 +129,30 @@ def test_unseen_object_is_searched_for():
     assert any(m["tool"] == "find" for m in rob.b.missions)
 
 
+def test_search_from_fetch_through_the_wrappers_advances_the_task():
+    """2026-11-27 Gazebo dry run: the search stalled after its first Nav2 step. run_text wraps RosBackend (incidents, memory);
+    IncidentBackend.tick() only samples for the recorder and never ticks the wrapped task engine, and the agent's pump (which
+    normally ticks it through poll_events) is blocked by the agent lock while the fetch runs."""
+    s, rob, arm, fp = rig(unseen={"blue_cube"}, wrapped=True)
+    r = s.handle("bring me the blue cube")
+    assert r == "Here you are: the blue cube."
+    m = next(m for m in rob.engine.missions if m["tool"] == "find")
+    assert m["state"] != "running" and (m.get("result") or {}).get("found")
+    assert rob.engine.task is None or rob.engine.task.tool != "find"
+
+
+def test_search_view_radius_reaches_the_task_engine_through_the_wrappers():
+    from brain.ros.fetch_robot import FetchConfig
+    s, rob, arm, fp = rig(unseen={"blue_cube"}, wrapped=True)
+    rob.cfg = FetchConfig(search_view_radius_m=1.5, search_timeout_s=120.0)   # only checks that the setting arrives (a 1.5 m sweep of all 4 rooms needs > 900 s)
+    seen = []
+    real = rob.engine._sweep_steps
+    rob.engine._sweep_steps = lambda *a, **k: (seen.append(rob.engine.search_view_radius_m), real(*a, **k))[1]
+    s.handle("bring me the blue cube")
+    assert seen and seen[0] == 1.5 and rob.engine.search_view_radius_m is None      # set for the search only, then restored
+    assert len(rob.engine._sweep_steps()) < len((lambda: (setattr(rob.engine, "search_view_radius_m", 1.5), rob.engine._sweep_steps())[1])())
+
+
 def test_estop_mid_task_stops_and_says_what_is_true():
     s, rob, arm, fp = rig(estop_at=30.0)
     r = s.handle("bring me the red can")
@@ -145,3 +172,80 @@ def test_handover_pose_is_feasible():
     s, rob, arm, fp = rig()
     q = rob.handover_pose()
     assert A.within_limits(rob.ARM, q) and A.fk(rob.ARM, q)["Gc"][2] > A.ground_z(rob.RB) + 0.10
+
+
+# ---- 2026-11-27 fetch dry run: the grasp_test pipeline in the fetch path + one diagnostics record per attempt
+def test_grasp_uses_floor_target_obstacle_and_logs_each_attempt(tmp_path):
+    from brain.ros.fetch_robot import FetchConfig
+    s, rob, arm, fp = rig({"miss": {"blue_can"}})
+    rob.cfg = FetchConfig(attempt_log=str(tmp_path / "att.jsonl"))
+    assert "couldn't get a grip" in s.handle("bring me the blue can")
+    assert [e[0] for e in arm.scene].count("floor") == 1                       # fitted floor added once
+    tgt = [e for e in arm.scene if e[0] == "target"]
+    assert len(tgt) == 6 and [e[3] for e in tgt] == [True, False] * 3          # on for the big moves, off before the approach
+    lines = [json.loads(x) for x in (tmp_path / "att.jsonl").read_text().splitlines()]
+    assert len(lines) == len(rob.attempts) == 3 and [a["attempt"] for a in lines] == [1, 2, 3]
+    for a in lines:
+        assert a["outcome"] == "missed" and a["reason"] == "fingers fully closed: nothing between them"
+        assert a["plan_ok"] and a["est_source"] == "servo" and 0.25 < a["dist_robot_obj_m"] < 0.45
+        assert list(a["fingers_closed"]) == [0.0, 0.0] and "settle_pre_rad" in a and "centre_shift_m" in a
+
+
+def test_success_attempt_record():
+    s, rob, arm, fp = rig()
+    assert s.handle("pick up the red cube") == "I picked up the red cube in room A and I'm holding it with the arm folded."
+    a = rob.attempts[-1]
+    assert a["outcome"] == "success" and a["reason"] == "" and a["fingers_ok"] and a["target_in_scene"]
+
+
+def test_centring_corrects_a_sagging_arm(monkeypatch):
+    """The effort-controlled arm settles off its command (constant joint offset): the measured-FK centre correction
+    re-plans so the finger midpoint lands on the object (grasp_test fix 1). Same sag without the correction: 3 misses."""
+    sag = {"sag": [0.0, -0.10, 0.0, 0.0, 0.0]}
+    s, rob, arm, fp = rig(sag)
+    assert s.handle("bring me the red cube") == "Here you are: the red cube."
+    a = rob.attempts[0]
+    assert a["outcome"] == "success" and a.get("centre_replan_ok") and abs(a["centre_shift_m"][2]) > 0.01
+    import numpy as np
+    from gurdy_core import grasp_test as G
+    monkeypatch.setattr(G, "centre_correction", lambda *a, **k: np.zeros(3))
+    s, rob, arm, fp = rig(sag)
+    assert "couldn't get a grip" in s.handle("bring me the red cube")
+    assert [a["outcome"] for a in rob.attempts] == ["missed"] * 3
+
+
+class FakeTruth:
+    """Stands in for brain.ros.gz_truth.GzTruth: ground truth = the fake arm port's object list; teleport moves the FakePort."""
+    def __init__(self, arm, fp, bias=(0.0, 0.0)):
+        self.arm, self.fp, self.bias, self.teleports = arm, fp, bias, []
+
+    def nearest(self, cls, xy, max_d=0.6):
+        c = [(math.hypot(o["x"] - xy[0], o["y"] - xy[1]), o) for o in self.arm.objs if o["class"] == cls]
+        d, o = min(c, key=lambda t: t[0]) if c else (9, None)
+        return None if d > max_d else (o["model"], o["x"] + self.bias[0], o["y"] + self.bias[1])
+
+    def teleport(self, x, y, yaw):
+        self.teleports.append((x, y, yaw))
+        self.fp.x, self.fp.y, self.fp.yaw = x, y, yaw
+        return True
+
+
+def test_variant_a_teleport_approach_puts_the_object_in_the_zone():
+    from brain.ros.fetch_robot import FetchConfig
+    s, rob, arm, fp = rig()
+    rob.cfg, rob.truth = FetchConfig(approach="teleport", gt="log"), FakeTruth(arm, fp)
+    assert s.handle("pick up the blue can").startswith("I picked up the blue can")
+    t = rob.truth.teleports
+    assert len(t) == 1 and any("teleport" in x for x in rob.log)
+    a = rob.attempts[0]
+    assert a["gt_world"] == (-1.3, 0.3) and a["est_err_m"] < 0.02 and a["est_source"] == "servo"
+
+
+def test_variant_b_grasp_at_the_ground_truth_pose():
+    """gt=use: the grasp plan takes the GT pose; a 4 cm GT offset the servo cannot see moves the plan target with it."""
+    from brain.ros.fetch_robot import FetchConfig
+    s, rob, arm, fp = rig()
+    rob.cfg, rob.truth = FetchConfig(gt="use"), FakeTruth(arm, fp, bias=(0.0, 0.04))
+    s.handle("pick up the blue can")
+    a = rob.attempts[0]
+    assert a["est_source"] == "gt" and 0.03 < a["est_err_m"] < 0.05

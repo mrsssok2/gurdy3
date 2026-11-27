@@ -35,6 +35,12 @@ def main() -> None:
                     "temporary no-go zones and progress checks). Needs a places file with room rectangles. Default off")
     ap.add_argument("--fetch", action="store_true", help="Phase 9h: fetch commands on the real arm (needs the stack with arm:=true "
                     "object3d:=true; brain/ros/fetch_robot.py). Default off: fetch phrases go to the planner as before")
+    # fetch retest diagnostics (scripts/fetch_retest.sh), all off by default
+    ap.add_argument("--fetch-log", default=None, metavar="JSONL", help="one diagnostics record per grasp attempt")
+    ap.add_argument("--fetch-gt", choices=("off", "log", "use"), default="off",
+                    help="Gazebo ground truth of the target: log it next to the estimates, or use it for the grasp (variant B)")
+    ap.add_argument("--fetch-approach", choices=("nav", "teleport"), default="nav",
+                    help="teleport = gz set_pose to the grasp-zone pose instead of the Nav2 approach (variant A; sim only)")
     a = ap.parse_args()
     from ..agent.graph import Agent
     from ..agent.llm import KeywordLLM
@@ -61,7 +67,11 @@ def main() -> None:
         if not arm.arm_ready():
             print("--fetch: arm_controller not answering (stack started with arm:=true?): fetch stays OFF")
         else:
-            be.fetch_session = FetchSession(RosFetchRobot(be, arm))
+            from .fetch_robot import FetchConfig
+            cfg = FetchConfig(attempt_log=a.fetch_log, gt=a.fetch_gt, approach=a.fetch_approach)
+            be.fetch_session = FetchSession(RosFetchRobot(be, arm, cfg))
+            if a.fetch_log or a.fetch_gt != "off" or a.fetch_approach != "nav":
+                print(f"fetch diagnostics: log {a.fetch_log}, gt {a.fetch_gt}, approach {a.fetch_approach}")
             print(f"fetch: ON (MoveIt {'yes' if arm.moveit_available() else 'no: direct joint goals'})")
     if a.ollama:
         from ..agent.ollama_llm import OllamaLLM

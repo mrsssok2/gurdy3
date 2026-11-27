@@ -41,19 +41,13 @@ def _spin_until(node, cond, timeout):
     return cond()
 
 
-def fit_floor_once(node, timeout=15.0) -> dict:
-    """-> {'n': [3], 'd': float, 'fitted': bool, 'z0': floor z under base_link, 'tilt_deg', 'inliers'}"""
-    got = {}
-    s1 = node.create_subscription(Image, "/camera/depth_image", lambda m: got.setdefault("depth", m), 2)
-    s2 = node.create_subscription(CameraInfo, "/camera/camera_info", lambda m: got.setdefault("info", m), 2)
-    ok = _spin_until(node, lambda: "depth" in got and "info" in got, timeout)
-    node.destroy_subscription(s1)
-    node.destroy_subscription(s2)
+def fit_floor_from(depth_msg, info_msg) -> dict:
+    """One body depth image + camera_info -> fitted floor plane in base_link (prior plane if the fit fails)."""
     prm = LO.LowObstacleParams()
-    if not ok:
+    if depth_msg is None or info_msg is None:
         return {"n": [0.0, 0.0, 1.0], "d": -prm.floor_prior_z, "fitted": False, "z0": prm.floor_prior_z, "tilt_deg": 0.0,
                 "inliers": 0, "why": "no depth image"}
-    m, k = got["depth"], got["info"].k
+    m, k = depth_msg, info_msg.k
     depth = np.frombuffer(m.data, dtype=np.float32).reshape(m.height, m.width)
     pts, _ = LO.depth_to_points(depth, (k[0], k[4], k[2], k[5]), prm)
     pts = LO.apply_T(LO.T_base_optical(load_robot().sensors["depth_camera"]), pts)
@@ -61,6 +55,17 @@ def fit_floor_once(node, timeout=15.0) -> dict:
     n = np.asarray(n, float)
     return {"n": n.tolist(), "d": float(d), "fitted": bool(fitted), "z0": float(-d / n[2]),
             "tilt_deg": math.degrees(math.acos(min(1.0, n[2]))), "inliers": int(np.sum(inl)), "points": int(len(pts))}
+
+
+def fit_floor_once(node, timeout=15.0) -> dict:
+    """-> {'n': [3], 'd': float, 'fitted': bool, 'z0': floor z under base_link, 'tilt_deg', 'inliers'} (spins `node` itself)."""
+    got = {}
+    s1 = node.create_subscription(Image, "/camera/depth_image", lambda m: got.setdefault("depth", m), 2)
+    s2 = node.create_subscription(CameraInfo, "/camera/camera_info", lambda m: got.setdefault("info", m), 2)
+    _spin_until(node, lambda: "depth" in got and "info" in got, timeout)
+    node.destroy_subscription(s1)
+    node.destroy_subscription(s2)
+    return fit_floor_from(got.get("depth"), got.get("info"))
 
 
 def _quat_z_to(n):
@@ -75,17 +80,10 @@ def _quat_z_to(n):
     return tuple(float(x) for x in q)
 
 
-def add_fitted_floor(node, margin=0.005, size=4.0, thick=0.02, timeout=15.0) -> dict:
-    fl = fit_floor_once(node, timeout)
+def floor_scene(fl: dict, acm, margin=0.005, size=4.0, thick=0.02):
+    """PlanningScene diff: the `floor` box from the fitted plane + the current ACM extended with floor-vs-leg allowed.
+    -> (scene, allowed leg links)."""
     n = np.asarray(fl["n"])
-    gp = node.create_client(GetPlanningScene, "/get_planning_scene")
-    ap = node.create_client(ApplyPlanningScene, "/apply_planning_scene")
-    if not (gp.wait_for_service(timeout_sec=30.0) and ap.wait_for_service(timeout_sec=30.0)):
-        return {**fl, "added": False, "why": "move_group services not available"}
-    f = gp.call_async(GetPlanningScene.Request(components=PlanningSceneComponents(
-        components=PlanningSceneComponents.ALLOWED_COLLISION_MATRIX)))
-    rclpy.spin_until_future_complete(node, f, timeout_sec=10.0)
-    acm = f.result().scene.allowed_collision_matrix
     names = list(acm.entry_names)
     rows = [list(e.enabled) for e in acm.entry_values]
     if "floor" not in names:
@@ -106,11 +104,25 @@ def add_fitted_floor(node, margin=0.005, size=4.0, thick=0.02, timeout=15.0) -> 
     co.primitives = [SolidPrimitive(type=SolidPrimitive.BOX, dimensions=[size, size, thick])]
     co.primitive_poses = [pose]
     scene = PlanningScene(is_diff=True, world=PlanningSceneWorld(collision_objects=[co]), allowed_collision_matrix=acm)
+    return scene, sorted(nm for nm in names[:-1] if any(w in nm for w in LEG_WORDS))
+
+
+ACM_REQUEST = PlanningSceneComponents.ALLOWED_COLLISION_MATRIX
+
+
+def add_fitted_floor(node, margin=0.005, size=4.0, thick=0.02, timeout=15.0) -> dict:
+    fl = fit_floor_once(node, timeout)
+    gp = node.create_client(GetPlanningScene, "/get_planning_scene")
+    ap = node.create_client(ApplyPlanningScene, "/apply_planning_scene")
+    if not (gp.wait_for_service(timeout_sec=30.0) and ap.wait_for_service(timeout_sec=30.0)):
+        return {**fl, "added": False, "why": "move_group services not available"}
+    f = gp.call_async(GetPlanningScene.Request(components=PlanningSceneComponents(components=ACM_REQUEST)))
+    rclpy.spin_until_future_complete(node, f, timeout_sec=10.0)
+    scene, legs = floor_scene(fl, f.result().scene.allowed_collision_matrix, margin, size, thick)
     f = ap.call_async(ApplyPlanningScene.Request(scene=scene))
     rclpy.spin_until_future_complete(node, f, timeout_sec=10.0)
     ok = f.result() is not None and f.result().success
-    return {**fl, "added": bool(ok), "margin": margin, "top_z_under_base": fl["z0"] + margin,
-            "allowed_leg_links": sorted(nm for nm in names[:-1] if any(w in nm for w in LEG_WORDS))}
+    return {**fl, "added": bool(ok), "margin": margin, "top_z_under_base": fl["z0"] + margin, "allowed_leg_links": legs}
 
 
 def main():

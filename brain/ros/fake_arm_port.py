@@ -56,6 +56,8 @@ class FakeArmPort:
         self.speed_limits: list = []
         self.base_cruise = fake.cruise
         self.moves: list = []
+        self.scene: list = []                     # MoveIt scene calls: ("floor", ...) / ("target", cls, xy, on)
+        self.sag = np.asarray(self.faults.get("sag", np.zeros(5)), float)   # constant joint offset of the effort-controlled arm (rad)
         cam = self.a.cam
         fx = (cam["width"] / 2) / math.tan(cam["hfov"] / 2)
         self.K, self.W, self.H = (fx, fx, cam["width"] / 2, cam["height"] / 2), cam["width"], cam["height"]
@@ -108,7 +110,7 @@ class FakeArmPort:
         self.moves.append({"t": self.f.now(), "n": len(qs), "moveit": bool(use_moveit)})
         z0 = self._gc_world()[2]
         self.f.advance(seconds)
-        self.q = np.array(qs[-1], float)
+        self.q = np.array(qs[-1], float) + self.sag            # where the arm really settles
         if self.held is not None and self.held["name"] in self.faults.get("slip", set()) and self._gc_world()[2] - z0 > 0.02:
             self._put_down()
             self.finger = (0.0, 0.0)
@@ -145,6 +147,18 @@ class FakeArmPort:
     def set_speed_limit(self, mps):
         self.speed_limits.append(mps)
         self.f.cruise = self.base_cruise if mps is None else min(self.base_cruise, mps)
+
+    def settle(self, q, tol=0.003, timeout=3.0):
+        self.f.advance(0.5)
+        return float(np.max(np.abs(self.q - np.asarray(q, float))))
+
+    def add_floor(self, margin=0.005):
+        self.scene.append(("floor", margin))
+        return {"added": bool(self.mg), "fitted": True, "z0": -0.108}
+
+    def target_in_scene(self, cls, xy_base, on=True):
+        self.scene.append(("target", cls, tuple(round(float(v), 4) for v in xy_base), bool(on)))
+        return bool(self.mg)
 
     def wait(self, seconds):
         self.f.advance(seconds)

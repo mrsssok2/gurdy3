@@ -34,3 +34,43 @@ honest in all three (no false success, e-stop replies correct).**
    container; the next start was ready on attempt 1; cause not established; `CHAT_LOG_DIR` now keeps the logs on the host).
 5. Not tested: the ~2 m vs ~3 m detection-range question in the live search (blocked by finding 1), place / hand-over,
    `search_view_radius_m`.
+
+## Follow-up (2026-11-27 evening, CPU only: fake-robot tests, no Gazebo)
+**Finding 1, root cause FOUND (not an rclpy executor deadlock).** `run_text` wraps RosBackend (`with_incidents`, plus
+MemoryBackend with MEMORY=true) and gives the WRAPPER to `RosFetchRobot`. `IncidentBackend.tick()` only samples pose / objects
+for its recorder; it does not tick the wrapped RosBackend. Normally the agent's pump thread ticks RosBackend through
+`poll_events()`, but that needs the agent lock, which `Agent.say` holds for the whole fetch. So during a fetch search nobody
+ran RosBackend's task machine: `_start` sends the first Nav2 goal directly, Nav2 finishes it on its own, and then no step, no
+`until` (target in the map) and no timeout is ever evaluated. The same wrapper also swallowed `search_view_radius_m`
+(set on the wrapper, never seen by RosBackend). Correction to the table above: "Found the blue can ..." in try 1 was the
+e-stop finishing the task (its final report says found because the can was in the map by then), not the search ending.
+Executor check: RclpyPort = MultiThreadedExecutor(3), RclpyArmPort = MultiThreadedExecutor(2), each on its own thread, default
+callback groups; every blocking wait (`_wait` on a threading.Event, `_done` polling) runs in the CALLER's thread, never inside a
+callback; Nav2 result / feedback only set state in done-callbacks. No deadlock path.
+**Fix:** `RosFetchRobot.engine` = the innermost backend (follows `_inner`); `_wait` ticks the engine (and still the wrapper,
+for the incident recorder); the search waits on / reads missions from the engine and sets `search_view_radius_m` on it. Events
+are not consumed, so the agent gets them after the fetch. Tests (`brain/tests/test_ros_fetch.py`): fetch -> search -> nav
+THROUGH the run_text wrappers (failed before the fix: "I don't know any blue cube", passes now), radius reaches the engine.
+Side finding: the fetch search limit `search_timeout_s` 300 s is tight: the default room sweep needed 270 s (fake, sim time)
+to reach room D; with `search_view_radius_m` 1.5 a full sweep needs > 900 s. Not changed.
+
+**Finding 2: reach is NOT the cause; the fetch grasp path lacked the three grasp_test fixes.** From the measured poses: at the
+end of try 2 the can's ORIGINAL spot was at base (-0.341, -0.039), 0.34 m: 1 cm from the can's servo target (-0.35, 0) and
+inside the side-grasp reach (x -0.30 .. -0.395 m on the centre line, `grasp_plan` ok). The 0.39 m in the table is to the can
+AFTER it was pushed (base (-0.381, -0.084)). So the stand-off / back-up was right and is unchanged. But `RosFetchRobot.grasp`
+had none of today's grasp_test fixes (13/15 -> 25/25): no fitted floor in MoveIt's scene, no target collision object for the
+big moves (the arm swing pushed the can in grasp_test fixed5x5 exactly like here), no settle + measured-FK centring.
+**Fix (no new flag; the fetch path itself stays behind FETCH=false):** `grasp()` now = the grasp_test pipeline: floor added
+once (`RclpyArmPort.add_floor`, scripts/moveit_floor.py split into `fit_floor_from` + `floor_scene`, no spin_once on the
+executor-owned node), target in the scene for the big moves and removed before the straight approach (also on errors),
+settle + `centre_correction` + re-plan. **Per-attempt record** (`RosFetchRobot.attempts`, JSONL with `--fetch-log`): robot
+pose, map (detector) pose, servo result, estimate + source, robot->object distance, GT pose + estimate error (`--fetch-gt
+log`), yaw, plan ok / reason, target in scene, settle errors, centre shift, re-plan, fingers closed / lifted, standing
+points, outcome + reason. Tests: floor once, target on/off per attempt, one record per attempt with reason; centring with a
+-0.1 rad shoulder sag: success with it, 3 misses without; teleport approach (variant A) and GT grasp (variant B) with a fake
+ground truth. Suites: brain 1189 passed / 3 skipped, gurdy_core 409, vision 56, CI yaml / lint / safety PASS.
+
+**Retest (NOT run; needs Docker + GPU):** `nohup scripts/fetch_retest.sh > /tmp/fetch_retest.out 2>&1 &`
+(A = teleport to the grasp_test pose + detector pose, B = Nav2 approach + GT pose, C = full fetch with search; blue can 1.33 m
+from the spawn point; TRIES 3 for A / B, C_TRIES 2 fresh stacks; report `docs/results/phase9j_fetch_retest.md`). Expected
+~65-80 min wall (estimate from today's start-up and try times at RTF ~0.3, not measured for this script).
