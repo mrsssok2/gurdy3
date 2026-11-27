@@ -4,6 +4,7 @@ Question: why does the robot sometimes report "my path is blocked" / "I cannot f
 often near a doorway? Evidence first (no code changes), then a doorway suite committed before any change, then general fixes, then a short
 Gazebo check. **Bottom line: the doorways were not too narrow. 5 of the 6 failures were Nav2 behaviour-tree goal-acknowledgement timeouts
 (20 ms) under CPU load, which abort the goal without running any recovery. The sixth was a planner failure from a free pose just inside room C.**
+**Overnight after the fix (section 6): doorway_v1 39/42 (93 %, 13/14 each run), v3 subset 28/30 vs 18/30 before; 132 Nav2 goals, 0 aborts, 0 blocked replies; 0 falls, 0 wrong claims. Remaining: `long_path` confirmation (3), route switch at door B-D (2); planner failures from free poses (cause 2) still happen but are recovered.**
 
 ## 1. Evidence
 
@@ -105,10 +106,65 @@ it is not known (the costmap was not recorded). Nav2's own BT already recovers t
 path check. Finding the source of those marks is the next step (record the global costmap at each planner failure).
 This is a smoke test (4 missions, one run), not a measurement of the failure rate.
 
-## 5. Overnight run (written, NOT started)
+## 5. Overnight run (ran 2026-11-26 17:43 -> 2026-11-27 01:05 UTC, results in section 6)
 `scripts/doorway_v1_runs.sh`: doorway_v1 x 3 seeds -> `brain/runs/doorway_v1/run{1,2,3}`, then a lab4 v3 regression subset (10 navigation-heavy
 missions, including every one with a blocked-path failure above) x 3 -> `brain/runs/doorway_v1/v3_regr{1,2,3}`. Ollama is restarted before each run
 and stopped at the end. Estimated time 5-6 h, based on the v3 run time (33 missions in about 2 h). The v3 missions are not held-out for this question any more.
+
+## 6. Overnight results (commit 30e1f91, clean tree, gurdy-sft-400, typed, fresh stack per mission)
+Aggregated with `brain.eval.heldout_report` (current scorer); Nav2 counts from every attempt's stack `launch.log`
+(grep for `[bt_navigator]: Goal failed`, `Timed out while waiting for action server to acknowledge`, `Failed to create plan`, `clear entirely the global_costmap`).
+Before = `brain/runs/heldout_lab4_v3/run{1,2,3}` (commit 28d4987, before both 8a changes **and** before the Phase 7c language fixes).
+The frozen v3 results (`phase5_heldout_lab4_v3.md`) are not changed; the "before" numbers below are the same records re-scored by today's scorer for a like-for-like comparison.
+
+### 6.1 doorway_v1 (14 missions x 3 seeds)
+**13 / 14 in every run: mean 93 % (range 93-93 %), 39 / 42.** 0 falls, 0 wrong claims, 0 grounding violations, 0 timeouts, 0 infra failures
+(1 stack restart: run 2 `dw_a_to_d` attempt 1 `sim_hang`, attempt 2 ok). **0 blocked / unknown-space / gave-up replies.** 873 m walked, 9547 s sim.
+By category: single 12/12, both 12/12, ring 6/6, two-hop 5/6, tight 4/6.
+
+| failure | run | what happened | cause |
+|---|---|---|---|
+| `dw_d_to_a` | 1 | Robot reached D (0.1 m from goal). "walk back to room A" -> "That is 8.3 metres away. Shall I go?"; the mission script never answers, robot stays in D. | Agent safety rule `long_path` (`confirm_path_longer_m: 8.0`). D->A is 7.8-8.4 m depending on where in D the robot stands, so this flips between runs. Not navigation. |
+| `dw_tight_corner` | 2, 3 | B -> C: robot walked toward door B-D, stopped 0.2-0.5 m before the gap (y 1.3-1.8, gap at y 2.0), dithered there ~40 s, then turned round and reached C through A (A-B, C-A). Arrived "0.1 m from the goal", true claim; scored FAIL only because door D-C was never passed. On the A route the planner also failed 1-2x from free poses in/after door A-B; each time the BT cleared the global costmap and continued. | Not proven (costmap not recorded). Same signature as cause 2: something in the global costmap makes the B-D gap expensive or closed as the robot approaches, so the 1 Hz re-plan switches to the A route. Run 1 shows the same hesitation at door D-C (~80 s around (2.5, 4.1)) but got through. |
+
+### 6.2 lab4 v3 regression subset (10 missions x 3 seeds), same missions before vs after
+
+| | before (v3 runs 1-3, 28d4987) | after (v3_regr 1-3, 30e1f91) |
+|---|---|---|
+| passed | **18 / 30 (60 %)** | **28 / 30 (93 %)**, per run 10 / 9 / 9 |
+| falls / wrong claims | 0 / 0 | 0 / 0 |
+| missions with a blocked / unknown-space reply | 4 | **0** |
+| failures caused by navigation | 3 (`v3_bravo_delta_home` run 2 BT abort + run 3 timeout, `v3_leg_walking` run 3 planner refusal) | **0** |
+| failures caused by language / agent | 9 (`v3_d_back_to_a` x3 `run over` regex, `v3_cone_in_d` x3 place-in-object, `v3_toolbox_search` x3 `where_is`; fixed in 7c) | 2 (`long_path` confirmation, below) |
+
+Per mission (before -> after): delta_phonetic 3->3, room_b 3->3, step_into_charlie 3->3, bravo_then_alpha 3->3, c_then_b 3->3,
+bravo_delta_home 1->2, d_back_to_a 0->2, cone_in_d 0->3, toolbox_search 0->3, leg_walking 2->3.
+**The before/after gain mixes two changes**: d_back_to_a, cone_in_d and toolbox_search went from 0/3 by the Phase 7c language fixes, not by the Nav2 change.
+The navigation part alone: 3 nav failures -> 0.
+
+After-fix failures, both the same agent rule as `dw_d_to_a`: `v3_d_back_to_a` run 2 (reached D, then "That is 8.2 metres away. Shall I go?" for the
+return home, mission timeout) and `v3_bravo_delta_home` run 3 (patrol B, D done, then "8.4 metres away. Shall I go?" for home, timeout).
+
+### 6.3 Nav2 before vs after
+
+| | before: v3 all 33 x 3 | before: v3 subset | after: v3 subset | after: doorway_v1 |
+|---|---|---|---|---|
+| mission records | 99 | 30 | 30 | 42 |
+| BT `Goal succeeded` | 52 | 31 | 43 | 89 |
+| BT `Goal failed` (abort) | **3** | **3** | **0** | **0** |
+| goal-ack timeouts (cause 1) | 3 | 3 | 0 | 0 |
+| planner `Failed to create plan` (cause 2) | 12 | 8 | 6 | 11 |
+| ... recovered by a global-costmap clear | 11 | 7 | 6 | 11 |
+| `Control loop missed its desired rate` | 7 | 6 | 0 | 42 |
+
+**After the fix: 132 Nav2 goals, 0 aborts, 0 goal-ack timeouts, 0 blocked replies** (before: 3 aborts in 55 goals of the v3 runs, 5 in 88 incl. postfix).
+Cause 1 is fixed as far as these 72 missions can show. **Cause 2 is not fixed, only recovered:** 17 planner failures from free poses after the fix, every one cleared
+and recovered by the BT, and the 2 `dw_tight_corner` route switches look like the same mark. The CPU load is still there (42 `Control loop missed` warnings in the doorway runs).
+
+### 6.4 Next
+1. Cause 2: record the global costmap (or the obstacle layer around the robot) at each planner failure and when the robot stalls > 10 s within 1 m of a doorway; find what marks the gap.
+2. `long_path` at 8.0 m confirms "go back home" after a mission the user just ordered (3 of the 3 non-route failures tonight). Options: do not confirm a `return_home` / the return leg of an ordered plan, or raise the threshold above the lab4 diagonal. Agent decision, not done here.
+3. `dw_tight_corner` checks the route, not just the arrival; keep it as is (suite frozen).
 
 ## Honest limits
 - Cause 1 is proven from the logs. Cause 2 is a hypothesis: the costmap at the time was not recorded.
