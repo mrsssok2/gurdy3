@@ -12,12 +12,21 @@ dest_room}. Everything is validated strictly and most of it is not trusted:
   * target "user" needs a user word (me / my / here / us / I); unknown keys or values -> rejected
 Safety is NOT the picker's job: the session runs the text-level rules (throw, people) BEFORE the picker is called and the
 object rules (classes, mass, mannequin) AFTER it, exactly as for the router. Any problem -> None. Never raises.
-The real model is evaluated tomorrow; tonight only a FAKE (scripted) LLM is used in tests.
+
+Real model (2026-11-27): `OllamaFetchLLM`, same transport as the Phase 6d incident picker (brain/incidents/picker.py):
+the project's Ollama at OLLAMA_URL (default http://127.0.0.1:11435; containers set OLLAMA_URL, scripts/lib_ollama.sh),
+model GURDY_FETCH_PICKER_MODEL / GURDY_PICKER_MODEL / gurdy-sft-400, temperature 0, `think` off, Ollama JSON mode
+(`format: "json"`; `schema=True` sends the full JSON schema instead - the fine-tuned model was derailed by grammars for
+the planner, so it is off by default, phase5_eval_sft.md), timeout 20 s. Server down / timeout / non-JSON -> None and
+the existing routing continues. NOT run against Ollama yet: `python3 -m brain.eval.fetch_picker_dev` (DEV set).
 """
 from __future__ import annotations
 
 import json
+import os
 import re
+import time
+import urllib.request
 from pathlib import Path
 from typing import Any, Callable
 
@@ -29,7 +38,9 @@ TOOLS = ("fetch", "pick_up", "place", "hand_over", "none")
 KEYS = {"tool", "object", "colour", "room", "target", "dest_room"}
 PROMPT = (Path(__file__).with_name("picker_prompt.txt")).read_text()
 FETCHY = re.compile(r"\b(bring|fetch|get|grab|pick|lift|carry|put|place|drop|leave|hand|give|take|move|deliver|need|want|"
-                    r"love|like|could use|pass|toss|throw|over here|to me|for me)\b", re.I)
+                    r"love|like|could (?:\w+ )?use|pass|toss|throw|over here|to me|for me|"
+                    # 2026-11-27, from the DEV set (fetch_picker_dev.py): these phrasings never reached the model
+                    r"can i have|could i have|ferry\w*|send|return|end up|should go|belongs? in)\b", re.I)
 QUESTION = re.compile(r"^\s*(what|where|which|who|when|why|how|is|are|was|were|did|do|does|have|has)\b.*\?\s*$", re.I)
 USER_WORD = re.compile(r"\b(me|my|i|i'd|i'm|here|us|we|over)\b", re.I)
 FAMILY = {"traffic_cone": "mini_cone", "fire_extinguisher": "mini_extinguisher", "toolbox": "mini_toolbox", "box": "small_box"}
@@ -118,25 +129,96 @@ def validate(raw: Any, text: str, rooms) -> dict | None:
     return {"intent": "fetch", "object": o, "mode": target, **({"room": dest} if target == "room" else {})}
 
 
-class FetchPicker:
-    """llm(system: str, user: str) -> str (raw model text). Tonight: scripted fakes only."""
+def json_schema() -> dict:
+    """Strict JSON schema of the reply (Ollama `format`, only with OllamaFetchLLM(schema=True))."""
+    nul = lambda e: {"anyOf": [{"type": "string", "enum": list(e)}, {"type": "null"}]}    # noqa: E731
+    return {"type": "object", "additionalProperties": False, "required": sorted(KEYS),
+            "properties": {"tool": {"type": "string", "enum": list(TOOLS)}, "object": nul(KNOWN_CLASSES), "colour": nul(COLOURS),
+                           "room": {"type": ["string", "null"]}, "target": nul(("user", "home", "room")),
+                           "dest_room": {"type": ["string", "null"]}}}
 
-    def __init__(self, llm: Callable[[str, str], str]):
-        self.llm = llm
-        self.calls = 0
+
+class OllamaFetchLLM:
+    """(system, user) -> raw model text, through the project's Ollama /api/chat. Raises on any transport problem (the
+    picker turns that into None)."""
+
+    def __init__(self, model: str | None = None, host: str | None = None, timeout: float = 20.0, keep_alive: str = "30m",
+                 schema: bool = False, num_predict: int = 96):
+        self.model = model or os.environ.get("GURDY_FETCH_PICKER_MODEL") or os.environ.get("GURDY_PICKER_MODEL") or "gurdy-sft-400"
+        self.host = (host or os.environ.get("OLLAMA_URL") or "http://127.0.0.1:11435").rstrip("/")
+        self.timeout, self.keep_alive, self.schema, self.num_predict = timeout, keep_alive, schema, num_predict
+
+    def body(self, system: str, user: str) -> dict:
+        return {"model": self.model, "stream": False, "think": False, "keep_alive": self.keep_alive,
+                "format": json_schema() if self.schema else "json",
+                "options": {"temperature": 0, "num_ctx": 2048, "num_predict": self.num_predict},
+                "messages": [{"role": "system", "content": system}, {"role": "user", "content": user}]}
+
+    def __call__(self, system: str, user: str) -> str:
+        req = urllib.request.Request(self.host + "/api/chat", json.dumps(self.body(system, user)).encode(),
+                                     {"Content-Type": "application/json"})
+        with urllib.request.urlopen(req, timeout=self.timeout) as r:
+            return json.load(r)["message"]["content"]
+
+
+def parse_reply(raw: Any):
+    """Model text -> dict or None. Strict first; a single {...} inside extra text / code fences is accepted (counted)."""
+    d = _json(raw)
+    if d is not None or not isinstance(raw, str):
+        return d, False
+    m = re.findall(r"\{[^{}]*\}", raw)
+    if len(m) != 1:
+        return None, False
+    return _json(m[0]), True
+
+
+class FetchPicker:
+    """llm(system: str, user: str) -> str (raw model text); default: the real model (OllamaFetchLLM).
+    Counters: calls (model calls), failures (transport / timeout), bad_json, invalid (a fetch tool the validation
+    rejected), none (model said "none"), repaired (JSON inside extra text), latencies (s)."""
+
+    def __init__(self, llm: Callable[[str, str], str] | None = None, **ollama_kw):
+        self.llm = llm if llm is not None else OllamaFetchLLM(**ollama_kw)
+        self.calls = self.failures = self.bad_json = self.invalid = self.none = self.repaired = 0
+        self.latencies: list[float] = []
+        self.last_raw: Any = None
 
     def pick(self, text: str, rooms) -> dict | None:
+        self.last_raw = None
         if not might_be_fetch(text):
             return None
+        self.calls += 1
+        t0 = time.perf_counter()
         try:
-            self.calls += 1
             raw = self.llm(system_prompt(rooms), user_message(text))
         except Exception:                                 # noqa: BLE001  (server down / timeout -> keyword routing)
+            self.failures += 1
             return None
+        finally:
+            self.latencies.append(time.perf_counter() - t0)
+        self.last_raw = raw
         try:
-            return validate(raw, text, list(rooms))
+            d, fixed = parse_reply(raw)
+            if d is None:
+                self.bad_json += 1
+                return None
+            self.repaired += fixed
+            out = validate(d, text, list(rooms))
+            if out is None:
+                if d.get("tool") == "none":
+                    self.none += 1
+                else:
+                    self.invalid += 1
+            return out
         except Exception:                                 # noqa: BLE001
+            self.invalid += 1
             return None
+
+    def stats(self) -> dict:
+        lat = sorted(self.latencies)
+        return {"calls": self.calls, "failures": self.failures, "bad_json": self.bad_json, "invalid": self.invalid,
+                "none": self.none, "repaired": self.repaired,
+                "latency_p50_s": round(lat[len(lat) // 2], 3) if lat else None, "latency_max_s": round(lat[-1], 3) if lat else None}
 
 
 def describe_intent(intent: dict) -> str:

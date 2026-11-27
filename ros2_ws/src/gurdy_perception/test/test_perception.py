@@ -45,3 +45,35 @@ def test_pipeline_object_in_map_frame():
     for k in range(5):
         m.update("barrel", p_map + np.random.default_rng(k).normal(0, 0.02, 3), 0.9, k, range_m=2.0)
     assert len(m.confirmed()) == 1
+
+
+def test_default_position_method_is_the_phase4_pixel_method():
+    """Phase 8c wiring must not change the default: position_method 'pixel', floor prior -0.11 (no rclpy needed)."""
+    import ast
+    from pathlib import Path
+    src = (Path(__file__).resolve().parents[1] / "gurdy_perception" / "detector_node.py").read_text()
+    calls = {}
+    for node in ast.walk(ast.parse(src)):
+        if isinstance(node, ast.Call) and getattr(node.func, "id", None) == "P" and len(node.args) == 2:
+            calls[node.args[0].value] = ast.literal_eval(node.args[1])
+    assert calls["position_method"] == "pixel"
+    assert calls["floor_z"] == -0.11 and calls["floor_fit"] is True and calls["object3d_shape_fit"] is True
+
+
+def test_object3d_pipeline_barrel_into_semantic_map():
+    """Same barrel case as above through the Phase 8c path (all box pixels, fitted floor, circle fit, Track3D)."""
+    from gurdy_core.vision import locate3d as L
+    from gurdy_core.vision.synth_depth import render
+    from gurdy_core.vision.transforms import T_base_optical, T_map_base, intrinsics_from_fov, make_T
+    K = intrinsics_from_fov(320, 240, 1.047)
+    m = SemanticMap(min_hits=3)
+    barrel = dict(kind="cylinder", centre=(1.0, 3.3, 0.45), radius=0.275, height=0.90)
+    for k, dx in enumerate((-0.1, 0.0, 0.1, 0.05)):
+        Tw = T_map_base(1.0 + dx, 1.0, np.pi / 2, z=0.11) @ T_base_optical({"pos": [0.15, 0, 0.02], "pitch_down": 0.17})
+        d, _, boxes = render(K, 320, 240, Tw, [barrel], noise=0.003, rng=np.random.default_rng(k))
+        T = make_T(t=(0, 0, -0.11)) @ Tw
+        s = L.locate(d, boxes[0], K, T, "barrel", L.FloorTracker().update(d, K, T, float(k)))
+        m.update("barrel", s.centre, 0.9, float(k), range_m=2.0, obs3d=s)
+    (o,) = [t.to_dict() for t in m.confirmed()]
+    assert o["pos_source"] == "object3d" and abs(o["x"] - 1.0) < 0.02 and abs(o["y"] - 3.3) < 0.02
+    assert o["top_z"] is None and not o["height_known"] and o["size"][2] == 0.90    # barrel top never visible: prior height

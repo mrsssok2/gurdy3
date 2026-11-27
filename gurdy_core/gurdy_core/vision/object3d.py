@@ -149,12 +149,27 @@ def _rect_boundary_dist(q: np.ndarray, hx: float, hy: float) -> np.ndarray:
     return np.where((ax > 0) | (ay > 0), outside, inside)
 
 
-def fit_rectangle(xy: np.ndarray, size, cam_xy, step_deg: float = 2.0):
+def _adaptive_half(ext, size_range, seen_min):
+    """Half sizes from the visible extents (0.5-99.5 pct, /0.99: a face seen at a grazing angle holds only a few % of the
+    points, a 2-98 pct extent cuts it) for a box class of VARIABLE size: each axis = its extent clipped
+    to size_range when that face is seen (extent >= seen_min), else the other axis' size (near-cube assumption), else the
+    middle of the range."""
+    lo, hi = size_range
+    s = [min(max(e / 0.99, lo), hi) if e >= seen_min else None for e in ext]
+    if s[0] is None and s[1] is None:
+        s = [0.5 * (lo + hi)] * 2
+    s = [s[0] if s[0] is not None else s[1], s[1] if s[1] is not None else s[0]]
+    return s[0] / 2.0, s[1] / 2.0
+
+
+def fit_rectangle(xy: np.ndarray, size, cam_xy, step_deg: float = 2.0, size_range=None):
     """Centre + yaw of a rectangle of KNOWN size (sx, sy) whose camera-facing sides contain the visible points.
     For each yaw on a grid, the side facing the camera fixes the centre along that axis (robust 2nd / 98th pct of the points);
-    the yaw with the smallest median point-to-boundary distance wins. -> (centre (2,), yaw, cost)."""
+    the yaw with the smallest median point-to-boundary distance wins. -> (centre (2,), yaw, cost).
+    size_range (lo, hi), optional: the class has no single size (generic `box`): per yaw the size comes from the visible
+    extents (`_adaptive_half`); `size` is then ignored. Default None = the fixed-size fit (unchanged)."""
     hx, hy = size[0] / 2.0, size[1] / 2.0
-    period = math.pi / 2 if abs(hx - hy) < 1e-6 else math.pi
+    period = math.pi / 2 if size_range is not None or abs(hx - hy) < 1e-6 else math.pi
     best = (None, 0.0, math.inf)
     cam = np.asarray(cam_xy, float)
     for yaw in np.arange(0.0, period, math.radians(step_deg)):
@@ -163,6 +178,9 @@ def fit_rectangle(xy: np.ndarray, size, cam_xy, step_deg: float = 2.0):
         q = xy @ R.T
         qc = R @ cam
         lo, hi = np.percentile(q, 2, axis=0), np.percentile(q, 98, axis=0)
+        if size_range is not None:
+            ext = np.percentile(q, 99.5, axis=0) - np.percentile(q, 0.5, axis=0)
+            hx, hy = _adaptive_half(ext, size_range, 0.5 * size_range[0])
         cu = lo[0] + hx if qc[0] < 0.5 * (lo[0] + hi[0]) else hi[0] - hx
         cv = lo[1] + hy if qc[1] < 0.5 * (lo[1] + hi[1]) else hi[1] - hy
         cost = float(np.median(_rect_boundary_dist(q - [cu, cv], hx, hy)))
@@ -224,7 +242,7 @@ def estimate(depth: np.ndarray, box, K, T_map_opt, prm: Object3DParams | None = 
     if shape is not None and shape.get("kind") == "cylinder":
         cxy = fit_circle_fixed_r(pts[:, :2], float(shape["radius"]), cxy)
     elif shape is not None and shape.get("kind") == "box":
-        c_fit, fit_yaw, _ = fit_rectangle(pts[:, :2], shape["size"][:2], cam[:2])
+        c_fit, fit_yaw, _ = fit_rectangle(pts[:, :2], shape["size"][:2], cam[:2], size_range=shape.get("size_range"))
         cxy = c_fit
     centre = np.array([cxy[0], cxy[1], 0.5 * (top + bottom)])
     zc = float(np.median(z))
@@ -290,6 +308,18 @@ class Track3D:
             self.widths.append(obs.width)
         self.hits += 1
         return True
+
+    def merge(self, other: "Track3D") -> None:
+        """Add another track's sightings (two tracks of one object merged by the semantic map)."""
+        if other is None or not other.hits:
+            return
+        self.info = self.info + other.info
+        self.info_vec = self.info_vec + other.info_vec
+        self.tops += other.tops
+        self.widths += other.widths
+        self.heights += other.heights
+        self.hits += other.hits
+        self.rejected += other.rejected
 
     def summary(self) -> dict:
         c = self.centre

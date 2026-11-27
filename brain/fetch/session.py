@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 
 from .catalog import COLOURS, label
-from .machine import FetchMachine, Outcome
+from .machine import FetchAborted, FetchMachine, Outcome
 from .mock import ROOMS, room_of
 from .replies import describe, outcome_reply, safe
 from .router import find_object, parse
@@ -28,6 +28,7 @@ class FetchSession:
         self.picker = picker           # Phase 9f: brain.fetch.picker.FetchPicker for free phrasings (None = router only)
         self.m = FetchMachine(robot)
         self.pending = None            # (intent, candidates) waiting for 'the red one' / 'the one in room C'
+        self.queue: list = []          # remaining items of a multi-object request ("the red can and the blue cube"), in order
         self.calls: list = []          # validated tool calls of the last turn
         self.last: Outcome | None = None
 
@@ -87,8 +88,10 @@ class FetchSession:
                 intent, chosen = res
             else:
                 self.pending = None
+                self.queue = []                        # a new request replaces the rest of an interrupted list
                 intent = parse(text)
         else:
+            self.queue = []
             intent = parse(text)
         if intent is None and self.picker is not None:
             ref = refuse_reason(text)                  # text-level safety BEFORE any model sees the request
@@ -97,6 +100,40 @@ class FetchSession:
             intent = self.picker.pick(text, sorted(ROOMS))
         if intent is None:
             return None
+        if intent["intent"] == "multi_pick":           # one gripper: holding two things is impossible -> ask, never guess
+            names = " or ".join(f"the {(o.get('color') + ' ') if o.get('color') else ''}{label(o['class'])}" for o in intent["objects"])
+            return f"I can only hold one thing at a time. Which one should I pick up: {names}?"
+        if intent["intent"] == "multi":                # several objects: one after another, in the order they were said
+            self.queue = list(intent["items"][1:])
+            intent = intent["items"][0]
+        try:
+            return self._run_queue(self._run(intent, chosen))
+        except FetchAborted as e:                        # e-stop during a real-robot primitive: stop everything, say what is true
+            self.queue, self.pending = [], None
+            held = self.r.carrying
+            what = f"I'm still holding {describe(self.r.objects[held])}." if held and held in self.r.objects else \
+                "I'm not holding anything."
+            return f"I stopped ({e}). {what}"
+
+    # ---- multi-object requests: one after another; stop at the first item that does not end as asked
+    def _run_queue(self, reply: str | None) -> str | None:
+        parts = [reply]
+        while self.queue and self.pending is None and self.last is not None and self.last.status in ("placed", "handed_over"):
+            nxt = self.queue.pop(0)
+            self.last = None
+            parts.append(self._run(nxt, None))
+        if self.queue and self.pending is None:
+            rest = " and ".join(self._name(i["object"]) for i in self.queue)
+            self.queue = []
+            parts.append(f"I stopped there, so I haven't done {rest} yet.")
+        return " ".join(p for p in parts if p)
+
+    @staticmethod
+    def _name(o: dict) -> str:
+        return f"the {(o['color'] + ' ') if o.get('color') else ''}{label(o['class'])}"
+
+    def _run(self, intent: dict, chosen) -> str | None:
+        self.last = None
         if intent["intent"] == "refuse":
             return intent["reply"]
         if intent["intent"] == "hand_over":
@@ -127,6 +164,11 @@ class FetchSession:
                 # not in the map: the machine's FIND step searches (and may fail with NOT_FOUND)
                 unseen = [o for o in self.r.objects.values() if o.cls == obj["class"] and o.name not in self.r.known
                           and (not obj.get("color") or o.color == obj["color"]) and (not obj.get("room") or o.room == obj["room"])]
+                if not unseen and callable(getattr(self.r, "search", None)):
+                    # real robot (brain/ros/fetch_robot.py): nobody has seen one yet -> search the rooms, then look again
+                    ref = {"class": obj["class"], **({"color": obj["color"]} if obj.get("color") else {})}
+                    if self.r.search(ref):
+                        unseen = self._candidates(obj)
                 if not unseen:
                     c = f"{obj['color']} " if obj.get("color") else ""
                     where = f" in {obj['room']}" if obj.get("room") else ""

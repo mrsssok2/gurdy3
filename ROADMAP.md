@@ -364,6 +364,8 @@ then Phase 5b VLN, Phase 8, Phase 9, Phase 10 below. Nothing in Part 2 blocks "G
 
 ## Phase 5b — End-to-end Vision-Language-Navigation experiment (planned, not started)
 Question: can a small end-to-end policy distilled from the modular system (LLM brain + Nav2 + YOLO) match it?
+- [x] Modular VLN design + plan validator (LLM picks a constrained JSON plan, code validates against words + map, grounds landmarks, routes around avoided rooms), metrics code (SR / SPL / oracle / wrong room / avoid violation / false claims), DEV set 45 (not held-out, oracle 45/45) — `docs/results/vln_plan.md`, branch `phase10-vln-prep` (2026-11-27)
+- [ ] DEV run with gurdy-sft-400 / base (Ollama); `Agent._vln_route` + execution (legs, temporary no-go zones, progress monitor); Gazebo runner on the user's blind VLN suite
 - [ ] Record the modular system completing English missions as demonstrations (camera frames + instruction + `/cmd_vel`, plus outcome labels)
 - [ ] Train a small VLN policy (camera + instruction → `/cmd_vel`) by imitation / distillation
 - [ ] Compare modular vs end-to-end: success rate, time, collisions, unseen rooms, unseen phrasings
@@ -383,6 +385,21 @@ closer than d_safe to the footprint. Results: docs/results/phase8b_safety_shield
 - [x] Unit tests + 2D kinematic simulator (walls, doorway, corner, turn, sudden obstacle, stale scan): 0 / 52 shielded collisions, doorway slowdown 0-2 %
 - [ ] colcon build + node test in the ROS image
 - [ ] Gazebo test (teleop / agent / Nav2 through the flat_lab doorway, with vs without shield); tune d_safe / alpha from the measured stopping distance
+
+---
+
+## Phase 8c — 3D object positions from the depth camera (picking prep)
+Box + all depth pixels -> 3D centre, top, height, yaw, covariance; Track3D fusion. Plan and results: docs/results/phase8c_plan.md.
+- [x] Offline code + tests (`gurdy_core/vision/object3d.py`, `transforms.py`, `synth_depth.py`), synthetic eval, 3D GT for semantic_lab (2026-11-26)
+- [x] Wired into `detector_node` / `SemanticMap` behind `position_method:=object3d` (launch `object3d:=false` default), fitted floor plane (prior z -0.11 m), size-adaptive `box` fit, 3D fields in the semantic map JSON; host-venv tests (2026-11-27, branch `phase8c-wire`)
+- [x] Gazebo accuracy-check script (teleport stops 0.6 / 1.0 / 1.5 / 2.5 m x 3 bearings, scorer vs 3D GT) — written, not run
+- [ ] colcon build + node smoke test in the ROS image
+- [ ] Gazebo convention checks (K, z-depth, floor z, noise) + the accuracy run; calibrate the covariance
+- [ ] Depth-noise model in the gz sensor (robot model)
+- [x] First grasp test script for Gazebo lab4_fetch (`scripts/grasp_test.sh`, 5 classes x 3 tries, contact grip, lift + hold; `docs/results/phase9g_grasp_test.md`) — written, not run
+- [ ] Run it (after day_0927 01 / 04 / 09 PASS)
+- [x] ROS fetch backend behind `--fetch` / `FETCH=true` (default off): find / search, approach, servo, grasp, verify, fold, carry, place, hand-over; fake-port tests (`docs/results/phase9h_ros_fetch.md`) — not run in ROS
+- [ ] v3 detector (small classes) + live fetch run
 
 ---
 

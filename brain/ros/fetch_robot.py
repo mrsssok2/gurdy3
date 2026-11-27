@@ -1,0 +1,448 @@
+"""RosFetchRobot: the fetch backend for the REAL robot / Gazebo, the same primitive interface as brain.fetch.mock.FetchMock,
+so brain.fetch.session.FetchSession + FetchMachine run unchanged on top of it (Phase 9h; behind run_text --fetch,
+default off). NOT run in Gazebo yet.
+
+    robot = RosFetchRobot(ros_backend, arm_port)            # RosBackend (body: Nav2, pose, semantic map, search) + ArmPort
+    session = FetchSession(robot); ros_backend.fetch_session = session
+
+Primitives (each returns what FetchMock returns; every wait loop checks the e-stop and raises FetchAborted):
+  find        the object is in the semantic map (object3d mode gives x / y / z / yaw); `search(ref)` runs RosBackend.find
+              (room sweep + explore) for objects nobody has seen (the session calls it when it has no candidate)
+  approach    grasp-zone pose: the object must end up at the class zone BEHIND the robot (rear arm). Nav2 to a stand-off
+              pose (zone distance + 0.25 m) FACING the object, turn round there (turning right next to the object could
+              sweep a leg into it), then back up the 0.25 m on odometry (closed loop /cmd_vel). The candidate side is the one
+              with free map cells around the footprint and the shortest planned path.
+  fine_align  arm to the view pose, wrist-camera visual servo (gurdy_core.visual_servo, body steps = closed loop /cmd_vel)
+  grasp       wrist-view yaw (gurdy_core.wrist_yaw; below 0.5 confidence roll 0), grasp plan (gurdy_core.grasp_test), gripper
+              open, pre-grasp (MoveIt if available, else a joint goal), straight approach (joint goal), squeeze (contact)
+  verify      lift 5 cm; fingers neither fully closed nor fully open; then arm to the view pose and the wrist view must show
+              nothing STANDING at the old spot (gurdy_core.wrist_yaw.standing_points: 0.5-2.5 cm band above the fitted floor;
+              a held object is lifted / occludes it, a missed one is still there). Failure -> open, back off (the machine
+              retries the grasp)
+  fold        arm `folded` (payload pose)
+  carry_to    Nav2 with the controller speed limit at the carry speed (<= 0.08 m/s); fingers fully closed on the way =
+              dropped (returns the drop point); the measured speed is logged (`speeds`, like the mock)
+  release     lower to the class place pose behind the robot, open, back off, fold
+  hand_over   turn so the arm points at the user, present the object (IK, ~15 cm up), keep a light grip and wait until the
+              fingers close (the object was taken) or the timeout
+"""
+from __future__ import annotations
+
+import math
+from dataclasses import dataclass
+
+import numpy as np
+
+from ..fetch.catalog import CARRY_SPEED_MPS, PICKABLE as CAT
+from ..fetch.machine import FetchAborted
+from ..fetch.mock import HOME, ROOMS, Obj
+
+BACKUP_M = 0.25
+GRIP_EFFORT = 3.0                  # N per finger (joint limit 10 N; 80 g at mu 1 needs ~0.4 N)
+HOLD_EFFORT = 1.0                  # N while presenting (the user can pull it out)
+FINGER_CLOSED = 0.004              # m per finger: below this nothing is between the fingers
+
+
+@dataclass
+class FetchConfig:
+    nav_timeout_s: float = 240.0
+    carry_timeout_s: float = 600.0
+    search_timeout_s: float = 300.0
+    handover_timeout_s: float = 20.0
+    poll_s: float = 0.2
+    yaw_min_conf: float = 0.5
+    use_moveit: bool = True        # if available
+
+
+class RosFetchRobot:
+    def __init__(self, backend, arm, cfg: FetchConfig | None = None):
+        from gurdy_core import arm as A
+        self.A = A
+        self.b, self.p, self.arm, self.cfg = backend, backend.p, arm, cfg or FetchConfig()
+        self.ARM, self.RB = A.load_arm(), A.load_robot()
+        self.carrying: str | None = None
+        self.user = tuple(self._place_xy("home") or HOME)
+        self.speeds: list = []
+        self.log: list = []
+        self.known: set = set()
+        self._objects: dict = {}
+        self._with_user: dict = {}
+        self._moved: dict = {}        # name -> (x, y, t): placed by us; overrides the map until the detector sees it again
+        self._servo = None
+        self._plan = None
+        self._rest = None             # (x, y) world where the object stood before the grasp
+
+    # ------------------------------------------------------------------ state
+    def now(self) -> float:
+        return self.p.now()
+
+    @property
+    def robot(self):
+        pz = self.p.pose()
+        return (pz[0], pz[1]) if pz else (0.0, 0.0)
+
+    @property
+    def objects(self) -> dict:
+        """Semantic-map tracks as fetch objects (name obj<id>); held / handed-over objects keep their own state."""
+        for t in self.p.semantic_objects() or []:
+            name = f"obj{t['id']}"
+            if name in self._with_user or name == self.carrying:
+                continue
+            cls = t["class"]
+            mass = CAT[cls][0] if cls in CAT else None
+            x, y = float(t["x"]), float(t["y"])
+            mv = self._moved.get(name)
+            if mv and float(t.get("last_seen", -1e9)) <= mv[2]:
+                x, y = mv[0], mv[1]
+            o = Obj(name, cls, t.get("color") or "", x, y, mass, cls in CAT)
+            o.track = t
+            self._objects[name] = o
+            self.known.add(name)
+        for name, o in self._with_user.items():
+            self._objects[name] = o
+        return self._objects
+
+    def _place_xy(self, name):
+        pl = getattr(self.b, "places", {}) or {}
+        v = next((v for k, v in pl.items() if k.lower() == name.lower()), None)
+        return (v["x"], v["y"]) if isinstance(v, dict) and "x" in v else None
+
+    def place_point(self, room: str):
+        xy = self._place_xy(room)
+        if xy:
+            return xy
+        a, b, c, d = ROOMS[room]
+        return ((a + c) / 2 + 0.6, (b + d) / 2 + 0.6)
+
+    # ------------------------------------------------------------------ waiting / body helpers
+    def _check(self):
+        if self.p.estop_active():
+            self.p.send_cmd(0.0, 0.0, 0.0)
+            raise FetchAborted("emergency stop")
+
+    def _wait(self, s):
+        end = self.now() + s
+        while True:
+            self._check()
+            dt = min(self.cfg.poll_s, end - self.now())
+            if dt <= 1e-6:
+                return
+            self.arm.wait(dt)
+            if hasattr(self.b, "tick"):
+                self.b.tick()
+
+    def _nav(self, x, y, yaw, timeout):
+        h = self.p.nav_send(x, y, yaw)
+        if h is None:
+            return False, "Nav2 not available"
+        t0 = self.now()
+        while True:
+            self._check()
+            st = self.p.nav_state(h)
+            if st["state"] == "succeeded":
+                return True, None
+            if st["state"] in ("aborted", "canceled"):
+                return False, f"Nav2 {st['state']}"
+            if self.now() - t0 > timeout:
+                self.p.nav_cancel(h)
+                return False, "Nav2 timeout"
+            v = self.p.speed()
+            if v is not None:
+                self.speeds.append((round(v, 3), self.carrying is not None))
+            self._wait(self.cfg.poll_s)
+
+    def _turn_to(self, yaw, tol=0.05, timeout=30.0):
+        t0 = self.now()
+        while self.now() - t0 < timeout:
+            x, y, cur = self.p.pose()
+            e = math.atan2(math.sin(yaw - cur), math.cos(yaw - cur))
+            if abs(e) < tol:
+                break
+            self.p.send_cmd(0.0, 0.0, math.copysign(min(0.3, max(0.1, abs(e))), e))
+            self._wait(self.cfg.poll_s)
+        self.p.send_cmd(0.0, 0.0, 0.0)
+        x, y, cur = self.p.pose()
+        return abs(math.atan2(math.sin(yaw - cur), math.cos(yaw - cur))) < 2 * tol
+
+    def _move_body(self, dx, dy, speed=0.05, tol=0.01, timeout=15.0):
+        """Closed-loop straight move by (dx, dy) in the CURRENT base frame (odometry / TF pose), yaw held."""
+        x0, y0, yaw = self.p.pose()
+        c, s = math.cos(yaw), math.sin(yaw)
+        tx, ty = x0 + c * dx - s * dy, y0 + s * dx + c * dy
+        t0 = self.now()
+        while self.now() - t0 < timeout:
+            x, y, cur = self.p.pose()
+            ex, ey = tx - x, ty - y
+            if math.hypot(ex, ey) < tol:
+                break
+            c, s = math.cos(cur), math.sin(cur)
+            bx, by = c * ex + s * ey, -s * ex + c * ey
+            n = math.hypot(bx, by)
+            v = min(speed, 2.0 * n)
+            self.p.send_cmd(bx / n * v, by / n * v, 0.0)
+            self._wait(self.cfg.poll_s)
+        self.p.send_cmd(0.0, 0.0, 0.0)
+        x, y, _ = self.p.pose()
+        return math.hypot(tx - x, ty - y) < 3 * tol
+
+    def _base(self, xy):
+        x, y, yaw = self.p.pose()
+        c, s = math.cos(yaw), math.sin(yaw)
+        dx, dy = xy[0] - x, xy[1] - y
+        return np.array([c * dx + s * dy, -s * dx + c * dy])
+
+    def _world(self, bxy):
+        x, y, yaw = self.p.pose()
+        c, s = math.cos(yaw), math.sin(yaw)
+        return (x + c * bxy[0] - s * bxy[1], y + s * bxy[0] + c * bxy[1])
+
+    def _move_arm(self, qs, seconds, big=False):
+        use = big and self.cfg.use_moveit and self.arm.moveit_available()
+        ok = self.arm.move_arm(qs, seconds, use_moveit=use)
+        if not ok and use:
+            ok = self.arm.move_arm(qs, seconds, use_moveit=False)
+        self.log.append({"t": round(self.now(), 1), "arm": "moveit" if use else "direct", "ok": ok})
+        self._check()
+        return ok
+
+    # ------------------------------------------------------------------ primitives
+    def search(self, ref: dict) -> bool:
+        """Look for an object nobody has seen (RosBackend.find: room sweep + explore). True when the map has one now."""
+        r = self.b.find(object=dict(ref), approach=False, max_time_s=self.cfg.search_timeout_s)
+        if not getattr(r, "ok", False):
+            return False
+        t0 = self.now()
+        while self.b.task is not None and self.now() - t0 < self.cfg.search_timeout_s + 30:
+            self._wait(self.cfg.poll_s)
+        m = self.b.missions[-1] if self.b.missions else {}
+        return bool((m.get("result") or {}).get("found"))
+
+    def find(self, name):
+        o = self.objects.get(name)
+        if o is None:
+            return False, "not in the semantic map"
+        return True, o.room
+
+    def _approach_candidates(self, o, zone):
+        out = []
+        for k in range(16):
+            yaw = -math.pi + 2 * math.pi * k / 16
+            c, s = math.cos(yaw), math.sin(yaw)
+            bx, by = o.x - (c * zone[0] - s * zone[1]), o.y - (s * zone[0] + c * zone[1])
+            sx, sy = bx + c * BACKUP_M, by + s * BACKUP_M           # stand-off: further from the object (it is behind, at -x)
+            ring = [(px + 0.34 * math.cos(a), py + 0.34 * math.sin(a)) for px, py in ((bx, by), (sx, sy))
+                    for a in np.linspace(0, 2 * math.pi, 12, endpoint=False)]
+            if any(self.p.map_cell(px, py) not in (None, "free") for px, py in ring + [(bx, by), (sx, sy)]):
+                continue
+            path = self.p.compute_path(sx, sy)
+            if path is None:
+                continue
+            out.append((path["length_m"], yaw, (bx, by), (sx, sy)))
+        return sorted(out)
+
+    def approach(self, name, speed=0.10):
+        from gurdy_core.visual_servo import CLASS_INFO
+        o = self.objects[name]
+        zone = CLASS_INFO[o.cls][3]
+        cands = self._approach_candidates(o, zone)
+        if not cands:
+            return False, f"no free spot next to the {o.cls}"
+        for _, yaw, grasp_xy, stand in cands[:3]:
+            ok, why = self._nav(stand[0], stand[1], yaw + math.pi, self.cfg.nav_timeout_s)   # facing the object
+            if not ok:
+                continue
+            if not self._turn_to(yaw):
+                return False, "could not turn round"
+            self._move_body(-BACKUP_M, 0.0, speed=0.05, tol=0.015)  # back up towards it (wrist camera looks behind)
+            return True, o.room
+        return False, why
+
+    def _servo_robot(self):
+        rob = self
+
+        class _R:
+            def wrist_view(self):
+                v = rob.arm.wrist_view()
+                if v is None:
+                    raise RuntimeError("no wrist frame")
+                return v
+
+            def step(self, dx, dy):
+                rob._move_body(dx, dy, speed=0.05, tol=0.005, timeout=10.0)
+                rob._wait(0.5)
+
+            def now(self):
+                return rob.now()
+        return _R()
+
+    def fine_align(self, name):
+        from gurdy_core import grasp_test as G
+        from gurdy_core.visual_servo import VIEW_POSE, VisualServo
+        o = self.objects[name]
+        self._move_arm([self.ARM.poses[VIEW_POSE[o.cls]]], 3.0, big=True)
+        self._wait(0.5)
+        reach = lambda c, xy: G.grasp_plan(self.ARM, self.RB, c, xy).ok       # noqa: E731
+        res = VisualServo(self._servo_robot(), arm_reachable=reach).run(o.cls, prior_xy=self._base((o.x, o.y)))
+        self._servo = res
+        self.log.append({"t": round(self.now(), 1), "servo": res.code, "steps": res.steps, "residual": res.residual})
+        return res.ok, res.residual if res.residual is not None else 0.99
+
+    def grasp(self, name):
+        from gurdy_core import grasp_test as G
+        from gurdy_core import wrist_yaw as WY
+        o = self.objects[name]
+        xy = np.array(self._servo.obs.xy) if self._servo and self._servo.obs and self._servo.obs.xy else self._base((o.x, o.y))
+        v = self.arm.wrist_view()
+        ye = WY.estimate_yaw(*v, o.cls, xy_hint=xy) if v else WY.YawEstimate(None, 0.0, "none")
+        yaw = ye.yaw if (ye.yaw is not None and ye.confidence >= self.cfg.yaw_min_conf) else None
+        plan = G.grasp_plan(self.ARM, self.RB, o.cls, xy, yaw)
+        self.log.append({"t": round(self.now(), 1), "yaw": ye.to_dict(), "plan": plan.ok, "reason": plan.reason})
+        if not plan.ok:
+            return False
+        self._plan, self._rest = plan, self._world(xy)
+        self.arm.gripper(+GRIP_EFFORT)
+        self._wait(0.5)
+        if not self._move_arm([plan.pre], 3.0, big=True) or not self._move_arm([plan.grasp], 2.0):
+            return False
+        self.arm.gripper(-GRIP_EFFORT)
+        self._wait(1.5)
+        return True
+
+    def _standing_at_rest(self, cls) -> int | None:
+        """Points of something still STANDING where the object was, seen from the class view pose."""
+        from gurdy_core import wrist_yaw as WY
+        from gurdy_core.visual_servo import VIEW_POSE
+        self._move_arm([self.ARM.poses[VIEW_POSE[cls]]], 2.0)
+        self._wait(0.5)
+        v = self.arm.wrist_view()
+        if v is None or self._rest is None:
+            return None
+        r = 0.5 * max(self.A.PICKABLE[cls].get("size", (0.06, 0.06))[:2]) if "size" in self.A.PICKABLE[cls] else self.A.PICKABLE[cls]["radius"]
+        return WY.standing_points(*v, self._base(self._rest), r + 0.01)
+
+    def verify_grasp(self, name):
+        p = self._plan
+        if p is None:
+            return False
+        o = self._objects[name]
+        self._move_arm(p.lift, 2.5)
+        self._wait(1.0)
+        f = self.arm.fingers()
+        half = CAT[o.cls][1] / 2 if o.cls in CAT else 0.03
+        fingers_ok = f is not None and min(f) > FINGER_CLOSED and max(f) < half + 0.012
+        standing = self._standing_at_rest(o.cls) if fingers_ok else None
+        gone = standing is not None and standing < 15
+        self.log.append({"t": round(self.now(), 1), "verify": {"fingers": f, "fingers_ok": fingers_ok, "standing_points": standing}})
+        if fingers_ok and gone:
+            self.carrying = name
+            return True
+        self.arm.gripper(+GRIP_EFFORT)
+        self._wait(0.5)
+        self._move_arm([p.pre], 1.5)
+        return False
+
+    def fold_arm(self):
+        return self._move_arm([self.ARM.poses["folded"]], 3.0, big=True)
+
+    def _dropped(self) -> bool:
+        f = self.arm.fingers()
+        return f is not None and max(f) <= FINGER_CLOSED
+
+    def carry_to(self, xy, speed):
+        speed = min(speed, CARRY_SPEED_MPS)
+        self.arm.set_speed_limit(speed)
+        try:
+            h = self.p.nav_send(xy[0], xy[1], None)
+            if h is None:
+                return False, None
+            t0 = self.now()
+            while True:
+                self._check()
+                if self.carrying and self._dropped():
+                    self.p.nav_cancel(h)
+                    self.p.send_cmd(0.0, 0.0, 0.0)
+                    name, self.carrying = self.carrying, None
+                    self._objects.pop(name, None)
+                    return False, self.robot
+                st = self.p.nav_state(h)
+                if st["state"] == "succeeded":
+                    return True, xy
+                if st["state"] in ("aborted", "canceled") or self.now() - t0 > self.cfg.carry_timeout_s:
+                    if st["state"] == "running":
+                        self.p.nav_cancel(h)
+                    return False, None
+                v = self.p.speed()
+                if v is not None:
+                    self.speeds.append((round(v, 3), True))
+                self._wait(self.cfg.poll_s)
+        finally:
+            self.arm.set_speed_limit(None)
+
+    def _place_plan(self):
+        from gurdy_core import grasp_test as G
+        from gurdy_core.visual_servo import CLASS_INFO
+        o = self._objects.get(self.carrying)
+        cls = o.cls if o else "small_box"
+        xy = np.array(CLASS_INFO[cls][3])
+        return G.grasp_plan(self.ARM, self.RB, cls, xy), xy
+
+    def release(self):
+        if not self.carrying:
+            return False
+        p, place_xy = self._place_plan()
+        if p.ok:
+            self._move_arm([p.pre], 3.0, big=True)
+            self._move_arm([p.grasp], 2.0)
+        self.arm.gripper(+GRIP_EFFORT)
+        self._wait(1.0)
+        f = self.arm.fingers()
+        opened = f is not None and min(f) > FINGER_CLOSED
+        if p.ok:
+            self._move_arm([p.pre], 1.5)
+        self.fold_arm()
+        if opened:
+            name, self.carrying = self.carrying, None
+            wx, wy = self._world(place_xy)
+            self._moved[name] = (wx, wy, self.now())
+            o = self._objects.get(name)
+            if o:
+                o.x, o.y = wx, wy
+        return opened
+
+    def handover_pose(self):
+        """Present the object behind the robot, ~15 cm above the floor, horizontal approach (fallback: `ready`)."""
+        A = self.A
+        tgt = np.array([-0.35, 0.0, A.ground_z(self.RB) + 0.15])
+        for ap in (0.0, -0.3, 0.3):
+            for eu in (True, False):
+                q = A.ik(self.ARM, tgt, ap, elbow_up=eu)
+                if q is not None and A.within_limits(self.ARM, q) and A.collision_free(self.ARM, q, self.RB, A.ground_z(self.RB)):
+                    return q
+        return np.array(self.ARM.poses["ready"])
+
+    def hand_over(self, timeout_s=None):
+        timeout_s = timeout_s or self.cfg.handover_timeout_s
+        if not self.carrying:
+            return False
+        x, y, _ = self.p.pose()
+        ux, uy = self.user
+        self._turn_to(math.atan2(uy - y, ux - x) + math.pi)        # the arm is at the back: back towards the user
+        self._move_arm([self.handover_pose()], 3.0, big=True)
+        self.arm.gripper(-HOLD_EFFORT)
+        t0 = self.now()
+        while self.now() - t0 < timeout_s:
+            if self._dropped():                                     # fingers closed: the user took it
+                self.arm.gripper(+GRIP_EFFORT)
+                self._wait(0.5)
+                self.fold_arm()
+                name, self.carrying = self.carrying, None
+                o = self._objects.pop(name, None)
+                if o:
+                    o.x, o.y = self.user
+                    o.with_user = True
+                    self._with_user[name] = o
+                return True
+            self._wait(self.cfg.poll_s)
+        self.arm.gripper(-GRIP_EFFORT)
+        self.fold_arm()
+        return False

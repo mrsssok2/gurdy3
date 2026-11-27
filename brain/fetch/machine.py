@@ -19,6 +19,11 @@ from .safety import carry_speed
 MAX_ALIGN, MAX_GRASP = 3, 3
 
 
+class FetchAborted(Exception):
+    """Raised by a backend primitive when the task must stop at once (emergency stop). FetchSession turns it into an honest
+    reply; nothing after it runs."""
+
+
 @dataclass
 class Outcome:
     status: str                     # holding | placed | handed_over | failed
