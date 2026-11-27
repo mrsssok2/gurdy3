@@ -193,9 +193,12 @@ def srdf_text(disabled):
     for name, q in poses.items():
         lines.append(f'  <group_state name="{name}" group="arm">' + "".join(
             f'<joint name="{j}" value="{v}"/>' for j, v in zip(ARM_JOINTS, q)) + "</group_state>")
+    from gurdy_core import arm as A                     # example pre-grasp: cube at (-0.27, 0), analytic IK (as the MoveIt check)
+    _a, _rb = A.load_arm(), A.load_robot()
+    _pg = [round(float(v), 4) + 0.0 for v in A.plan_grasp(_a, _rb, A.PICKABLE["small_box"], (-0.27, 0.0), A.ground_z(_rb))[0]]
     lines.append('  <group_state name="pre_grasp" group="arm">' + "".join(
-        f'<joint name="{j}" value="{v}"/>' for j, v in zip(ARM_JOINTS, poses["ready"])) + "</group_state>"
-        "  <!-- placeholder: the real pre-grasp is computed per object (gurdy_core.arm.plan_grasp) -->")
+        f'<joint name="{j}" value="{v}"/>' for j, v in zip(ARM_JOINTS, _pg)) + "</group_state>"
+        "  <!-- example: cube at (-0.27, 0); real pre-grasps are computed per object (gurdy_core.arm.plan_grasp) -->")
     lines += ['  <group_state name="open" group="gripper"><joint name="arm_finger_left_joint" value="0.04"/><joint name="arm_finger_right_joint" value="0.04"/></group_state>',
               '  <group_state name="closed" group="gripper"><joint name="arm_finger_left_joint" value="0.0"/><joint name="arm_finger_right_joint" value="0.0"/></group_state>',
               '  <end_effector name="gripper" parent_link="arm_palm_link" group="gripper" parent_group="arm"/>',
