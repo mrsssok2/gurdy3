@@ -1,0 +1,12 @@
+PASS 01_build 2026-11-27 01:57:52 built, URDF valid, arm:=false == default; pick_ik NOT installed (step 08 will fail)
+# WRONG (script bug: colcon test fell back to unittest, chain stopped; step fixed and re-run below): PASS 02_unit_in_image 2026-11-27 01:58:06   3 packages failed: gurdy_arm_moveit gurdy_navigation gurdy_safety
+FAIL 02_unit_in_image 2026-11-27 02:00:41 3 passed in 0.51s;24 passed in 0.60s;9 passed in 0.28s;8 passed in 18.82s;1 failed, 242 passed in 27.21s; FAILED tests/test_scan_timing.py::test_patch_applies_to_main - AssertionError... 
+SKIP 03_8c_noise_and_wiring 2026-11-27 02:00:47 not run today on request (Phase 8c wiring is being coded in another session)
+PASS 04_arm_spawn 2026-11-27 02:01:17 arm max error to folded 0.000 rad, base z 0.108 m
+PASS 05_walk_no_arm 2026-11-27 02:02:58 forward 13 % err, turn 2 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+PASS 06_walk_arm_folded 2026-11-27 02:04:27 forward 16 % err, turn 3 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+PASS 07_walk_arm_object 2026-11-27 02:05:56 forward 1 % err, turn 2 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+FAIL 08_moveit_plan 2026-11-27 02:08:25 no probe result (move_group.log)
+PASS 09_wrist_camera 2026-11-27 02:09:05 45 frames in 5 s, fx 233.9 (arm.yaml 233.9), fitted floor z -0.107 m in base_link (expected about -0.11)
+FAIL 10_scan_gaps 2026-11-27 02:35:04 no gap statistics (bag.log / console.log)
+NOTE 10_scan_gaps 2026-11-27 02:35:28 step timed out (1500 s) in goal round 3 (rounds take ~12 min wall each); bag was complete (617 s, 3434 scans) and analysed offline afterwards: recommended scan_timeout: 0.5 s  (p99 gap 0.327 s x 1.2 = 0.392 s -> 0.50 s (floor)); gaps > 0.5 s: 2 (max 0.512); Nav2 rounds 1-2: 6/6 goals SUCCEEDED

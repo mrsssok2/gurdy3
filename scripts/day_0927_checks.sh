@@ -71,12 +71,13 @@ step_01_build() {      # [gate] the workspace with the new packages builds; the 
 }
 
 step_02_unit_in_image() {   # the ROS packages' tests + the pure-Python suites inside the image (numpy < 2 there)
+  # pytest per package: `colcon test` falls back to unittest discovery for these ament_python packages ("Ran 0 tests", exit 5)
   run_in 02_unit_in_image 1800 '
-    cd ros2_ws && colcon test --packages-select gurdy_safety gurdy_navigation gurdy_description gurdy_arm_moveit 2>&1 | tail -5 &&
-    colcon test-result --verbose 2>&1 | tail -15 && cd .. &&
-    (cd gurdy_core && python3 -m pytest -q 2>&1 | tail -2)'
-  local s; s=$(grep -E "passed|failed" "$OUT/02_unit_in_image/console.log" | tail -1)
-  if grep -qE "[1-9][0-9]* failed|errors?: [1-9]" "$OUT/02_unit_in_image/console.log"; then result 02_unit_in_image FAIL "$s"
+    for p in gurdy_safety gurdy_navigation gurdy_description gurdy_arm_moveit; do
+      echo "== $p"; (cd ros2_ws/src/$p && python3 -m pytest -q test 2>&1 | tail -4); done
+    echo "== gurdy_core"; (cd gurdy_core && python3 -m pytest -q 2>&1 | tail -4)'
+  local s; s=$(grep -E "^[0-9]+ (passed|failed)|^[0-9]+ failed" "$OUT/02_unit_in_image/console.log" | tr '\n' ';')
+  if grep -qE "[0-9]+ failed|[0-9]+ errors?" "$OUT/02_unit_in_image/console.log"; then result 02_unit_in_image FAIL "$s $(grep ^FAILED "$OUT/02_unit_in_image/console.log" | tr '\n' ' ')"
   else result 02_unit_in_image PASS "$s"; fi
 }
 
@@ -138,7 +139,7 @@ step_09_wrist_camera() {   # arm to servo_view, trigger, frames + K + fitted flo
 }
 
 step_10_scan_gaps() {   # 10 min of /scan under detector + Nav2 load -> recommended shield scan_timeout
-  run_in 10_scan_gaps 1500 '
+  run_in 10_scan_gaps 2700 '
     source scripts/lib_nav_start.sh
     start_nav_stack "$STEP_DIR" gui:=false world:=lab4 nav:=localization map:=lab4_map controller:=policy odom_source:=ground_truth perception:=true \
       || { echo "FAIL Nav2 never became ready"; exit 1; }

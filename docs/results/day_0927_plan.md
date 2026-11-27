@@ -112,3 +112,31 @@ tomorrow runs them in the image.
    plane (map z −0.11), as in the servo.
 8. **CPU:** steps 03, 10 and 11 load the CPU / GPU heavily. Never run two at a time (the script refuses when
    `docker ps` is not empty).
+
+## 5. Results 2026-11-27 (main at 3b92bab + 3b7d402, headless, one container at a time)
+Raw: `docs/results/data/day_0927/summary.txt` and the per-step folders. Every number below was measured from one run (no repeats).
+
+| step | result | key numbers |
+|---|---|---|
+| 01_build [gate] | **PASS** | 11 packages built, `gurdy_with_arm arm:=true` passes `check_urdf`, `arm:=false` == default URDF. `pick_ik` **not installed** |
+| 02_unit_in_image | **FAIL (1 test, known cause)** | pytest in the image: gurdy_safety 3, gurdy_navigation 24, gurdy_description 9, gurdy_arm_moveit 8 passed; gurdy_core 242 passed, **1 failed: `test_scan_timing::test_patch_applies_to_main`**. Main now contains the 9c shield patch, so the 9f patch no longer applies: this is the pending "regenerate the 9f patch on top of 9c" item, not broken code. Script bug fixed: `colcon test` ran these ament_python packages with unittest discovery ("Ran 0 tests", exit 5), the `&&` chain stopped and the step logged a false PASS (marked WRONG in summary.txt); the step now runs pytest per package |
+| 03_8c_noise_and_wiring | **SKIP** | not run on request (the 8c wiring is being coded in another session) |
+| 04_arm_spawn [gate] | **PASS** | both `<ros2_control>` blocks load (GazeboSimSystem + GurdyArmSystem); joint_pd / joint_state_broadcaster / arm_controller / gripper_controller active; arm error to `folded` 2.5e-11 rad, base z 0.108 m. The error is ~0 because the arm joints use a **position** command interface (gz_ros2_control sets the joint position directly). It shows the folded pose is held, not that the servos can hold it |
+| 05_walk_no_arm | PASS | 30 s at 0.10 m/s: 0.0873 m/s (**12.7 %** err); 30 s at 0.3 rad/s: 0.294 (**2.1 %**); min z 0.080 / 0.103 m, no fall |
+| 06_walk_arm_folded | PASS | forward **16.2 %** (+3.5 pts), turn **3.5 %** (+1.4 pts), min z 0.079 m, no fall -> within +5 pts |
+| 07_walk_arm_object (+0.08 kg palm) | PASS | forward **1.4 %** (−11 pts), turn **1.6 %** (−0.4 pts), min z 0.081 m, no fall -> within +5 pts. Payload checked: palm 0.045 -> 0.125 kg in the generated URDF. Being 11 pts *better* than no-arm means a single 30 s window is noisier than the ±5-point rule, so 05-07 do not establish an effect of the arm either way. Repeats would be needed |
+| 08_moveit_plan | **FAIL** | **MoveIt 2 is not in the image** (`package 'moveit_ros_move_group' not found`, `No module named 'moveit_msgs'`), not just pick_ik. Needs an image change (the project rule says images are not rebuilt: user decision) |
+| 09_wrist_camera | **PASS** | 45 depth frames in 5 s, fx = fy 233.9 (arm.yaml 233.9), cx/cy 160/120, fitted floor z **−0.107 m** in base_link (expected −0.11 ± 0.02), NaN share 0. **But `<triggered>` is ignored**: SDF warns that `triggered` / `trigger_topic` are unknown elements, and with no trigger the wrist depth topic still publishes at **7.1 Hz**. So the camera always renders (RTF cost), and plan risk 4 is real |
+| 10_scan_gaps | **FAIL (step timeout), data OK** | step wall limit 1500 s was too short (each 3-goal round ~12 min wall; round 3 cut). The 617 s `/scan` bag was complete and analysed afterwards with `scan_gaps.py`: 3434 scans, gap mean 0.180 s, p50 0.171, p95 0.254, p99 0.327, max 0.512 s; 59 gaps > 0.3 s, **2 > 0.5 s**, 0 > 1.0 s. **Recommended `scan_timeout` 0.5 s** (p99 x 1.2 = 0.39 -> floor 0.5), i.e. the current value. With 0.5 s the 2 gaps over 0.5 s would still cause 2 short `stale` stops per 10 min (fits the 9 blips seen in 8b). 0.6 s would have removed both in this sample. Nav2 under this load: 6/6 goals SUCCEEDED, 1 recovery. Step limit raised to 2700 s |
+| 11_small_object_render | not run | on request |
+
+Gates: 01 PASS, 04 PASS, so nothing stopped the sequence.
+
+## 6. Risks found today and next steps
+1. **MoveIt 2 missing from `gurdy2/ros:jazzy`** (08). It blocks 9e. Options: (a) a separate derived image `gurdy3/ros-moveit` on top of the existing one (`ros-jazzy-moveit` + `ros-jazzy-pick-ik`), which leaves `gurdy2/*` untouched but needs a rule change from the user; (b) plan without MoveIt: send the analytic joint goals straight to `arm_controller` (works today, no collision checking). **User decision.**
+2. **Wrist camera always on** (09): gz-sensors ignores `<triggered>` for this sensor, 7.1 Hz without a trigger. Measure the RTF cost (arm:=true vs false, idle) before 9b/9e use it; fallback `update_rate` 1-2 Hz, or the camera only in the fetch launch.
+3. **Arm held by a position interface** (04): Gazebo sets the arm joints kinematically, so servo torque limits and arm compliance are not simulated, and walking with the arm (06/07) sees a rigid arm. The offline torque check (9a) is the only torque evidence. Consider an effort + PD interface like the legs before trusting the walk results.
+4. **Walking effect of the arm is unresolved** (05-07): 0 falls in all three, but the single 30 s windows vary more (07 better than no-arm by 11 pts) than the ±5-point rule. Run 3+ repeats per configuration (about 90 s each) before calling the acceptance met.
+5. **9f scan-timeout patch** must be regenerated on top of 9c; `test_patch_applies_to_main` fails until then. Today's data says keep 0.5 s (tool) or take 0.6 s (removes the 2 gaps > 0.5 s seen in 10 min); one 10-min sample only.
+6. **Phase 8a leftovers** (`phase8a_nav2_doorways.md` §6): `long_path` 8.0 m confirmation on the return leg (3 overnight failures), route switch before door B-D, and cause-2 costmap marks (record the costmap at planner failures).
+7. Not started on request: step 11 (small-object render), step 03 (8c wiring).
