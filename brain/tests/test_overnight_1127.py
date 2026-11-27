@@ -33,7 +33,7 @@ def test_full_flow_skips_a_block_after_3_failed_starts_and_grades_from_ground_tr
     out, ev, md, log = run(tmp_path, DRY_START_FAIL="3,4,5", DRY_FETCH_FAIL="small_box_2", DRY_CLAIM_ONLY="small_box_1",
                            DRY_WALK_FAIL="2", RUNS=2)
     assert [e["type"] for e in ev if e["type"].startswith("block")] == [
-        "block_start", "block_skip", "block_end", "block_start", "block_end", "block_start", "block_end"]
+        "block_start", "block_skip", "block_end", "block_start", "block_end", "block_start", "block_end", "block_start", "block_end"]
     skip = next(e for e in ev if e["type"] == "block_skip")
     assert skip["block"] == "fetch" and skip["reason"] == "3 failed stack starts in a row" and skip["at"] == "mini_toolbox_3"
     tries = [json.loads(x) for x in (out / "fetch/tries.jsonl").read_text().splitlines()]
@@ -60,7 +60,7 @@ def test_smoke_runs_one_fetch_try_only(tmp_path):
 def test_deadline_skips_units_that_could_overrun(tmp_path):
     out, ev, md, log = run(tmp_path, DEADLINE_H="0.1")                    # 6 min: no fetch try (25 min worst case) fits
     skips = {e["block"]: e["reason"] for e in ev if e["type"] == "block_skip"}
-    assert skips == {"fetch": "deadline", "ab": "deadline", "walk": "deadline"}
+    assert skips == {"fetch": "deadline", "ab": "deadline", "walk": "deadline", "yolo": "deadline"}
     assert not (out / "fetch/tries.jsonl").exists()
 
 
@@ -86,3 +86,51 @@ def test_plan_commands_pick_the_planned_object(cls):
     r = s.handle(p["command"])
     assert r.startswith("I picked up"), r
     assert arm.held is not None and arm.held["model"] == p["model"]
+
+
+# ---- block d) YOLO v3.1: render -> train (time budget) -> eval -> report; deadline rule; runtime detector untouched
+def yolo_calls(out):
+    st = out / "yolo" / "stages.jsonl"
+    return [json.loads(x) for x in st.read_text().splitlines()] if st.exists() else []
+
+
+def test_yolo_block_runs_all_stages_with_the_v3_training_budget(tmp_path):
+    out, ev, md, log = run(tmp_path, RUNS=1)
+    st = yolo_calls(out)
+    assert [x["stage"] for x in st] == ["render", "train", "eval", "report"] and all(x["rc"] == "0" for x in st)
+    assert st[1]["train_time_h"] == "2.1"                                  # capped at what det_v3_s trained
+    assert "Runtime detector default after the block: `det_v3_s.onnx` (unchanged)" in md
+    assert "**Acceptance, side by side" in md and "estimate d) YOLO v3.1" in log
+    assert (out / "yolo/det_v31_s_results.csv").exists()
+    no_token_anywhere(out)
+
+
+def test_yolo_block_skipped_when_render_plus_1h_training_cannot_fit(tmp_path):
+    out, ev, md, log = run(tmp_path, RUNS=1, DEADLINE_H="4.0")            # needs 9000 + 3600 + 600 + 1200 + 600 s = 4.17 h
+    assert not yolo_calls(out)
+    assert any(e["type"] == "block_skip" and e["block"] == "yolo" and e["reason"] == "deadline" for e in ev)
+
+
+def test_yolo_training_gets_only_the_time_that_is_left(tmp_path):
+    out, ev, md, log = run(tmp_path, RUNS=1, DEADLINE_H="4.5", DRY_RENDER_ADD_S=9000)   # 16200 - 9000 - 2400 = 4800 s left
+    st = yolo_calls(out)
+    assert [x["stage"] for x in st] == ["render", "train", "eval", "report"] and st[1]["train_time_h"] == "1.33"
+
+
+def test_yolo_training_skipped_below_one_hour(tmp_path):
+    out, ev, md, log = run(tmp_path, RUNS=1, DEADLINE_H="4.5", DRY_RENDER_ADD_S=12000)  # 1800 s left
+    assert [x["stage"] for x in yolo_calls(out)] == ["render"]
+    sk = next(e for e in ev if e["type"] == "block_skip" and e["block"] == "yolo")
+    assert sk["at"] == "train" and sk["reason"] in ("deadline: only 30 min left for training (< 60)", "deadline: only 29 min left for training (< 60)")
+
+
+def test_yolo_render_failure_stops_the_block(tmp_path):
+    out, ev, md, log = run(tmp_path, RUNS=1, DRY_YOLO_FAIL="render")
+    assert [x["stage"] for x in yolo_calls(out)] == ["render"]
+    assert any(e["type"] == "block_skip" and e["block"] == "yolo" and "render failed" in e["reason"] for e in ev)
+    assert "yolo render: exit code 2" in md
+
+
+def test_smoke_has_no_yolo_block(tmp_path):
+    out, ev, md, log = run(tmp_path, "--smoke")
+    assert not yolo_calls(out) and "## d) YOLO v3.1" in md and "Not run." in md.split("## d)")[1].split("##")[0]

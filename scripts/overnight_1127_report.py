@@ -109,6 +109,37 @@ def main():
     for r in sorted(set(runs) - set(ok_runs)):
         failed_why.append(f"walk {r}: no result ({last_line(D / 'walk' / r / 'console.log') or 'no console.log'})")
 
+    # ---------------- d) YOLO v3.1
+    L += ["## d) YOLO v3.1 (render -> train -> eval), v3 vs v3.1; runtime detector NOT switched", ""]
+    Y = D / "yolo"
+    st = rows(Y / "stages.jsonl")
+    if not st:
+        L += ["Not run.", ""]
+    else:
+        L += ["| stage | exit code | wall (min) | training budget (h) |", "|---|---|---|---|"]
+        for x in st:
+            L.append(f"| {x['stage']} | {x['rc']} | {int(x['wall_s']) / 60:.0f} | {x.get('train_time_h', '0')} |")
+            if str(x["rc"]) != "0":
+                failed_why.append(f"yolo {x['stage']}: exit code {x['rc']} (log: yolo/logs/{x['stage']}.log)")
+        L.append("")
+        rc = Y / "det_v31_s_results.csv"
+        if rc.exists():
+            r = [ln.split(",") for ln in rc.read_text().splitlines()[1:] if ln.strip()]
+            if r:
+                best = max(r, key=lambda v: 0.1 * float(v[7]) + 0.9 * float(v[8]))
+                L += [f"det_v31_s trained {len(r)} epochs in {float(r[-1][1]) / 3600:.2f} h (det_v3_s: 104 epochs in 2.09 h, "
+                      f"stopped by the power cut); best epoch {best[0]}: val mAP50 {float(best[7]):.3f}, mAP50-95 {float(best[8]):.3f} "
+                      "(val sets differ: v3.1 labels include the tiny objects).", ""]
+        for f, title in (("phase9b_v3_vs_v31.md", "Acceptance, side by side (scripts/p9b_report.py)"),
+                         ("phase9b_recall_by_distance_det_v3_s.md", "Recall by distance, det_v3_s"),
+                         ("phase9b_recall_by_distance_det_v31_s.md", "Recall by distance, det_v31_s")):
+            if (Y / f).exists():
+                L += [f"**{title}**", "", (Y / f).read_text().strip(), ""]
+        rd = rows(Y / "runtime_detector.jsonl")
+        if rd:
+            L += [f"Runtime detector default after the block: `{rd[-1]['default_model']}`"
+                  + (" (unchanged)" if rd[-1]["default_model"] == "det_v3_s.onnx" else " (CHANGED: check!)"), ""]
+
     # ---------------- what failed and why
     L += ["## Blocks, skips and failures", "", "| event | details |", "|---|---|"]
     for e in ev:

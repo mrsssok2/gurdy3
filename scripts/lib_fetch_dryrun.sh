@@ -48,3 +48,20 @@ run_walk_step() {
   echo "console GURDY_WEB_TOKEN=$TOKEN" > "$d/console.log"
   _in_list "$DRY_N_WALK" "${DRY_WALK_FAIL:-}" && return 0
   python3 -c "import json,random,sys; r=random.Random(int(sys.argv[2])); json.dump({'pass': True, 'forward': {'cmd': 0.1, 'err_pct': r.uniform(5, 15)}, 'turn': {'cmd': 0.3, 'err_pct': r.uniform(1, 4)}, **({} if sys.argv[3] == '05_walk_no_arm' else {'arm_max_dev_rad': 0.04})}, open(sys.argv[1], 'w'))" "$d/walk.json" "$DRY_N_WALK" "$1"; }
+# block d (YOLO v3.1): fake datasets / runs / docs under $DRY_STATE; DRY_YOLO_FAIL=render|train|eval makes that stage fail
+YOLO_DOCS=$DRY_STATE/docs; YOLO_DATA=$DRY_STATE/datasets; YOLO_RUNS=$DRY_STATE/runs
+run_yolo_stage() {
+  mkdir -p "$YOLO_DOCS" "$YOLO_DATA" "$YOLO_RUNS"; echo "$1 TRAIN_TIME_H=${TRAIN_TIME_H:-0}" >> "$DRY_STATE/yolo_calls"
+  [ "${DRY_YOLO_FAIL:-}" = "$1" ] && { [ "$1" = render ] && return 2; return 1; }
+  case $1 in
+    render) for d in synth_v31_body synth_v31_wrist; do mkdir -p "$YOLO_DATA/$d"; echo "names: {}" > "$YOLO_DATA/$d/dataset.yaml"; done ;;
+    train)  mkdir -p "$YOLO_RUNS/det_v31_s"; { echo "epoch,time,a,b,c,d,e,metrics/mAP50(B),metrics/mAP50-95(B)"
+              for e in $(seq 1 90); do echo "$e,$((e * 73)),0,0,0,0,0,0.96$((e % 10)),0.90"; done; } > "$YOLO_RUNS/det_v31_s/results.csv" ;;
+    eval)   for m in det_v3_s det_v31_s; do echo "recall table $m (Bearer $TOKEN)" > "$YOLO_DOCS/phase9b_recall_by_distance_$m.md"; done ;;
+    report) printf '| check | target | det_v2_s | det_v3_s | det_v31_s |\n|---|---|---|---|---|\n| **acceptance (old + v3 sets)** | | | **PASS** | **PASS** |\n' > "$YOLO_DOCS/phase9b_v3_vs_v31.md" ;;
+  esac; }
+# fake clock for the deadline rule: DRY_RENDER_ADD_S seconds pass during the (stub) render stage
+elapsed() { echo $(( $(date +%s) - START_S + $(cat "$DRY_STATE/clock" 2>/dev/null || echo 0) )); }
+_real_run_yolo_stage=$(declare -f run_yolo_stage)
+eval "${_real_run_yolo_stage/run_yolo_stage/_dry_yolo_stage}"
+run_yolo_stage() { [ "$1" = render ] && echo "${DRY_RENDER_ADD_S:-0}" > "$DRY_STATE/clock"; _dry_yolo_stage "$@"; }

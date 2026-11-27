@@ -25,6 +25,8 @@ ap.add_argument("--workers", type=int, default=4)
 ap.add_argument("--device", default="0", help="'0' = first GPU, 'cpu'")
 ap.add_argument("--data-yaml", default="", help="use this dataset yaml instead of <data>/dataset.yaml (e.g. several datasets merged)")
 ap.add_argument("--export-only", action="store_true")
+ap.add_argument("--time-h", type=float, default=0.0, help="wall-time budget in hours (Ultralytics `time`, overrides --epochs; "
+                "the LR schedule follows it). 0 = off (default): train for --epochs")
 a = ap.parse_args()
 
 from ultralytics import YOLO  # noqa: E402  (import late: --help works without it)
@@ -34,7 +36,8 @@ runs = Path("vision/runs").resolve()
 if not a.export_only:
     YOLO(a.model).train(data=data, epochs=a.epochs, imgsz=a.imgsz, batch=a.batch, device=a.device, workers=a.workers,
                         project=str(runs), name=a.name, exist_ok=True, patience=a.patience, cos_lr=True, close_mosaic=10,
-                        fliplr=0.5, flipud=0.0, hsv_h=0.02, hsv_s=0.5, hsv_v=0.4, degrees=0.0, amp=True, plots=True, seed=0)
+                        fliplr=0.5, flipud=0.0, hsv_h=0.02, hsv_s=0.5, hsv_v=0.4, degrees=0.0, amp=True, plots=True, seed=0,
+                        **({"time": a.time_h} if a.time_h > 0 else {}))
 best = runs / a.name / "weights" / "best.pt"
 onnx = YOLO(str(best)).export(format="onnx", imgsz=[256, 320], opset=12, simplify=True, dynamic=False, half=False)
 dst = Path("models/detector")
@@ -42,5 +45,6 @@ dst.mkdir(parents=True, exist_ok=True)
 shutil.copy(onnx, dst / f"{a.name}.onnx")
 (dst / f"{a.name}.json").write_text(json.dumps({"input_hw": [256, 320], "classes": YOLO(str(best)).names,
                                                 "trainer": "ultralytics (AGPL-3.0)", "data": data, "epochs": a.epochs,
+                                                **({"time_h": a.time_h} if a.time_h > 0 else {}),
                                                 "base": a.model}, indent=1))
 print("exported", dst / f"{a.name}.onnx")

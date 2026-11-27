@@ -15,10 +15,14 @@
 #      on the blue can at its GT spot (diagnostics: only matters if a) fails).
 #   c) Walking variance with the arm: 90 s at 0.10 m/s + 90 s at 0.3 rad/s, 10 runs per config (no arm / arm folded / + 80 g),
 #      interleaved (as scripts/overnight_grasp_walk.sh part B); report scripts/walk_variance_report.py.
+#   d) YOLO v3.1 (scripts/p9b_v31_night.sh stages): render the SAME scenes as v3 with the v3.1 label rule (small classes 3 px /
+#      12 px^2, unfiltered boxes + 3D GT in meta) -> train det_v31_s (time budget = what is left, capped at 2.1 h = what det_v3_s
+#      trained; >= 1.0 h or the stage is skipped) -> eval (same acceptance targets + recall by distance) -> v3 vs v3.1 side by side.
+#      The runtime detector is NOT switched (checked at the end of the block).
 # Rules: a block is skipped (rest of it) after 3 failed stack starts / walk runs IN A ROW; a unit is not started when it could
 # overrun the deadline (DEADLINE_H, default 10 h from the start); every saved log passes scripts/redact_logs.py (raw logs live in
 # the git-ignored .overnight_raw/ and are deleted after the redacted copy); the token is random, in memory only.
-# Output: docs/results/data/overnight_1127/ (run.log, events.jsonl, fetch/, ab/, walk/) + morning summary docs/results/overnight_1127.md
+# Output: docs/results/data/overnight_1127/ (run.log, events.jsonl, fetch/, ab/, walk/, yolo/) + morning summary docs/results/overnight_1127.md
 # (scripts/overnight_1127_report.py). Env: TRY_TIMEOUT_S (900), DEADLINE_H (10), RUNS (10), WALK_S (90), SMOKE_ID (can_1).
 set -uo pipefail
 cd "$(dirname "$0")/.."
@@ -30,6 +34,9 @@ SUMMARY_MD=docs/results/overnight_1127.md; [ $SMOKE = 1 ] && SUMMARY_MD=docs/res
 PLAN=docs/results/data/overnight_1127/plan.json
 TRY_TIMEOUT_S=${TRY_TIMEOUT_S:-900}; DEADLINE_S=$(python3 -c "print(int(float('${DEADLINE_H:-10}') * 3600))"); RUNS=${RUNS:-10}
 FETCH_UNIT_S=1500; AB_UNIT_S=1500; WALK_UNIT_S=660        # worst case per unit (start 3 x ~2 min + try timeout / walk 600 s cap)
+# d) YOLO v3.1: render measured for v3 = 60 + 43 min -> budget 150 min; training 1.0 .. 2.1 h (+ 10 min load / export); eval
+# measured ~2.5 min for 6 evals + recall -> 20 min for 10 + 2; 10 min for the report / commit at the end
+D_RENDER_S=9000; D_TRAIN_MIN_S=3600; D_TRAIN_MAX_S=7560; D_TRAIN_OVH_S=600; D_EVAL_S=1200; D_END_S=600
 START_S=$(date +%s); STAMP=$(date -u +%Y%m%d_%H%M%S)
 RAW_REL=.overnight_raw/$STAMP; RAW=$PWD/$RAW_REL           # git-ignored; inside the repo because the walk container mounts it
 mkdir -p "$OUT" "$RAW"
@@ -40,7 +47,7 @@ export GURDY_WEB_TOKEN=$TOKEN
 source scripts/lib_fetch_run.sh
 
 declare -F docker_busy >/dev/null || docker_busy() { [ -n "$(docker ps -q)" ]; }     # (DRY_RUN stubs define their own)
-elapsed() { echo $(( $(date +%s) - START_S )); }
+declare -F elapsed >/dev/null || elapsed() { echo $(( $(date +%s) - START_S )); }   # (DRY_RUN: fake clock)
 fits() { [ $(( $(elapsed) + $1 )) -le "$DEADLINE_S" ]; }   # fits UNIT_S: would this unit end before the deadline?
 REPORTED=0
 finish() {
@@ -50,9 +57,12 @@ finish() {
   python3 scripts/overnight_1127_report.py "$OUT" --out "$SUMMARY_MD" > /dev/null 2>>"$LOG" && log "summary: $SUMMARY_MD"
   log "end after $(( $(elapsed) / 60 )) min; docker ps: $(docker ps -q | wc -l) containers"
   if [ $SMOKE = 0 ] && [ "${DRY_RUN:-0}" != 1 ]; then
-    git add -- "$OUT" "$SUMMARY_MD" && git commit -q -m "Overnight 2026-11-27 reliability run: full fetch x15 (GT graded), variants A/B, walking variance with the arm (results + morning summary)
+    local extra=(); for f in docs/results/phase9b_v3_vs_v31.md docs/results/phase9b_recall_by_distance_det_v3_s.md \
+        docs/results/phase9b_recall_by_distance_det_v31_s.md models/detector/det_v31_s.json docs/results/phase9b_v31_eval_*.md \
+        docs/results/phase9b_eval_synth_v31_*.md; do [ -f "$f" ] && { python3 scripts/redact_logs.py inplace "$f" 2>/dev/null; extra+=("$f"); }; done
+    git add -- "$OUT" "$SUMMARY_MD" "${extra[@]}" && git commit -q -m "Overnight 2026-11-27 reliability run: full fetch x15 (GT graded), variants A/B, walking variance with the arm, YOLO v3.1 vs v3 (results + morning summary; runtime detector unchanged)
 
-Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- "$OUT" "$SUMMARY_MD" && git pull --no-rebase -q && git push -q \
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>" -- "$OUT" "$SUMMARY_MD" "${extra[@]}" && git pull --no-rebase -q && git push -q \
       && log "committed + pushed" || log "WARNING: commit / push failed (results are on disk)"
   fi
   find "$RAW" -type d -empty -delete 2>/dev/null; rmdir "$(dirname "$RAW")" 2>/dev/null; true; }
@@ -96,7 +106,8 @@ log "overnight_1127 start (smoke=$SMOKE, dry=${DRY_RUN:-0}, deadline $(( DEADLIN
 log "estimate a) fetch: $N_FETCH tries x ~6 min (C1 retest: start ~1 min + 253 s try + stop) = ~$(( N_FETCH * 6 )) min, worst $(( N_FETCH * FETCH_UNIT_S / 60 )) min"
 [ $SMOKE = 0 ] && log "estimate b) variants A + B: 2 stacks x ~3 min + 6 tries x ~6 min = ~45 min, worst $(( 2 * AB_UNIT_S * 3 / 60 )) min"
 [ $SMOKE = 0 ] && log "estimate c) walking: $(( RUNS * 3 )) runs x ~5 min (start ~1.5 min + 2 x 90 s sim at RTF ~0.8) = ~$(( RUNS * 3 * 5 )) min, worst $(( RUNS * 3 * WALK_UNIT_S / 60 )) min"
-[ $SMOKE = 0 ] && log "estimate total ~$(( N_FETCH * 6 + 45 + RUNS * 15 )) min; hard limit ${DEADLINE_H:-10} h (units that could overrun are skipped)"
+[ $SMOKE = 0 ] && log "estimate d) YOLO v3.1: render ~100 min (measured v3) + train min(2.1 h, time left; >= 1 h) + eval ~10 min = ~4 h"
+[ $SMOKE = 0 ] && log "estimate total ~$(( N_FETCH * 6 + 45 + RUNS * 15 + 240 )) min; hard limit ${DEADLINE_H:-10} h (units that could overrun are skipped)"
 
 # ---------------------------------------------------------------- a) full fetch x 15
 event block_start block=fetch
@@ -169,5 +180,49 @@ if [ $SMOKE = 0 ]; then
   done
   python3 scripts/walk_variance_report.py "$OUT/walk" --out "$OUT/walk/report.md" >/dev/null 2>>"$LOG" || log "walk report failed"
   event block_end block=walk
+fi
+# ---------------------------------------------------------------- d) YOLO v3.1: render -> train -> eval -> v3 vs v3.1
+: "${YOLO_DOCS:=docs/results}" "${YOLO_DATA:=datasets}" "${YOLO_RUNS:=vision/runs}"
+declare -F run_yolo_stage >/dev/null || run_yolo_stage() {   # run_yolo_stage STAGE -> exit code of scripts/p9b_v31_night.sh STAGE
+  scripts/p9b_v31_night.sh "$1" > "$RAW/yolo/$1.log" 2>&1; }
+yolo_stage() {   # yolo_stage STAGE -> 0 ok; logs + timing in $OUT/yolo
+  local t0 rc; t0=$(date +%s); mkdir -p "$RAW/yolo"; log "d) $1 (train budget ${TRAIN_TIME_H:-0} h)"
+  run_yolo_stage "$1"; rc=$?
+  record "$OUT/yolo/stages.jsonl" stage="$1" rc="$rc" wall_s="$(( $(date +%s) - t0 ))" train_time_h="${TRAIN_TIME_H:-0}"
+  log "d) $1 rc=$rc after $(( ($(date +%s) - t0) / 60 )) min"; return $rc; }
+if [ $SMOKE = 0 ]; then
+  event block_start block=yolo
+  if ! fits $(( D_RENDER_S + D_TRAIN_MIN_S + D_TRAIN_OVH_S + D_EVAL_S + D_END_S )); then
+    event block_skip block=yolo reason="deadline" at=render; log "d) skipped: render + 1 h training + eval do not fit before the deadline"
+  else
+    yolo_stage render; rc=$?
+    if [ $rc -eq 2 ] || [ ! -f "$YOLO_DATA/synth_v31_body/dataset.yaml" ] || [ ! -f "$YOLO_DATA/synth_v31_wrist/dataset.yaml" ]; then
+      event block_skip block=yolo reason="render failed (rc $rc) or a v3.1 dataset is missing" at=train
+    else
+      left=$(( DEADLINE_S - $(elapsed) - D_TRAIN_OVH_S - D_EVAL_S - D_END_S ))
+      budget=$(( left < D_TRAIN_MAX_S ? left : D_TRAIN_MAX_S ))
+      if [ $budget -lt $D_TRAIN_MIN_S ]; then
+        event block_skip block=yolo reason="deadline: only $(( budget / 60 )) min left for training (< 60)" at=train
+      else
+        export TRAIN_TIME_H; TRAIN_TIME_H=$(python3 -c "print(round($budget / 3600, 2))")
+        if yolo_stage train && fits $(( D_EVAL_S + D_END_S )); then
+          unset TRAIN_TIME_H
+          yolo_stage eval && yolo_stage report
+        else
+          event block_skip block=yolo reason="training failed or no time left for the eval" at=eval
+        fi
+      fi
+    fi
+  fi
+  unset TRAIN_TIME_H
+  for f in phase9b_v3_vs_v31.md phase9b_recall_by_distance_det_v3_s.md phase9b_recall_by_distance_det_v31_s.md; do
+    [ -f "$YOLO_DOCS/$f" ] && python3 scripts/redact_logs.py copy "$YOLO_DOCS/$f" "$OUT/yolo/$f" 2>/dev/null
+  done
+  [ -f "$YOLO_RUNS/det_v31_s/results.csv" ] && cp "$YOLO_RUNS/det_v31_s/results.csv" "$OUT/yolo/det_v31_s_results.csv"
+  [ -d "$RAW/yolo" ] && save_logs "$RAW/yolo" "$OUT/yolo/logs"
+  default=$(grep -oE '^DEFAULT_MODEL = "[^"]+"' ros2_ws/src/gurdy_perception/gurdy_perception/detector_node.py | cut -d'"' -f2)
+  record "$OUT/yolo/runtime_detector.jsonl" default_model="$default"
+  log "d) runtime detector default: $default (not switched)"
+  event block_end block=yolo
 fi
 log "all blocks done"
