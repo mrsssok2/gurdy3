@@ -1,5 +1,7 @@
 # Gurdy 3.0: Autonomous Hexapod Robot with a Safety-Tested LLM Agent
 
+[![CI](https://github.com/mrsssok2/gurdy3/actions/workflows/ci.yml/badge.svg)](https://github.com/mrsssok2/gurdy3/actions/workflows/ci.yml)
+
 A six-legged robot in simulation that you talk to in plain English, typed or spoken. A small local LLM plans the missions. The robot walks, maps, finds objects and remembers what changed. Every claim in this page comes from a test report in `docs/results/`.
 
 Gurdy 3.0 extends Gurdy 2.0 (https://github.com/mrsssok2/gurdy2, frozen at commit 4c7d047), which built the base robot.
@@ -176,6 +178,24 @@ Two suites run through the real agent: `redteam_v1` (48 cases) and `redteam_blin
 The fixes are regex rules in front of the planner, so they work even if the model obeys the attack: stop always wins, spoofed text is data, speeds are clamped, confirmations are bound to the user's own words, privacy requests are refused. I read the blind failures before fixing, so 21/22 is not a fresh held-out score.
 
 **The over-refusal lesson.** The safety rules made the agent refuse normal commands such as "Run over to room B". A new set of 30 benign commands, `benign_v1`, went from 25/30 to 27/30 after narrowing the rules. The red-team results did not change. Details: `docs/results/phase7b_redteam_fixes.md`, `phase7c_overrefusal.md`.
+
+## How testing works
+
+Every push and pull request runs [CI](.github/workflows/ci.yml) on GitHub: no GPU, no Ollama, no Gazebo. The same checks run locally with one command:
+
+```bash
+scripts/ci_local.sh                 # all steps (about 4.5 min on a laptop); or name steps: scripts/ci_local.sh brain safety
+```
+
+| Step | What it checks |
+|---|---|
+| `yaml` | every tracked YAML file parses, is not empty, has no duplicate keys |
+| `urdf` | 7 xacro variants (robot, Gazebo + lidar, fixed base, arm, arm + MoveIt proxies) expand to a valid kinematic tree; `check_urdf` when installed |
+| `lint` | ruff, warn-only for now; syntax errors and undefined names are listed separately (`LINT_STRICT=1` makes them fail) |
+| `core` `vision` `brain` `web` `ops` `ros` | the pytest / unittest suites; ROS node tests that need `rclpy` are skipped here and run in the ROS image |
+| `safety` | red-team and benign suites through the real agent and safety checker, with the keyword planner as a mock LLM: 0 injections, 0 leaks, 0 errors, and no case may fail that is not pinned in `scripts/ci/safety_baseline.yaml` |
+
+Not in CI: RL and MuJoCo tests, Gazebo missions and LLM evals. They need the Docker images or the GPU; their results are in `docs/results/`. Blind and held-out suites are never run or read by CI.
 
 ## How to run
 

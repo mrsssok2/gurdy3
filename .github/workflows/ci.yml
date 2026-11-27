@@ -1,0 +1,76 @@
+# Host-side CI for every push / PR: no GPU, no Ollama, no Gazebo, no Docker.
+# Each job runs scripts/ci_local.sh with the steps named below, so `scripts/ci_local.sh` on a laptop runs exactly the same checks.
+#   checks: YAML validity (+ duplicate keys), xacro -> URDF (7 variants + check_urdf), lint (warn-only), safety gate (red-team + benign, keyword mock LLM)
+#   tests:  gurdy_core, vision, brain, web, ops, pure-Python parts of the ROS packages (rclpy node tests skip here; they run in the ROS image)
+# Not here (need MuJoCo / torch / ROS / GPU): rl/tests, sim_mujoco/tests, colcon test, Gazebo / Ollama evals. Blind / held-out suites are never run.
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PY: python
+  LINT_STRICT: "0"          # "1" = syntax errors / undefined names fail the build (0 findings on 2026-11-27)
+
+jobs:
+  checks:
+    name: yaml + urdf + lint + safety gate
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/host-tests.txt
+      - name: Install check_urdf (liburdfdom-tools)
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq liburdfdom-tools
+      - run: pip install -r requirements/host-tests.txt
+      - run: scripts/ci_local.sh yaml urdf lint safety
+        env:
+          CI_LOG_DIR: ci_logs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-checks
+          path: ci_logs
+          if-no-files-found: ignore
+
+  tests:
+    name: pytest ${{ matrix.steps }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        steps: ["brain", "core vision", "web ros ops"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: requirements/host-tests.txt
+      - name: Install check_urdf (liburdfdom-tools)
+        if: contains(matrix.steps, 'ros')
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq liburdfdom-tools
+      - run: pip install -r requirements/host-tests.txt
+      - run: scripts/ci_local.sh ${{ matrix.steps }}
+        env:
+          CI_LOG_DIR: ci_logs
+      - if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: logs-${{ strategy.job-index }}
+          path: ci_logs
+          if-no-files-found: ignore
