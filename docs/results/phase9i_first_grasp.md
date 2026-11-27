@@ -64,3 +64,29 @@ asymmetrically (one at its open limit), i.e. the object is ~1-1.5 cm off the gri
    then re-check the servo's side-class point (3-5 mm error vs 1 mm for top).
 2. Scorer: require the fingers to be apart (≥ ~50 % of the object width) for a success, so a wedged object is not counted (can try 2).
 3. More tries per class (3 is too few to tell 2/3 from 3/3), then the walking `--step walk` variant.
+
+## 8. Grasp fixes (2026-11-27 afternoon) and 5 classes x 5 tries
+All general, no per-class tuning:
+1. **Centring** (`--centre on`, default): settle at the pre-grasp (integral term), measure the finger-midpoint error by FK of the MEASURED
+   joints vs the command (`grasp_test.centre_correction`), shift the grasp target by it (clip 2 cm) and re-plan, so the midpoint lands
+   on the wrist-camera 3D estimate. The wrist camera cannot see the object at the pre-grasp (closer than its 7 cm near clip), hence FK.
+   Logged per try: ground-truth object position in the gripper frame (`obj_in_gripper_gt`: approach / finger axis / normal).
+2. **Scorer:** a lifted object counts only if the fingers are apart (total opening ≥ 50 % of the class grip width,
+   `grasp_test.fingers_apart`). Re-scored morning run: 13/15 -> 12/15 (can try 2: fingers 0 mm).
+3. **Target in MoveIt's scene** (`--target-obstacle on`, default): the estimated object (class size + 1 cm) is a collision object for the
+   big MoveIt moves and is removed before the final straight approach. Found by run `fixed5x5`: can tries 2 and 5 (same placement offset)
+   had the can 14-17 cm away along the approach at the close (knocked by the arm swing; MoveIt did not know the target), then lifted
+   wedged with the fingers closed -> counted as missed by rule 2.
+
+| run | small_box | mini_toolbox | can | mini_cone | mini_extinguisher | total |
+|---|---|---|---|---|---|---|
+| morning `all5x3` (no fixes, old scorer) | 3/3 | 3/3 | 2/3 | 2/3 | 3/3 | 13/15 (12/15 strict) |
+| `fixed5x5` (1 + 2) | 5/5 | 5/5 | 3/5 (2 knocked) | 5/5 | 5/5 | 23/25 |
+| `can5_target` (1 + 2 + 3, can only) | | | 5/5, 0 knocked | | | 5/5 |
+| **`final5x5` (1 + 2 + 3)** | **5/5** | **5/5** | **5/5** | **5/5** | **5/5** | **25/25**, 0 knocked / slipped / dropped |
+
+Ground-truth centring after fix 1 (fixed5x5, successful side grasps): object within 0-6 mm of the finger midpoint along the closing axis
+(before: 1-1.5 cm). **Remaining model artefact:** the two finger joints are independent with equal force, so a held object can slide
+with BOTH fingers until one reaches its open limit (seen even with the object centred to 3 mm). The real gripper has one servo + rack
+(coupled fingers); a mimic / coupling would model it. Not a failure cause in these runs.
+Wrist yaw error (final5x5): small_box median 1.7° (max 2.8°), mini_toolbox 0.09° (max 0.2°). Mean try time 19-24 s sim. Single runs.

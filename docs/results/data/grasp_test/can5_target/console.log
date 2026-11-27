@@ -1,0 +1,22 @@
+ Container gurdy3_grasp Creating 
+ Container gurdy3_grasp Created 
+floor in MoveIt: added True, fitted True, z -0.1083 m
+grasp test: locate servo, moveit yes, step teleport, yaw wrist, grip 3.0 N
+/home/ubuntu/gurdy2/gurdy_core/gurdy_core/visual_servo.py:107: RuntimeWarning: invalid value encountered in matmul
+  h = (P.reshape(-1, 3) @ T_floor_opt[:3, :3].T + T_floor_opt[:3, 3])[:, 2].reshape(z.shape)
+  can try 1: success  (lifted 0.0738, sank 0.0004, time 21.42 s sim; yaw symmetric conf 1.0 err None deg, used symmetric)
+/home/ubuntu/gurdy2/gurdy_core/gurdy_core/visual_servo.py:107: RuntimeWarning: invalid value encountered in matmul
+  h = (P.reshape(-1, 3) @ T_floor_opt[:3, :3].T + T_floor_opt[:3, 3])[:, 2].reshape(z.shape)
+  can try 2: success  (lifted 0.0514, sank 0.0009, time 21.58 s sim; yaw symmetric conf 1.0 err None deg, used symmetric)
+/home/ubuntu/gurdy2/gurdy_core/gurdy_core/visual_servo.py:107: RuntimeWarning: invalid value encountered in matmul
+  h = (P.reshape(-1, 3) @ T_floor_opt[:3, :3].T + T_floor_opt[:3, 3])[:, 2].reshape(z.shape)
+/home/ubuntu/gurdy2/gurdy_core/gurdy_core/visual_servo.py:107: RuntimeWarning: invalid value encountered in matmul
+  h = (P.reshape(-1, 3) @ T_floor_opt[:3, :3].T + T_floor_opt[:3, 3])[:, 2].reshape(z.shape)
+  can try 3: success  (lifted 0.052, sank 0.0004, time 22.16 s sim; yaw symmetric conf 1.0 err None deg, used symmetric)
+/home/ubuntu/gurdy2/gurdy_core/gurdy_core/visual_servo.py:107: RuntimeWarning: invalid value encountered in matmul
+  h = (P.reshape(-1, 3) @ T_floor_opt[:3, :3].T + T_floor_opt[:3, 3])[:, 2].reshape(z.shape)
+  can try 4: success  (lifted 0.074, sank 0.0004, time 18.62 s sim; yaw symmetric conf 1.0 err None deg, used symmetric)
+/home/ubuntu/gurdy2/gurdy_core/gurdy_core/visual_servo.py:107: RuntimeWarning: invalid value encountered in matmul
+  h = (P.reshape(-1, 3) @ T_floor_opt[:3, :3].T + T_floor_opt[:3, 3])[:, 2].reshape(z.shape)
+  can try 5: success  (lifted 0.0523, sank 0.0006, time 19.76 s sim; yaw symmetric conf 1.0 err None deg, used symmetric)
+PASS grasp_can 5/5 success, 0 slipped, 0 dropped, 0 missed, 0 errors, 0 knocked, mean time 20.7 s sim, wrist yaw err median None / max None deg (0 low confidence)

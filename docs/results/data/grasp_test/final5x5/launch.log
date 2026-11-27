@@ -1,0 +1,1067 @@
+[INFO] [launch]: All log files can be found below /home/ubuntu/.ros/log/2026-11-27-07-06-37-273654-9e25d759ba8b-33
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [gazebo-1]: process started with pid [71]
+[INFO] [robot_state_publisher-2]: process started with pid [72]
+[INFO] [parameter_bridge-3]: process started with pid [74]
+[INFO] [create-4]: process started with pid [75]
+[INFO] [parameter_bridge-5]: process started with pid [76]
+[INFO] [gait_node-6]: process started with pid [77]
+[create-4] [INFO] [1795763198.439168386] [ros_gz_sim]: Requesting list of world names.
+[robot_state_publisher-2] [INFO] [1795763198.455653971] [robot_state_publisher]: Robot initialized
+[parameter_bridge-5] [INFO] [1795763198.515970641] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/wrist_camera/image (gz.msgs.Image) -> /wrist_camera/image (sensor_msgs/msg/Image)] (Lazy 0)
+[parameter_bridge-5] [INFO] [1795763198.520930056] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/wrist_camera/depth_image (gz.msgs.Image) -> /wrist_camera/depth_image (sensor_msgs/msg/Image)] (Lazy 0)
+[parameter_bridge-5] [INFO] [1795763198.521848521] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/wrist_camera/camera_info (gz.msgs.CameraInfo) -> /wrist_camera/camera_info (sensor_msgs/msg/CameraInfo)] (Lazy 0)
+[parameter_bridge-5] [INFO] [1795763198.523322982] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/wrist_camera/trigger (std_msgs/msg/Bool) -> /wrist_camera/trigger (gz.msgs.Boolean)] (Lazy 0)
+[gait_node-6] [INFO] [1795763199.192638769] [gait_node]: tripod gait at 50 Hz, cycle 0.8 s, limits vx=0.15 vy=0.1 wz=0.6
+[create-4] [INFO] [1795763199.408539615] [ros_gz_sim]: Waiting messages on topic [robot_description].
+[create-4] [INFO] [1795763199.424279208] [ros_gz_sim]: Entity creation successful.
+[parameter_bridge-3] [INFO] [1795763199.505922883] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/clock (gz.msgs.Clock) -> /clock (rosgraph_msgs/msg/Clock)] (Lazy 0)
+[parameter_bridge-3] [INFO] [1795763199.507888464] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/imu (gz.msgs.IMU) -> /imu (sensor_msgs/msg/Imu)] (Lazy 0)
+[parameter_bridge-3] [INFO] [1795763199.512654214] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/model/gurdy/odometry (gz.msgs.Odometry) -> /odom/ground_truth (nav_msgs/msg/Odometry)] (Lazy 0)
+[parameter_bridge-3] [INFO] [1795763199.517399322] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera/image (gz.msgs.Image) -> /camera/image (sensor_msgs/msg/Image)] (Lazy 1)
+[parameter_bridge-3] [INFO] [1795763199.518982246] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera/depth_image (gz.msgs.Image) -> /camera/depth_image (sensor_msgs/msg/Image)] (Lazy 1)
+[parameter_bridge-3] [INFO] [1795763199.519938622] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera/camera_info (gz.msgs.CameraInfo) -> /camera/camera_info (sensor_msgs/msg/CameraInfo)] (Lazy 1)
+[parameter_bridge-3] [INFO] [1795763199.520773522] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera/points (gz.msgs.PointCloudPacked) -> /camera/points (sensor_msgs/msg/PointCloud2)] (Lazy 1)
+[parameter_bridge-3] [INFO] [1795763199.522199928] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/scan (gz.msgs.LaserScan) -> /scan_raw (sensor_msgs/msg/LaserScan)] (Lazy 1)
+[INFO] [create-4]: process has finished cleanly [pid 75]
+[INFO] [spawner-7]: process started with pid [170]
+[spawner-7] [INFO] [1795763200.122235986] [spawner_joint_state_broadcaster]: waiting for service /controller_manager/list_controllers to become available...
+[gazebo-1] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="gurdy"]/link[@name="base_link"]/sensor[@name="depth_camera"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[gazebo-1] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="gurdy"]/link[@name="base_link"]/sensor[@name="imu"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[gazebo-1] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="gurdy"]/link[@name="arm_palm_link"]/sensor[@name="wrist_camera"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[gazebo-1] [INFO] [1795763201.063427658] [gz_ros_control]: Loading controller_manager
+[gazebo-1] [INFO] [1795763201.084850455] [controller_manager]: Using ROS clock for triggering controller manager cycles.
+[gazebo-1] [WARN] [1795763201.084973044] [controller_manager]: The resource manager is not yet initialized, will wait for the robot description to initialize it..
+[gazebo-1] [INFO] [1795763201.096081877] [controller_manager]: Subscribing to '/robot_description' topic for robot description.
+[gazebo-1] [WARN] [1795763201.096164791] [gz_ros_control]: Waiting RM to load and initialize hardware...
+[gazebo-1] [WARN] [1795763202.096427600] [controller_manager]: Waiting for data on 'robot_description' topic to finish initialization
+[gazebo-1] [INFO] [1795763202.417072652] [controller_manager]: Received robot description from topic.
+[gazebo-1] [INFO] [1795763202.418473417] [controller_manager]: Enforcing command limits is disabled. Command limits from URDF will be ignored.
+[gazebo-1] [INFO] [1795763202.429241141] [gz_ros_control]: The position_proportional_gain has been set to: 0.1
+[gazebo-1] [INFO] [1795763202.429401479] [gz_ros_control]: Loading joint: lf_hip_yaw
+[gazebo-1] [INFO] [1795763202.429419334] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.429426934] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.429442487] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-1] [INFO] [1795763202.429453534] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.429464110] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429468251] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.429472330] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429511320] [gz_ros_control]: Loading joint: lf_hip_pitch
+[gazebo-1] [INFO] [1795763202.429520564] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.429524842] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.429533384] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-1] [INFO] [1795763202.429539139] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.429543861] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429546972] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.429550913] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429563877] [gz_ros_control]: Loading joint: lf_knee
+[gazebo-1] [INFO] [1795763202.429568737] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.429572229] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.429575576] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-1] [INFO] [1795763202.429579388] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.429583127] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429587711] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.429590669] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429601236] [gz_ros_control]: Loading joint: lm_hip_yaw
+[gazebo-1] [INFO] [1795763202.429605372] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.429608337] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.429611524] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-1] [INFO] [1795763202.429615057] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.429617820] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429620646] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.429623610] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429632301] [gz_ros_control]: Loading joint: lm_hip_pitch
+[gazebo-1] [INFO] [1795763202.429635943] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.429639274] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.429642640] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-1] [INFO] [1795763202.429646261] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.429649321] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429652183] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.429655143] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429664247] [gz_ros_control]: Loading joint: lm_knee
+[gazebo-1] [INFO] [1795763202.429667582] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.429690042] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.429695765] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-1] [INFO] [1795763202.429699805] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.429705585] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429713510] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.429716954] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429728582] [gz_ros_control]: Loading joint: lr_hip_yaw
+[gazebo-1] [INFO] [1795763202.429769145] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.429774916] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.429778966] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-1] [INFO] [1795763202.429784155] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.429787642] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429791184] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.429794224] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429806297] [gz_ros_control]: Loading joint: lr_hip_pitch
+[gazebo-1] [INFO] [1795763202.429810497] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.429814005] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.429817093] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-1] [INFO] [1795763202.429821220] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.429824091] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429828567] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.429831593] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429839992] [gz_ros_control]: Loading joint: lr_knee
+[gazebo-1] [INFO] [1795763202.429843620] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.429846667] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.429849763] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-1] [INFO] [1795763202.429853059] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.429856600] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429859637] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.429862547] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429872860] [gz_ros_control]: Loading joint: rf_hip_yaw
+[gazebo-1] [INFO] [1795763202.429875921] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.429879023] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.429882039] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-1] [INFO] [1795763202.429885516] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.429888400] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429891391] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.429894700] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429909094] [gz_ros_control]: Loading joint: rf_hip_pitch
+[gazebo-1] [INFO] [1795763202.429913712] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.429917462] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.429920563] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-1] [INFO] [1795763202.429930154] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.429933839] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429940686] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.429943764] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429954042] [gz_ros_control]: Loading joint: rf_knee
+[gazebo-1] [INFO] [1795763202.429959423] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.429962619] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.429964839] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-1] [INFO] [1795763202.429968589] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.429971928] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.429978699] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.429980909] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.430002052] [gz_ros_control]: Loading joint: rm_hip_yaw
+[gazebo-1] [INFO] [1795763202.430004316] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.430007188] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.430011443] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-1] [INFO] [1795763202.430013849] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.430016090] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.430017990] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.430019959] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.430026555] [gz_ros_control]: Loading joint: rm_hip_pitch
+[gazebo-1] [INFO] [1795763202.430028681] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.430030664] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.430032737] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-1] [INFO] [1795763202.430035015] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.430037011] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.430038911] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.430040918] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.430049072] [gz_ros_control]: Loading joint: rm_knee
+[gazebo-1] [INFO] [1795763202.430051065] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.430062202] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.430064112] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-1] [INFO] [1795763202.430066346] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.430068288] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.430070023] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.430071904] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.430078870] [gz_ros_control]: Loading joint: rr_hip_yaw
+[gazebo-1] [INFO] [1795763202.430080990] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.430095209] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.430097091] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-1] [INFO] [1795763202.430101036] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.430103326] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.430105234] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.430107309] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.430112574] [gz_ros_control]: Loading joint: rr_hip_pitch
+[gazebo-1] [INFO] [1795763202.430114873] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.430116901] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.430118831] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-1] [INFO] [1795763202.430121506] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.430123632] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.430125910] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.430127861] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.430135197] [gz_ros_control]: Loading joint: rr_knee
+[gazebo-1] [INFO] [1795763202.430137332] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.430139384] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.430141391] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-1] [INFO] [1795763202.430143598] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.430145616] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.430147541] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.430151247] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.430342067] [gz_ros_control]: Loading sensor: imu
+[gazebo-1] [INFO] [1795763202.430348378] [gz_ros_control]: 	State:
+[gazebo-1] [WARN] [1795763202.430352232] [gz_ros_control]: IMU sensor 'imu' not found in hardware_info, skipping.
+[gazebo-1] [INFO] [1795763202.430832995] [controller_manager]: Initialize hardware 'GazeboSimSystem' 
+[gazebo-1] [WARN] [1795763202.430877765] [controller_manager.hardware_component.system.GazeboSimSystem]: Executor is not available during hardware component initialization for 'GazeboSimSystem'. Skipping node creation!
+[gazebo-1] [INFO] [1795763202.431030842] [controller_manager]: Successful initialization of hardware 'GazeboSimSystem'
+[gazebo-1] [INFO] [1795763202.431543589] [gz_ros_control]: The position_proportional_gain has been set to: 0.1
+[gazebo-1] [INFO] [1795763202.431585642] [gz_ros_control]: Loading joint: arm_yaw
+[gazebo-1] [INFO] [1795763202.431591632] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.431595067] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.431599564] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-1] [INFO] [1795763202.431602832] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.431606378] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.431609164] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.431611352] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.431620760] [gz_ros_control]: Loading joint: arm_shoulder
+[gazebo-1] [INFO] [1795763202.431623352] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.431625557] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.431633337] [gz_ros_control]: 			 found initial value: 2.475000
+[gazebo-1] [INFO] [1795763202.431635915] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.431638748] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.431640974] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.431643054] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.431649771] [gz_ros_control]: Loading joint: arm_elbow
+[gazebo-1] [INFO] [1795763202.431652179] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.431654365] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.431656388] [gz_ros_control]: 			 found initial value: 0.225000
+[gazebo-1] [INFO] [1795763202.431661620] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.431663822] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.431666820] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.431668821] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.431687756] [gz_ros_control]: Loading joint: arm_wrist_pitch
+[gazebo-1] [INFO] [1795763202.431690507] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.431692717] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.431694762] [gz_ros_control]: 			 found initial value: 1.725000
+[gazebo-1] [INFO] [1795763202.431697148] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.431699544] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.431701582] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.431703582] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.431709347] [gz_ros_control]: Loading joint: arm_wrist_roll
+[gazebo-1] [INFO] [1795763202.431711631] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.431713663] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.431715774] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-1] [INFO] [1795763202.431718151] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.431720243] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.431722295] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.431724520] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.431730836] [gz_ros_control]: Loading joint: arm_finger_left_joint
+[gazebo-1] [INFO] [1795763202.431733188] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.431735446] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.431738533] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.431741971] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.431744271] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.431746338] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.431753410] [gz_ros_control]: Loading joint: arm_finger_right_joint
+[gazebo-1] [INFO] [1795763202.431755832] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795763202.431758099] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795763202.431760790] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795763202.431762981] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.431765196] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795763202.431767137] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795763202.431778438] [gz_ros_control]: Loading sensor: imu
+[gazebo-1] [INFO] [1795763202.431781875] [gz_ros_control]: 	State:
+[gazebo-1] [WARN] [1795763202.431784413] [gz_ros_control]: IMU sensor 'imu' not found in hardware_info, skipping.
+[gazebo-1] [INFO] [1795763202.431812057] [controller_manager]: Initialize hardware 'GurdyArmSystem' 
+[gazebo-1] [WARN] [1795763202.431845036] [controller_manager.hardware_component.system.GurdyArmSystem]: Executor is not available during hardware component initialization for 'GurdyArmSystem'. Skipping node creation!
+[gazebo-1] [INFO] [1795763202.431887025] [controller_manager]: Successful initialization of hardware 'GurdyArmSystem'
+[gazebo-1] [INFO] [1795763202.432178431] [controller_manager]: Activating component 'GurdyArmSystem'.
+[gazebo-1] [INFO] [1795763202.432223446] [resource_manager]: 'configure' hardware 'GurdyArmSystem' 
+[gazebo-1] [INFO] [1795763202.432244267] [gz_ros_control]: System Successfully configured!
+[gazebo-1] [INFO] [1795763202.432255660] [resource_manager]: Successful 'configure' of hardware 'GurdyArmSystem'
+[gazebo-1] [INFO] [1795763202.432267942] [resource_manager]: 'activate' hardware 'GurdyArmSystem' 
+[gazebo-1] [INFO] [1795763202.432290630] [resource_manager]: Successful 'activate' of hardware 'GurdyArmSystem'
+[gazebo-1] [INFO] [1795763202.432396102] [controller_manager]: Activating component 'GazeboSimSystem'.
+[gazebo-1] [INFO] [1795763202.432404527] [resource_manager]: 'configure' hardware 'GazeboSimSystem' 
+[gazebo-1] [INFO] [1795763202.432407051] [gz_ros_control]: System Successfully configured!
+[gazebo-1] [INFO] [1795763202.432410996] [resource_manager]: Successful 'configure' of hardware 'GazeboSimSystem'
+[gazebo-1] [INFO] [1795763202.432422072] [resource_manager]: 'activate' hardware 'GazeboSimSystem' 
+[gazebo-1] [INFO] [1795763202.432426480] [resource_manager]: Successful 'activate' of hardware 'GazeboSimSystem'
+[gazebo-1] [WARN] [1795763202.432458628] [controller_manager]: Component 'GurdyArmSystem' does not have read or write statistics initialized, skipping registration.
+[gazebo-1] [WARN] [1795763202.432466292] [controller_manager]: Component 'GazeboSimSystem' does not have read or write statistics initialized, skipping registration.
+[gazebo-1] [INFO] [1795763202.432475213] [controller_manager]: Resource Manager has been successfully initialized. Starting Controller Manager services...
+[gazebo-1] [WARN] [1795763203.142909381] [gz_ros_control]:  Desired controller update period (0.002 s) is slower than the gazebo simulation period (0.001 s).
+[gazebo-1] [INFO] [1795763203.880473134] [controller_manager]: Loading controller : 'joint_state_broadcaster' of type 'joint_state_broadcaster/JointStateBroadcaster'
+[gazebo-1] [INFO] [1795763203.880644719] [controller_manager]: Loading controller 'joint_state_broadcaster'
+[gazebo-1] [INFO] [1795763203.890492080] [controller_manager]: Controller 'joint_state_broadcaster' node arguments: --ros-args --params-file /tmp/gurdy_controllers_n9bk1ldz.yaml -p use_sim_time:=true --param use_sim_time:=true 
+[spawner-7] [INFO] [1795763204.453819636] [spawner_joint_state_broadcaster]: Loaded joint_state_broadcaster
+[gazebo-1] [INFO] [1795763204.456270965] [controller_manager]: Configuring controller: 'joint_state_broadcaster'
+[gazebo-1] [INFO] [1795763204.457158651] [joint_state_broadcaster]: 'joints' or 'interfaces' parameter is empty. All available state interfaces will be published
+[gazebo-1] [1;33m[Wrn] [OBJLoader.cc:202] [0m[1;33mMissing material for shape[[0m[1;33m] [0m[1;33min OBJ file[[0m[1;33m/home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/meshes/l4_cone_a_p0.obj[0m[1;33m][0m[1;33m[0m
+[gazebo-1] [1;33m[Wrn] [OBJLoader.cc:202] [0m[1;33mMissing material for shape[[0m[1;33m] [0m[1;33min OBJ file[[0m[1;33m/home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/meshes/l4_cone_a_p1.obj[0m[1;33m][0m[1;33m[0m
+[gazebo-1] [1;33m[Wrn] [OBJLoader.cc:202] [0m[1;33mMissing material for shape[[0m[1;33m] [0m[1;33min OBJ file[[0m[1;33m/home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/meshes/l4_cone_d_p0.obj[0m[1;33m][0m[1;33m[0m
+[gazebo-1] [1;33m[Wrn] [OBJLoader.cc:202] [0m[1;33mMissing material for shape[[0m[1;33m] [0m[1;33min OBJ file[[0m[1;33m/home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/meshes/l4_cone_d_p1.obj[0m[1;33m][0m[1;33m[0m
+[gazebo-1] [1;33m[Wrn] [OBJLoader.cc:202] [0m[1;33mMissing material for shape[[0m[1;33m] [0m[1;33min OBJ file[[0m[1;33m/home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/meshes/f_orange_cone_p1.obj[0m[1;33m][0m[1;33m[0m
+[gazebo-1] [1;33m[Wrn] [OBJLoader.cc:202] [0m[1;33mMissing material for shape[[0m[1;33m] [0m[1;33min OBJ file[[0m[1;33m/home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/meshes/f_green_cone_p1.obj[0m[1;33m][0m[1;33m[0m
+[gazebo-1] [INFO] [1795763204.591041990] [controller_manager]: Activating controllers: [ joint_state_broadcaster ]
+[gazebo-1] [INFO] [1795763204.594301246] [controller_manager]: Successfully switched controllers!
+[spawner-7] [INFO] [1795763204.600143560] [spawner_joint_state_broadcaster]: Configured and activated joint_state_broadcaster
+[INFO] [spawner-7]: process has finished cleanly [pid 170]
+[INFO] [spawner-8]: process started with pid [272]
+[spawner-8] [INFO] [1795763205.319879061] [spawner_joint_pd_controller]: waiting for service /controller_manager/list_controllers to become available...
+[gazebo-1] [INFO] [1795763207.824981447] [controller_manager]: Loading controller : 'joint_pd_controller' of type 'gurdy_control/JointPDController'
+[gazebo-1] [INFO] [1795763207.825050097] [controller_manager]: Loading controller 'joint_pd_controller'
+[gazebo-1] [INFO] [1795763207.831489963] [controller_manager]: Controller 'joint_pd_controller' node arguments: --ros-args --params-file /tmp/gurdy_controllers_n9bk1ldz.yaml -p use_sim_time:=true --param use_sim_time:=true 
+[spawner-8] [INFO] [1795763207.866235783] [spawner_joint_pd_controller]: Loaded joint_pd_controller
+[gazebo-1] [INFO] [1795763207.868242562] [controller_manager]: Configuring controller: 'joint_pd_controller'
+[gazebo-1] [INFO] [1795763207.873953260] [joint_pd_controller]: configured 18 joints, kp=20.000 kd=0.050 effort_limit=2.500
+[gazebo-1] [INFO] [1795763207.881865838] [controller_manager]: Activating controllers: [ joint_pd_controller ]
+[gazebo-1] [INFO] [1795763207.884261734] [controller_manager]: Successfully switched controllers!
+[spawner-8] [INFO] [1795763207.889712448] [spawner_joint_pd_controller]: Configured and activated joint_pd_controller
+[INFO] [spawner-8]: process has finished cleanly [pid 272]
+[INFO] [spawner-9]: process started with pid [303]
+[spawner-9] [INFO] [1795763208.658870559] [spawner_arm_controller]: waiting for service /controller_manager/list_controllers to become available...
+[gazebo-1] [INFO] [1795763208.914577019] [controller_manager]: Loading controller : 'arm_controller' of type 'joint_trajectory_controller/JointTrajectoryController'
+[gazebo-1] [INFO] [1795763208.914672851] [controller_manager]: Loading controller 'arm_controller'
+[gazebo-1] [INFO] [1795763208.924791994] [controller_manager]: Controller 'arm_controller' node arguments: --ros-args --params-file /tmp/gurdy_controllers_n9bk1ldz.yaml -p use_sim_time:=true --param use_sim_time:=true 
+[spawner-9] [INFO] [1795763208.989860531] [spawner_arm_controller]: Loaded arm_controller
+[gazebo-1] [INFO] [1795763208.991226761] [controller_manager]: Configuring controller: 'arm_controller'
+[gazebo-1] [INFO] [1795763208.991929686] [arm_controller]: No specific joint names are used for command interfaces. Using 'joints' parameter.
+[gazebo-1] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-1] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-1] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-1] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-1] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-1] [INFO] [1795763208.992179292] [arm_controller]: Command interfaces are [effort] and state interfaces are [position velocity].
+[gazebo-1] [INFO] [1795763208.992266070] [arm_controller]: Using 'splines' interpolation method.
+[gazebo-1] [INFO] [1795763208.997412867] [arm_controller]: Action status changes will be monitored at 20.00 Hz.
+[gazebo-1] [INFO] [1795763209.014045276] [arm_controller]: No scaling interface set. This controller will not read speed scaling from the hardware.
+[gazebo-1] [INFO] [1795763209.016877176] [controller_manager]: Activating controllers: [ arm_controller ]
+[gazebo-1] [INFO] [1795763209.018589327] [controller_manager]: Successfully switched controllers!
+[spawner-9] [INFO] [1795763209.024178627] [spawner_arm_controller]: Configured and activated arm_controller
+[gazebo-1] [INFO] [1795763209.026446223] [controller_manager]: Loading controller : 'gripper_controller' of type 'effort_controllers/JointGroupEffortController'
+[gazebo-1] [INFO] [1795763209.026538322] [controller_manager]: Loading controller 'gripper_controller'
+[gazebo-1] [INFO] [1795763209.030950438] [controller_manager]: Controller 'gripper_controller' node arguments: --ros-args --params-file /tmp/gurdy_controllers_n9bk1ldz.yaml -p use_sim_time:=true --param use_sim_time:=true 
+[spawner-9] [INFO] [1795763209.058821081] [spawner_arm_controller]: Loaded gripper_controller
+[gazebo-1] [INFO] [1795763209.059310889] [controller_manager]: Configuring controller: 'gripper_controller'
+[gazebo-1] [INFO] [1795763209.060755397] [gripper_controller]: configure successful
+[gazebo-1] [INFO] [1795763209.064318377] [controller_manager]: Activating controllers: [ gripper_controller ]
+[gazebo-1] [INFO] [1795763209.067415043] [gripper_controller]: activate successful
+[gazebo-1] [INFO] [1795763209.067615602] [controller_manager]: Successfully switched controllers!
+[spawner-9] [INFO] [1795763209.074217486] [spawner_arm_controller]: Configured and activated gripper_controller
+[INFO] [spawner-9]: process has finished cleanly [pid 303]
+[INFO] [ros2-10]: process started with pid [320]
+[ros2-10] Waiting for an action server to become available...
+[ros2-10] Sending goal:
+[ros2-10]      trajectory:
+[ros2-10]   header:
+[ros2-10]     stamp:
+[ros2-10]       sec: 0
+[ros2-10]       nanosec: 0
+[ros2-10]     frame_id: ''
+[ros2-10]   joint_names:
+[ros2-10]   - arm_yaw
+[ros2-10]   - arm_shoulder
+[ros2-10]   - arm_elbow
+[ros2-10]   - arm_wrist_pitch
+[ros2-10]   - arm_wrist_roll
+[ros2-10]   points:
+[ros2-10]   - positions:
+[ros2-10]     - 0.0
+[ros2-10]     - 2.475
+[ros2-10]     - 0.225
+[ros2-10]     - 1.725
+[ros2-10]     - 0.0
+[ros2-10]     velocities: []
+[ros2-10]     accelerations: []
+[ros2-10]     effort: []
+[ros2-10]     time_from_start:
+[ros2-10]       sec: 2
+[ros2-10]       nanosec: 0
+[ros2-10] multi_dof_trajectory:
+[ros2-10]   header:
+[ros2-10]     stamp:
+[ros2-10]       sec: 0
+[ros2-10]       nanosec: 0
+[ros2-10]     frame_id: ''
+[ros2-10]   joint_names: []
+[ros2-10]   points: []
+[ros2-10] path_tolerance: []
+[ros2-10] component_path_tolerance: []
+[ros2-10] goal_tolerance: []
+[ros2-10] component_goal_tolerance: []
+[ros2-10] goal_time_tolerance:
+[ros2-10]   sec: 0
+[ros2-10]   nanosec: 0
+[ros2-10] 
+[gazebo-1] [INFO] [1795763210.338731591] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763210.338891588] [arm_controller]: Accepted new action goal
+[ros2-10] Goal accepted with ID: 7e44b22b4a464b25ab2e0e0cddc088cb
+[ros2-10] 
+[gazebo-1] [INFO] [1795763213.813716594] [arm_controller]: Goal reached, success!
+[ros2-10] Result:
+[ros2-10]     error_code: 0
+[ros2-10] error_string: Goal successfully reached!
+[ros2-10] 
+[ros2-10] Goal finished with status: SUCCEEDED
+[INFO] [ros2-10]: process has finished cleanly [pid 320]
+[gait_node-6] [INFO] [1795763247.347110510] [gait_node]: catch-up gait periods so far: 1
+[gazebo-1] [INFO] [1795763254.907113653] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763254.907254283] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763263.146741222] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763268.099691106] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763268.100013792] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763274.565232490] [arm_controller]: Goal reached, success!
+[parameter_bridge-5] [INFO] [1795763275.635049874] [ros_gz_bridge]: Passing message from ROS std_msgs/msg/Bool to Gazebo gz.msgs.Boolean (showing msg only once per type)
+[gazebo-1] [INFO] [1795763276.481137462] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763276.481217400] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763280.465822132] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763283.517873572] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763283.517988710] [arm_controller]: Accepted new action goal
+[gazebo-1] NodeShared::Publish() Error: Interrupted system call
+[gazebo-1] [INFO] [1795763287.854499590] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763291.467102918] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763291.467162645] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763298.191601541] [arm_controller]: Goal reached, success!
+[gazebo-1] NodeShared::Publish() Error: Interrupted system call
+[gazebo-1] [INFO] [1795763312.602864249] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763312.602947759] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763318.369884035] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763319.422546149] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763319.422629208] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763323.308235475] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763323.467851279] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763323.467924064] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763328.473356370] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763328.544019466] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763328.544124599] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763334.690910953] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763339.433843230] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763339.433897155] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763343.783923321] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763345.352666555] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763345.352730503] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763348.321175126] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763351.403100111] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763351.403224626] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763353.627506559] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763354.535611601] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763354.535677180] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763358.566239210] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763362.223567800] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763362.223635059] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763367.670535240] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763378.394919734] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763378.394986517] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763382.249506530] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763383.298843646] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763383.298958173] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763386.211294429] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763386.315250087] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763386.315318379] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763392.134393868] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763392.197525951] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763392.197592713] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763400.523736407] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763405.495222249] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763405.495329381] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763410.512307984] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763414.692980101] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763414.693039109] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763418.681085262] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763421.837536854] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763421.837635603] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763424.144248579] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763425.796930977] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763425.796998961] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763429.548856061] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763433.308467017] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763433.308525027] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763439.935666005] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763452.226298210] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763452.226373785] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763458.263222703] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763459.281119350] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763459.281213753] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763463.502243173] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763463.617635489] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763463.617696760] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763468.516446884] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763468.539082288] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763468.539145586] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763474.880682719] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763479.733896794] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763479.733969473] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763486.207856380] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763487.869715759] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763487.869787001] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763491.962410631] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763495.036453882] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763495.036514655] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763497.126261740] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763497.456682549] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763497.456744373] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763502.212117016] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763505.869803178] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763505.869912983] [arm_controller]: Accepted new action goal
+[gazebo-1] NodeShared::Publish() Error: Interrupted system call
+[gazebo-1] [INFO] [1795763512.191190171] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763524.237076835] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763524.237208041] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763528.962380993] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763529.991566363] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763529.991624931] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763533.133610214] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763533.205206437] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763533.205296168] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763537.870874824] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763537.927486039] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763537.927560983] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763543.843323952] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763548.687924991] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763548.687982410] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763553.843373632] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763555.491121083] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763555.491285088] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763559.196570328] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763562.359718339] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763562.359844808] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763564.549911733] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763565.537473025] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763565.537554863] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763569.779452894] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763573.402436945] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763573.402556322] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763579.604835908] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763592.312526004] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763592.312695785] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763598.106544910] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763599.130384540] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763599.130491597] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763603.036677548] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763603.160029266] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763603.160132257] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763609.511472011] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763609.612806041] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763609.612946634] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763618.510584401] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763623.282366090] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763623.282443342] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763628.997798450] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763630.804541611] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763630.804648421] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763634.483096602] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763637.593728299] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763637.593796811] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763639.671687968] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763639.812318130] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763639.812380258] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763643.706285386] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763646.577286113] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763646.577367232] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763652.718748164] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763664.562783562] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763664.563048436] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763669.222603783] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763670.279335639] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763670.279461911] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763674.248557698] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763674.348220917] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763674.348269105] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763679.279762710] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763679.330347648] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763679.330413822] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763687.177524949] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763692.110751151] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763692.110886862] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763697.745816386] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763701.950322142] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763701.950421342] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763704.527225740] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763707.672513509] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763707.672608755] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763709.738245923] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763710.419564846] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763710.419639754] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763714.572030888] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763717.827370295] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763717.827472000] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763723.492524169] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763734.843044522] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763734.843195236] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763739.333011648] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763740.349487728] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763740.349602752] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763743.413220638] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763743.543560545] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763743.543703842] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763750.100218449] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763750.166240912] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763750.166340319] [arm_controller]: Accepted new action goal
+[gazebo-1] NodeShared::Publish() Error: Interrupted system call
+[gazebo-1] [INFO] [1795763757.834021936] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763762.813070800] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763762.813163240] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763769.064433731] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763773.754733301] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763773.754856115] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763777.028033535] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763780.171587574] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763780.171643041] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763781.955855736] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763782.517223214] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763782.517319163] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763785.911488113] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763788.823541722] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763788.823673602] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763793.057958029] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763803.108565881] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763803.108660216] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763807.088273370] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763808.111818676] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763808.111892799] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763810.996787420] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763811.068630557] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763811.068690838] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763815.652287257] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763815.688862403] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763815.688921189] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763820.922219558] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763825.787578590] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763825.787688145] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763830.720668435] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763832.358147992] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763832.358210138] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763834.802405251] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763837.914534204] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763837.914595876] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763839.602561512] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763839.953341411] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763839.953427453] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763843.676619982] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763846.527477912] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763846.527599150] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763851.438712976] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763862.170659238] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763862.170811598] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763866.776857424] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763867.830897812] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763867.831020173] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763871.475084509] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763871.569458407] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763871.569540536] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763876.415695924] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763876.436876632] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763876.436935089] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763882.569762697] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763887.428250384] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763887.428318789] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763892.794142741] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763897.096936885] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763897.096989045] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763900.570806169] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763903.637930277] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763903.637999693] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763905.705991013] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763906.520805194] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763906.520860988] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763910.501539178] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763913.713815900] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763913.713889868] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763919.451813149] [arm_controller]: Goal reached, success!
+[gazebo-1] NodeShared::Publish() Error: Interrupted system call
+[gazebo-1] [INFO] [1795763932.527409268] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763932.527514475] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763937.074170128] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763938.097248318] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763938.097368685] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763941.920874763] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763942.057364865] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763942.057488584] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763947.879135923] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763947.929441031] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763947.929527338] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763955.021967358] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763959.903360139] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763959.903452305] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763965.853067623] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763967.486448736] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763967.486493173] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763972.615883530] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763975.758810402] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763975.758882168] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763977.566338808] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763977.712760490] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763977.712874289] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763981.594199961] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795763985.247799204] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795763985.247918075] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795763990.648667502] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764003.228236584] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764003.228308717] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764007.809880386] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764008.837863914] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764008.837953138] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764011.863965742] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764011.950516987] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764011.950568896] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764016.277074059] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764016.323677106] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764016.323856704] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764023.125081250] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764027.983761797] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764027.983817568] [arm_controller]: Accepted new action goal
+[gazebo-1] NodeShared::Publish() Error: Interrupted system call
+[gazebo-1] [INFO] [1795764033.276802018] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764034.823421472] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764034.823475577] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764041.652459683] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764044.780385154] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764044.780466412] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764046.506107975] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764047.075937912] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764047.075992268] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764051.640675161] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764055.284366639] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764055.284471742] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764060.867916963] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764072.612064751] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764072.612273204] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764077.175750234] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764078.221619059] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764078.221688132] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764081.730083417] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764081.839771940] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764081.839828558] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764087.208014125] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764087.262759293] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764087.262818661] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764092.952651234] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764097.757752975] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764097.757842960] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764102.157195743] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764106.294566411] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764106.294630164] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764114.652684543] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764117.752374730] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764117.752489474] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764119.896328472] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764120.551456321] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764120.551535526] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764125.611661925] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764129.250991485] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764129.251081525] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764134.212203179] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764144.831485466] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764144.831566272] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764148.636358522] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764149.686717211] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764149.686808146] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764153.712064713] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764153.830222397] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764153.830328783] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764159.745447362] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764159.802693422] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764159.802752784] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764165.374601470] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764170.253658130] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764170.253718503] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764174.833627459] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764176.706314985] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764176.706432244] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764184.938818574] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764187.987240854] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764187.987299265] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764190.282610305] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764190.623913521] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764190.623983358] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764194.706920452] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764198.366970438] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764198.367051604] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764203.989289768] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764216.400557344] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764216.400644418] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764220.991784275] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764222.009632085] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764222.009721679] [arm_controller]: Accepted new action goal
+[gazebo-1] NodeShared::Publish() Error: Interrupted system call
+[gazebo-1] [INFO] [1795764225.119926769] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764225.242171770] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764225.242222704] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764231.013516694] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764231.065285332] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764231.065404740] [arm_controller]: Accepted new action goal
+[gazebo-1] NodeShared::Publish() Error: Interrupted system call
+[gazebo-1] [INFO] [1795764237.992312757] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764242.928330754] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764242.928875950] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764248.701878190] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764250.452563657] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764250.452701511] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764258.132218529] [arm_controller]: Goal reached, success!
+[gazebo-1] NodeShared::Publish() Error: Interrupted system call
+[gazebo-1] [INFO] [1795764261.257791312] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764261.257882451] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764264.106657110] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764264.904441685] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764264.904513130] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764270.073722748] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764273.748493208] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764273.748548476] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764280.214801708] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764296.208093519] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764296.208304565] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764302.643089183] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764303.681347772] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764303.681458360] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764307.044939052] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764307.199330688] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764307.199464983] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764314.964526205] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764315.010917461] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764315.010979118] [arm_controller]: Accepted new action goal
+[gazebo-1] NodeShared::Publish() Error: Interrupted system call
+[gazebo-1] [INFO] [1795764320.784963430] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764325.721498483] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764325.721556427] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764330.987599958] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764337.548391926] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764337.548442776] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764346.568966546] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764349.735039109] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764349.735121298] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764351.682701753] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764351.788230427] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764351.788285428] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764355.993485299] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764359.626870625] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764359.626924150] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764365.121485908] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764376.747861126] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764376.747918362] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764381.074287772] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764382.099314734] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764382.099385346] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764385.445452042] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764385.504144376] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764385.504215640] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764392.393377036] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764392.426762356] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764392.426833714] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764401.070214500] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764405.893224516] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764405.893279665] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764410.702523005] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764412.619873306] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764412.620000042] [arm_controller]: Accepted new action goal
+[gazebo-1] NodeShared::Publish() Error: Interrupted system call
+[gazebo-1] [INFO] [1795764421.887277312] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764425.035454043] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764425.035517362] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764427.026293316] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764427.558550877] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764427.558664406] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764431.084731484] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764434.781323661] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764434.781395295] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764440.977665171] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764456.169452975] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764456.169597597] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764460.504743455] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764461.542526550] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764461.542578527] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764464.568504006] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764464.687874962] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764464.687966952] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764471.842975805] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764471.931744378] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764471.931845070] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764486.084053438] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764490.488810354] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764490.488913370] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764501.916766572] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764506.120105436] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764506.120202955] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764510.647013406] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764513.724566205] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764513.724614116] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764514.909206997] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764515.132873723] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764515.132921150] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764517.533459473] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764521.180215144] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764521.180265903] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764524.640504365] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764531.802461430] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764531.802521606] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764534.622097609] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764535.662562100] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764535.662632497] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764537.441883270] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764537.492267334] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764537.492323713] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764540.845240710] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764540.903669259] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764540.903717738] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764545.220301456] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764549.969596878] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764549.969738452] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764554.433279464] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764560.947873832] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764560.948005069] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764566.529074257] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764569.647461011] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764569.647534606] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764571.991532117] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764573.518207611] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764573.518273276] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764576.565061893] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764579.177659239] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764579.177723500] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764584.370761889] [arm_controller]: Goal reached, success!
+[gazebo-1] NodeShared::Publish() Error: Interrupted system call
+[gazebo-1] [INFO] [1795764594.451338031] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764594.451441094] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764598.971998608] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764600.020816432] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764600.020931993] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764603.753212658] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764603.853431811] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764603.853523267] [arm_controller]: Accepted new action goal
+[gazebo-1] NodeShared::Publish() Error: Interrupted system call
+[gazebo-1] [INFO] [1795764609.135732069] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764609.174557418] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764609.174605360] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764613.601972596] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764618.340220577] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764618.340320193] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764621.631174925] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764623.449695834] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764623.449737813] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764628.793981862] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764631.857475529] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764631.857559884] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764634.169462271] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764635.145406946] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764635.145475005] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764639.779336153] [arm_controller]: Goal reached, success!
+[gazebo-1] NodeShared::Publish() Error: Interrupted system call
+[gazebo-1] [INFO] [1795764643.470117552] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764643.470199128] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764648.299305453] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764662.380954130] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764662.381320721] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764666.684771155] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764667.741237092] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764667.741284386] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764670.539643631] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764670.623429416] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764670.623536117] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764676.651432777] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764676.695410873] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764676.695459915] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764682.535646823] [arm_controller]: Goal reached, success!
+[gazebo-1] NodeShared::Publish() Error: Interrupted system call
+[gazebo-1] [INFO] [1795764687.382462880] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764687.382540933] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764691.548587739] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764693.034587260] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764693.034635792] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764697.980683784] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764701.089103080] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764701.089184984] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764703.309285247] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764703.563632504] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764703.563698785] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764707.564340418] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764711.304383890] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764711.304497010] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764715.125886329] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764724.329486119] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764724.329583762] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764729.275092733] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764730.295747259] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764730.295823217] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764733.766576201] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764733.867179975] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764733.867245786] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764737.442860314] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764737.488456187] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764737.488512587] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764743.126620897] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764747.859937852] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764747.859996927] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764751.842514882] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764753.355554586] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764753.355614111] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764759.639015191] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764762.696816309] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764762.696921423] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764766.237652977] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764769.845453031] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764769.845510728] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764775.809435731] [arm_controller]: Goal reached, success!
+[gazebo-1] NodeShared::Publish() Error: Interrupted system call
+[gazebo-1] [INFO] [1795764787.690618673] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764787.690735527] [arm_controller]: Accepted new action goal
+[gazebo-1] NodeShared::Publish() Error: Interrupted system call
+[gazebo-1] [INFO] [1795764791.091163434] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764792.095372848] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764792.095456281] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764795.227553781] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764795.376050851] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764795.376218877] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764801.752994487] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764801.786351430] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764801.786430994] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764808.777119689] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764813.662399016] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764813.662473780] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764819.424588935] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764823.712415036] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764823.712527025] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764831.649929955] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764834.696913611] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764834.697010700] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764837.466582494] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764838.152251117] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764838.152381952] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764842.826876378] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764846.460232574] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764846.460284846] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764851.915434226] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764861.093081233] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764861.093205693] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764864.697568878] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764865.746935976] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764865.746999220] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764867.992501362] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764868.051930679] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764868.051979857] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764871.848868788] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764871.873607854] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764871.873699867] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764876.541328511] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764881.321446203] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764881.321515886] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764886.341437591] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764887.870364831] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764887.870442673] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764891.733917057] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764894.813467307] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764894.813514468] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764897.707585742] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764901.296144899] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764901.296221270] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764905.967347975] [arm_controller]: Goal reached, success!
+[gazebo-1] NodeShared::Publish() Error: Interrupted system call
+[gazebo-1] [INFO] [1795764913.706819149] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764913.706879822] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764916.804501467] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764917.819297596] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764917.819422257] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764919.741409300] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764919.831810218] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764919.831846046] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764923.105305153] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764923.163088369] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764923.163151141] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764927.116371299] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764931.859267517] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764931.860075054] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764937.094259466] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764938.593889338] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764938.593959249] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764943.230105733] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764946.316298772] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764946.316348859] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764947.760641630] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764948.207607488] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764948.207659412] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764952.566334935] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764956.202323208] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764956.202398543] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764960.792054005] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764969.926203748] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764969.926283228] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764973.390989768] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764974.446068399] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764974.446174096] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764977.066465955] [arm_controller]: Goal reached, success!
+[gazebo-1] [INFO] [1795764977.145850776] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795764977.145918729] [arm_controller]: Accepted new action goal
+[gazebo-1] [INFO] [1795764981.283758978] [arm_controller]: Goal reached, success!

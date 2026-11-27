@@ -243,6 +243,39 @@ class Rig(Node):
         return {"ok": bool(e < 3 * tol and ey_ < 3 * yaw_tol), "time_s": round(self.now() - t_sim0, 2), "err_m": round(e, 4),
                 "err_yaw": round(ey_, 4)}
 
+    def target_in_scene(self, cls, xy_base, on=True, pad=0.01):
+        """Add (on) / remove the target object to MoveIt's scene for the big moves (MoveIt does not know it otherwise and the arm
+        swing can knock it away: can tries 2 / 5 of fixed5x5). Class-size box / cylinder + `pad`, on the floor, base_link."""
+        if self.mg is None:
+            return False
+        from geometry_msgs.msg import Pose
+        from moveit_msgs.msg import CollisionObject, PlanningScene, PlanningSceneWorld
+        from moveit_msgs.srv import ApplyPlanningScene
+        from shape_msgs.msg import SolidPrimitive
+        if not hasattr(self, "_aps"):
+            self._aps = self.create_client(ApplyPlanningScene, "/apply_planning_scene")
+            self._aps.wait_for_service(timeout_sec=5.0)
+        o = A.PICKABLE[cls]
+        co = CollisionObject(id="grasp_target", operation=CollisionObject.ADD if on else CollisionObject.REMOVE)
+        co.header.frame_id = "base_link"
+        if on:
+            h = (o["size"][2] if o["shape"] == "box" else o["height"]) + pad
+            if o["shape"] == "box":
+                prim = SolidPrimitive(type=SolidPrimitive.BOX, dimensions=[o["size"][0] + 2 * pad, o["size"][1] + 2 * pad, h])
+            else:
+                prim = SolidPrimitive(type=SolidPrimitive.CYLINDER, dimensions=[h, o["radius"] + pad])
+            p = Pose()
+            p.position.x, p.position.y, p.position.z = float(xy_base[0]), float(xy_base[1]), A.ground_z(RB) + h / 2
+            p.orientation.w = 1.0
+            co.primitives, co.primitive_poses = [prim], [p]
+        f = self._aps.call_async(ApplyPlanningScene.Request(scene=PlanningScene(is_diff=True, world=PlanningSceneWorld(collision_objects=[co]))))
+        rclpy.spin_until_future_complete(self, f, timeout_sec=5.0)
+        return bool(f.result() and f.result().success)
+
+    def obj_xy(self, name):
+        p = self.poses.get(name)
+        return None if p is None else [round(p[0], 4), round(p[1], 4)]
+
     def settle(self, q_cmd, tol=0.003, timeout=3.0):
         """Wait until the (effort-controlled) arm is within `tol` rad of q_cmd (integral term) or `timeout` s; -> max error."""
         t0 = time.monotonic()
@@ -379,7 +412,11 @@ def _grasp_and_lift(rig, obj, a, rec, est, yaw_b, rest, t0):
         return {**rec, "outcome": "missed", "detail": f"plan: {plan.reason}", "time_s": None}
     # 4. approach: pre-grasp, settle, centre the object between the fingers (measured-FK correction), final approach
     t1 = tt()
+    rec["obj_track"] = {"rest": [round(rest[0], 4), round(rest[1], 4)], "before_pre": rig.obj_xy(name)}
+    if a.target_obstacle == "on":                                   # the arm swing must not knock the target away
+        rec["target_in_scene"] = rig.target_in_scene(cls, est, True)
     rig.move(plan.pre, 3.0, rec["log"])
+    rec["obj_track"]["after_pre"] = rig.obj_xy(name)
     rec["settle_pre_rad"] = round(rig.settle(plan.pre), 4)
     q_pre = rig.q_arm()
     delta = G.centre_correction(ARM, plan.pre, q_pre)
@@ -393,7 +430,11 @@ def _grasp_and_lift(rig, obj, a, rec, est, yaw_b, rest, t0):
             rig.settle(plan.pre, timeout=1.5)
         else:
             rec["log"].append(f"centre re-plan failed: {p2.reason}")
+    if rec.get("target_in_scene"):
+        rig.target_in_scene(cls, est, False)                        # the final straight approach goes INTO it
+    rec["obj_track"]["after_centring"] = rig.obj_xy(name)
     rig.move_direct(plan.grasp, 2.0)
+    rec["obj_track"]["at_grasp"] = rig.obj_xy(name)
     rec["settle_grasp_rad"] = round(rig.settle(plan.grasp, timeout=1.5), 4)
     before = rig.poses.get(name)
     if before is not None:                                          # ground-truth diagnostic: object vs finger midpoint
@@ -463,6 +504,8 @@ def main():
     ap.add_argument("--floor", choices=("fitted", "off"), default="fitted", help="fitted body-camera floor in MoveIt's scene")
     ap.add_argument("--approach", choices=("teleport", "walk"), default="teleport",
                     help="walk = start 2.0 / 1.5 / 1.0 m in front of the grasp placement and walk there (closed loop on GT odom)")
+    ap.add_argument("--target-obstacle", choices=("on", "off"), default="on",
+                    help="put the target object into MoveIt's scene for the big moves (removed for the final approach)")
     ap.add_argument("--centre", choices=("on", "off"), default="on",
                     help="settle at the pre-grasp and shift the target by the measured finger-midpoint error (default on)")
     a = ap.parse_args()
