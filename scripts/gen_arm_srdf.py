@@ -138,7 +138,8 @@ def is_arm(n):
 
 
 def is_robot(n):
-    return n == "body_link" or any(n.startswith(p) for p in ("lf_", "lm_", "lr_", "rf_", "rm_", "rr_"))   # incl. *_proxy
+    return n in ("body_link", "camera_collision_proxy", "lidar_collision_proxy") or any(
+        n.startswith(p) for p in ("lf_", "lm_", "lr_", "rf_", "rm_", "rr_"))   # incl. *_proxy
 
 
 def build():

@@ -20,28 +20,39 @@
   <disable_collisions link1="arm_finger_left_link" link2="arm_palm_link" reason="Adjacent"/>
   <disable_collisions link1="arm_finger_left_link" link2="arm_upper_arm_link" reason="Never"/>
   <disable_collisions link1="arm_finger_left_link" link2="arm_wrist_link" reason="Never"/>
+  <disable_collisions link1="arm_finger_left_link" link2="wrist_camera_collision_proxy" reason="Adjacent"/>
   <disable_collisions link1="arm_finger_right_link" link2="arm_forearm_link" reason="Never"/>
   <disable_collisions link1="arm_finger_right_link" link2="arm_palm_link" reason="Adjacent"/>
   <disable_collisions link1="arm_finger_right_link" link2="arm_upper_arm_link" reason="Never"/>
   <disable_collisions link1="arm_finger_right_link" link2="arm_wrist_link" reason="Never"/>
+  <disable_collisions link1="arm_finger_right_link" link2="wrist_camera_collision_proxy" reason="Adjacent"/>
   <disable_collisions link1="arm_forearm_link" link2="arm_palm_link" reason="Never"/>
   <disable_collisions link1="arm_forearm_link" link2="arm_turret_link" reason="Never"/>
   <disable_collisions link1="arm_forearm_link" link2="arm_upper_arm_link" reason="Adjacent"/>
   <disable_collisions link1="arm_forearm_link" link2="arm_wrist_link" reason="Adjacent"/>
+  <disable_collisions link1="arm_forearm_link" link2="wrist_camera_collision_proxy" reason="Never"/>
   <disable_collisions link1="arm_mount_link" link2="arm_turret_link" reason="Adjacent"/>
   <disable_collisions link1="arm_mount_link" link2="body_link" reason="Adjacent"/>
+  <disable_collisions link1="arm_mount_link" link2="camera_collision_proxy" reason="Adjacent"/>
   <disable_collisions link1="arm_mount_link" link2="lf_coxa_proxy" reason="Adjacent"/>
+  <disable_collisions link1="arm_mount_link" link2="lidar_collision_proxy" reason="Adjacent"/>
   <disable_collisions link1="arm_mount_link" link2="lm_coxa_proxy" reason="Adjacent"/>
   <disable_collisions link1="arm_mount_link" link2="lr_coxa_proxy" reason="Adjacent"/>
   <disable_collisions link1="arm_mount_link" link2="rf_coxa_proxy" reason="Adjacent"/>
   <disable_collisions link1="arm_mount_link" link2="rm_coxa_proxy" reason="Adjacent"/>
   <disable_collisions link1="arm_mount_link" link2="rr_coxa_proxy" reason="Adjacent"/>
   <disable_collisions link1="arm_palm_link" link2="arm_wrist_link" reason="Adjacent"/>
+  <disable_collisions link1="arm_palm_link" link2="wrist_camera_collision_proxy" reason="Adjacent"/>
   <disable_collisions link1="arm_turret_link" link2="arm_upper_arm_link" reason="Adjacent"/>
   <disable_collisions link1="arm_turret_link" link2="body_link" reason="Adjacent"/>
+  <disable_collisions link1="arm_turret_link" link2="camera_collision_proxy" reason="Adjacent"/>
+  <disable_collisions link1="arm_turret_link" link2="lidar_collision_proxy" reason="Adjacent"/>
   <disable_collisions link1="arm_upper_arm_link" link2="arm_wrist_link" reason="Never"/>
+  <disable_collisions link1="arm_wrist_link" link2="wrist_camera_collision_proxy" reason="Adjacent"/>
+  <disable_collisions link1="body_link" link2="camera_collision_proxy" reason="Adjacent"/>
   <disable_collisions link1="body_link" link2="lf_coxa_proxy" reason="Adjacent"/>
   <disable_collisions link1="body_link" link2="lf_femur_proxy" reason="Never"/>
+  <disable_collisions link1="body_link" link2="lidar_collision_proxy" reason="Adjacent"/>
   <disable_collisions link1="body_link" link2="lm_coxa_proxy" reason="Adjacent"/>
   <disable_collisions link1="body_link" link2="lm_femur_proxy" reason="Never"/>
   <disable_collisions link1="body_link" link2="lr_coxa_proxy" reason="Adjacent"/>
@@ -54,9 +65,35 @@
   <disable_collisions link1="body_link" link2="rr_femur_proxy" reason="Never"/>
   <disable_collisions link1="body_link" link2="rr_tibia" reason="Never"/>
   <disable_collisions link1="body_link" link2="rr_tibia_proxy" reason="Never"/>
+  <disable_collisions link1="camera_collision_proxy" link2="lf_coxa_proxy" reason="Adjacent"/>
+  <disable_collisions link1="camera_collision_proxy" link2="lf_femur_proxy" reason="Never"/>
+  <disable_collisions link1="camera_collision_proxy" link2="lf_tibia" reason="Never"/>
+  <disable_collisions link1="camera_collision_proxy" link2="lf_tibia_proxy" reason="Never"/>
+  <disable_collisions link1="camera_collision_proxy" link2="lidar_collision_proxy" reason="Adjacent"/>
+  <disable_collisions link1="camera_collision_proxy" link2="lm_coxa_proxy" reason="Adjacent"/>
+  <disable_collisions link1="camera_collision_proxy" link2="lm_femur_proxy" reason="Never"/>
+  <disable_collisions link1="camera_collision_proxy" link2="lm_tibia" reason="Never"/>
+  <disable_collisions link1="camera_collision_proxy" link2="lm_tibia_proxy" reason="Never"/>
+  <disable_collisions link1="camera_collision_proxy" link2="lr_coxa_proxy" reason="Adjacent"/>
+  <disable_collisions link1="camera_collision_proxy" link2="lr_femur_proxy" reason="Never"/>
+  <disable_collisions link1="camera_collision_proxy" link2="lr_tibia" reason="Never"/>
+  <disable_collisions link1="camera_collision_proxy" link2="lr_tibia_proxy" reason="Never"/>
+  <disable_collisions link1="camera_collision_proxy" link2="rf_coxa_proxy" reason="Adjacent"/>
+  <disable_collisions link1="camera_collision_proxy" link2="rf_femur_proxy" reason="Never"/>
+  <disable_collisions link1="camera_collision_proxy" link2="rf_tibia" reason="Never"/>
+  <disable_collisions link1="camera_collision_proxy" link2="rf_tibia_proxy" reason="Never"/>
+  <disable_collisions link1="camera_collision_proxy" link2="rm_coxa_proxy" reason="Adjacent"/>
+  <disable_collisions link1="camera_collision_proxy" link2="rm_femur_proxy" reason="Never"/>
+  <disable_collisions link1="camera_collision_proxy" link2="rm_tibia" reason="Never"/>
+  <disable_collisions link1="camera_collision_proxy" link2="rm_tibia_proxy" reason="Never"/>
+  <disable_collisions link1="camera_collision_proxy" link2="rr_coxa_proxy" reason="Adjacent"/>
+  <disable_collisions link1="camera_collision_proxy" link2="rr_femur_proxy" reason="Never"/>
+  <disable_collisions link1="camera_collision_proxy" link2="rr_tibia" reason="Never"/>
+  <disable_collisions link1="camera_collision_proxy" link2="rr_tibia_proxy" reason="Never"/>
   <disable_collisions link1="lf_coxa_proxy" link2="lf_femur_proxy" reason="Adjacent"/>
   <disable_collisions link1="lf_coxa_proxy" link2="lf_tibia" reason="Never"/>
   <disable_collisions link1="lf_coxa_proxy" link2="lf_tibia_proxy" reason="Never"/>
+  <disable_collisions link1="lf_coxa_proxy" link2="lidar_collision_proxy" reason="Adjacent"/>
   <disable_collisions link1="lf_coxa_proxy" link2="lm_coxa_proxy" reason="Never"/>
   <disable_collisions link1="lf_coxa_proxy" link2="lm_femur_proxy" reason="Never"/>
   <disable_collisions link1="lf_coxa_proxy" link2="lm_tibia" reason="Never"/>
@@ -79,6 +116,7 @@
   <disable_collisions link1="lf_coxa_proxy" link2="rr_tibia_proxy" reason="Never"/>
   <disable_collisions link1="lf_femur_proxy" link2="lf_tibia" reason="Adjacent"/>
   <disable_collisions link1="lf_femur_proxy" link2="lf_tibia_proxy" reason="Adjacent"/>
+  <disable_collisions link1="lf_femur_proxy" link2="lidar_collision_proxy" reason="Never"/>
   <disable_collisions link1="lf_femur_proxy" link2="lm_coxa_proxy" reason="Never"/>
   <disable_collisions link1="lf_femur_proxy" link2="lm_femur_proxy" reason="Never"/>
   <disable_collisions link1="lf_femur_proxy" link2="lm_tibia" reason="Never"/>
@@ -100,6 +138,7 @@
   <disable_collisions link1="lf_femur_proxy" link2="rr_tibia" reason="Never"/>
   <disable_collisions link1="lf_femur_proxy" link2="rr_tibia_proxy" reason="Never"/>
   <disable_collisions link1="lf_tibia" link2="lf_tibia_proxy" reason="Adjacent"/>
+  <disable_collisions link1="lf_tibia" link2="lidar_collision_proxy" reason="Never"/>
   <disable_collisions link1="lf_tibia" link2="lm_coxa_proxy" reason="Never"/>
   <disable_collisions link1="lf_tibia" link2="lm_femur_proxy" reason="Never"/>
   <disable_collisions link1="lf_tibia" link2="lr_coxa_proxy" reason="Never"/>
@@ -118,6 +157,7 @@
   <disable_collisions link1="lf_tibia" link2="rr_femur_proxy" reason="Never"/>
   <disable_collisions link1="lf_tibia" link2="rr_tibia" reason="Never"/>
   <disable_collisions link1="lf_tibia" link2="rr_tibia_proxy" reason="Never"/>
+  <disable_collisions link1="lf_tibia_proxy" link2="lidar_collision_proxy" reason="Never"/>
   <disable_collisions link1="lf_tibia_proxy" link2="lm_coxa_proxy" reason="Never"/>
   <disable_collisions link1="lf_tibia_proxy" link2="lm_femur_proxy" reason="Never"/>
   <disable_collisions link1="lf_tibia_proxy" link2="lr_coxa_proxy" reason="Never"/>
@@ -136,6 +176,26 @@
   <disable_collisions link1="lf_tibia_proxy" link2="rr_femur_proxy" reason="Never"/>
   <disable_collisions link1="lf_tibia_proxy" link2="rr_tibia" reason="Never"/>
   <disable_collisions link1="lf_tibia_proxy" link2="rr_tibia_proxy" reason="Never"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="lm_coxa_proxy" reason="Adjacent"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="lm_femur_proxy" reason="Never"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="lm_tibia" reason="Never"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="lm_tibia_proxy" reason="Never"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="lr_coxa_proxy" reason="Adjacent"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="lr_femur_proxy" reason="Never"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="lr_tibia" reason="Never"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="lr_tibia_proxy" reason="Never"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="rf_coxa_proxy" reason="Adjacent"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="rf_femur_proxy" reason="Never"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="rf_tibia" reason="Never"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="rf_tibia_proxy" reason="Never"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="rm_coxa_proxy" reason="Adjacent"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="rm_femur_proxy" reason="Never"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="rm_tibia" reason="Never"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="rm_tibia_proxy" reason="Never"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="rr_coxa_proxy" reason="Adjacent"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="rr_femur_proxy" reason="Never"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="rr_tibia" reason="Never"/>
+  <disable_collisions link1="lidar_collision_proxy" link2="rr_tibia_proxy" reason="Never"/>
   <disable_collisions link1="lm_coxa_proxy" link2="lm_femur_proxy" reason="Adjacent"/>
   <disable_collisions link1="lm_coxa_proxy" link2="lm_tibia" reason="Never"/>
   <disable_collisions link1="lm_coxa_proxy" link2="lm_tibia_proxy" reason="Never"/>

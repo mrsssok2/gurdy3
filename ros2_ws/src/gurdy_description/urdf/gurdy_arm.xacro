@@ -14,6 +14,21 @@
     </inertial>
   </xacro:macro>
 
+  <!-- 2026-11-27: collision-only PROXY links for the body RGB-D camera, the LiDAR puck and the wrist camera (sizes = their
+       visuals + pad). MoveIt's description only (moveit_collision:=true), like the leg proxies: Gazebo contacts unchanged. -->
+  <xacro:macro name="sensor_collision_proxies" params="cfg arm_yaml pad:=0.005">
+    <xacro:property name="wc" value="${xacro.load_yaml(arm_yaml)['wrist_camera']}"/>
+    <joint name="camera_collision_proxy_joint" type="fixed"><parent link="camera_link"/><child link="camera_collision_proxy"/>
+      <origin xyz="-0.01 0 0"/></joint>
+    <link name="camera_collision_proxy"><collision><geometry><box size="${0.02 + 2*pad} ${0.08 + 2*pad} ${0.025 + 2*pad}"/></geometry></collision></link>
+    <joint name="lidar_collision_proxy_joint" type="fixed"><parent link="lidar_link"/><child link="lidar_collision_proxy"/></joint>
+    <link name="lidar_collision_proxy"><collision><geometry><cylinder radius="${0.025 + pad}" length="${0.03 + 2*pad}"/></geometry></collision></link>
+    <xacro:if value="${wc.get('enabled', True)}">
+      <joint name="wrist_camera_collision_proxy_joint" type="fixed"><parent link="wrist_camera_link"/><child link="wrist_camera_collision_proxy"/></joint>
+      <link name="wrist_camera_collision_proxy"><collision><geometry><box size="${0.012 + 2*pad} ${0.04 + 2*pad} ${0.014 + 2*pad}"/></geometry></collision></link>
+    </xacro:if>
+  </xacro:macro>
+
   <!-- Phase 9e: collision-only PROXY links on coxa / femur / tibia (the leg links themselves carry only visuals, plus the foot
        sphere). Only for the robot_description given to MoveIt (gurdy_with_arm.urdf.xacro moveit_collision:=true), so the arm
        planner can see the legs; Gazebo spawns without them (its contact physics stay unchanged). Sizes from robot.yaml + pad. -->

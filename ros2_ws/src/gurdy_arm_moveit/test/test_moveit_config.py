@@ -62,7 +62,8 @@ def test_arm_vs_robot_collisions_never_disabled(srdf):
 
 def test_leg_proxies_exist_and_carry_no_mass(model):
     proxies = [n for n in model.links if n.endswith("_proxy")]
-    assert len(proxies) == 18 and all(model.links[p].find("inertial") is None for p in proxies)
+    sensors = {"camera_collision_proxy", "lidar_collision_proxy", "wrist_camera_collision_proxy"}   # body camera, LiDAR, wrist camera
+    assert sensors <= set(proxies) and len(proxies) == 18 + len(sensors) and all(model.links[p].find("inertial") is None for p in proxies)
     assert all(p in model.boxes for p in proxies)
 
 

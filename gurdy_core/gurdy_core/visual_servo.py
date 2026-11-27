@@ -58,7 +58,7 @@ class ServoParams:
 @dataclass
 class Observation:
     ok: bool
-    reason: str = ""                # "" | no_points | no_blob | implausible | no_floor
+    reason: str = ""                # "" | no_points | no_blob | implausible | no_floor | non_finite
     xy: tuple | None = None         # object centre in base_link (x, y)
     centre: np.ndarray | None = None
     height: float | None = None
@@ -177,6 +177,8 @@ def observe(depth, K, T_base_opt, cls: str, box=None, prm: ServoParams | None = 
                 # what matters looking down is whether the TOP FACE is complete (a tall object's lower body may leave the image)
                 partial = bool(buv[:, 0].min() < 3 or buv[:, 1].min() < 3 or buv[:, 0].max() > Ww - 4 or buv[:, 1].max() > Hh - 4)
     c_base = LO.apply_T(np.linalg.inv(T_fb), centre_f)
+    if not (np.all(np.isfinite(c_base)) and np.isfinite(est.height)):      # NaN guard: never pass a NaN position on
+        return Observation(False, "non_finite", box=box, floor=(n, d))
     obs = Observation(True, "", (float(c_base[0]), float(c_base[1])), c_base, est.height, box, (n, d), partial=partial)
     # looking down, the height (top above the fitted floor) is measured whenever the object is fully in the image; the
     # 8c 'top' flag (pixels at the object's depth above the box) misfires there because that is the floor
@@ -197,6 +199,9 @@ class VisualServo:
 
     def _step(self, v, res, why):
         n = float(np.hypot(*v))
+        if not np.isfinite(n):              # NaN guard: hypot(nan) passes both size tests below, so it would be sent
+            res.log.append({"t": round(self.r.now(), 1), "step": None, "why": why + ": non-finite step refused"})
+            return
         if n < self.prm.min_step:
             return
         if n > self.prm.max_step:
@@ -210,6 +215,8 @@ class VisualServo:
         res = ServoResult(False, "NOT_ALIGNED")
         t0 = self.r.now()
         prior = None if prior_xy is None else np.array(prior_xy, float)
+        if prior is not None and not np.all(np.isfinite(prior)):
+            prior = None                    # NaN guard: a non-finite map prior is no prior
         lost = occl = 0
         while True:
             if self.r.now() - t0 > p.timeout_s:
@@ -234,7 +241,7 @@ class VisualServo:
                     return res
                 e = prior - target                                  # step toward where the object should be
                 self._step(e, res, "lost: toward prior")
-                moved = np.asarray(res.log[-1]["step"]) if "step" in res.log[-1] else np.zeros(2)
+                moved = np.asarray(res.log[-1]["step"]) if res.log[-1].get("step") is not None else np.zeros(2)
                 prior = prior - moved
                 res.steps += 1
                 continue

@@ -148,3 +148,38 @@ def test_step_limit():
     r = SimRobot("can", (t[0] + 0.12, t[1] + 0.05))
     res = VS.VisualServo(r, arm_reachable=arm_ok).run("can", prior_xy=(t[0] + 0.12, t[1] + 0.05))
     assert all(math.hypot(*e["step"]) <= 0.06 + 1e-3 for e in res.log if "step" in e)      # log rounded to 0.1 mm
+
+
+def test_nan_guard_never_sends_a_nan_step():
+    """NaN depth / a NaN estimate / a NaN prior must never reach robot.step (hypot(nan) passed both step-size tests)."""
+    t = VS.CLASS_INFO["small_box"][3]
+    r = SimRobot("small_box", (t[0] + 0.05, t[1]))
+    sent = []
+    real_step = r.step
+    r.step = lambda dx, dy: (sent.append((dx, dy)), real_step(dx, dy))
+    real_view = r.wrist_view
+    r.wrist_view = lambda: (np.full_like(real_view()[0], np.nan), *real_view()[1:])
+    res = VS.VisualServo(r).run("small_box", prior_xy=(float("nan"), 0.0))
+    assert res.code == "TARGET_LOST" and not sent
+    res = VS.VisualServo(r).run("small_box", prior_xy=(t[0] + 0.05, t[1]))      # all-NaN depth, finite prior
+    assert all(math.isfinite(dx) and math.isfinite(dy) for dx, dy in sent)
+    s = VS.VisualServo(r)
+    out = VS.ServoResult(False, "NOT_ALIGNED")
+    n0 = len(sent)
+    s._step((float("nan"), 0.01), out, "align")
+    assert len(sent) == n0 and out.log[-1]["step"] is None
+
+
+def test_observe_non_finite_estimate_is_not_ok(monkeypatch):
+    t = VS.CLASS_INFO["can"][3]
+    r = SimRobot("can", t)
+    d, K, T = r.wrist_view()
+    real = VS.O3.estimate
+
+    def nan_est(*a, **k):
+        e = real(*a, **k)
+        e.centre = np.array([np.nan, 0.0, 0.0])
+        return e
+    monkeypatch.setattr(VS.O3, "estimate", nan_est)
+    o = VS.observe(d, K, T, "can")
+    assert not o.ok and o.reason == "non_finite" and o.xy is None
