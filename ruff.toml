@@ -1,0 +1,14 @@
+# Lint config for CI (scripts/ci_local.sh, .github/workflows/ci.yml). WARN-ONLY for now: findings are printed, CI stays green.
+# Two levels:
+#   critical = syntax errors + undefined names + bad comparisons (E9, F63, F7, F82): crash bugs; 0 on 2026-11-27.
+#              Make them blocking with LINT_STRICT=1 (scripts/ci_local.sh) / the `lint_strict` env in ci.yml.
+#   style    = the rest of pyflakes + pycodestyle errors (E, F, W): informational (~700 findings, mostly E702 / E741).
+target-version = "py312"
+line-length = 200
+extend-exclude = ["ros2_ws/build", "ros2_ws/install", "ros2_ws/log", "datasets", "docs/heldout", "**/*blind*", "**/*heldout*"]
+
+[lint]
+select = ["E", "F", "W"]
+
+[lint.per-file-ignores]
+"brain/bench/llm_loop.py" = ["F821"]   # names come from exec() of llm_bench.py (intentional)
