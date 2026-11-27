@@ -189,3 +189,62 @@ def test_wrist_yaw_drives_the_toolbox_roll_end_to_end():
         f = G._finger_axis_xy(ARM, p.grasp)
         across = np.array([math.cos(math.radians(deg) + math.pi / 2), math.sin(math.radians(deg) + math.pi / 2)])
         assert abs(float(f @ across)) > 0.97, deg                      # fingers close across the handle
+
+
+# ---------------------------------------------------------------- 2026-11-27: centring + fingers-apart scorer rule
+def test_object_at_the_finger_midpoint_has_zero_offset():
+    a, rb = A.load_arm(), A.load_robot()
+    q = G.grasp_plan(a, rb, "can", (-0.33, 0.0)).grasp
+    o = G.object_in_gripper(a, q, G.grasp_centre(a, q))
+    assert all(abs(v) < 1e-12 for v in o.values())
+
+
+def test_finger_axis_offset_is_measured_along_the_palm_y_axis():
+    a, rb = A.load_arm(), A.load_robot()
+    q = G.grasp_plan(a, rb, "can", (-0.33, 0.0)).grasp
+    R = A.T_base_palm(a, q)[:3, :3]
+    o = G.object_in_gripper(a, q, G.grasp_centre(a, q) + 0.012 * R[:, 1])
+    assert o["finger_axis"] == pytest.approx(0.012) and abs(o["approach"]) < 1e-12
+
+
+def test_centre_correction_cancels_a_tracking_error():
+    a, rb = A.load_arm(), A.load_robot()
+    p = G.grasp_plan(a, rb, "mini_extinguisher", (-0.33, 0.02))
+    q_meas = np.array(p.pre) + np.array([0.03, 0.0, 0.0, 0.0, 0.0])          # yaw lags 0.03 rad
+    d = G.centre_correction(a, p.pre, q_meas)
+    assert np.linalg.norm(d) > 0.005                                          # ~1 cm at this reach
+    # commanding the shifted target with the same joint error puts the midpoint back near the original target
+    p2 = G.grasp_plan(a, rb, "mini_extinguisher", np.array([-0.33, 0.02]) + d[:2])
+    reached = G.grasp_centre(a, np.array(p2.grasp) + np.array([0.03, 0.0, 0.0, 0.0, 0.0]))
+    assert np.linalg.norm(reached[:2] - G.grasp_centre(a, p.grasp)[:2]) < 0.002
+    assert np.linalg.norm(G.centre_correction(a, p.pre, np.array(p.pre) + 0.5)) <= 0.02 + 1e-12   # clipped
+
+
+def test_fingers_apart_rule_and_classify():
+    assert G.fingers_apart([0.0254, 0.025], "small_box")
+    assert not G.fingers_apart([0.0, 0.0], "can")
+    assert G.fingers_apart(None, "can") and G.fingers_apart([float("nan"), 0.0], "can")
+    lift = [0.01, 0.03, 0.05]
+    hold = [0.05] * 10
+    assert G.classify(0.0, lift, hold, fingers_hold=[0.033, 0.033], cls="can").outcome == "success"
+    r = G.classify(0.0, lift, hold, fingers_hold=[0.0, 0.0], cls="can")
+    assert r.outcome == "missed" and "wedged" in r.detail
+    assert G.classify(0.0, lift, hold).outcome == "success"                  # no finger data: old behaviour
+
+
+def test_walk_start_pose_is_in_front_and_clear_for_every_class():
+    walls = L4.walls()
+    gt = json.loads((Path(__file__).resolve().parents[2] / "docs/results/data/lab4_fetch/lab4_fetch_gt.json").read_text())["objects"] \
+        if (Path(__file__).resolve().parents[2] / "docs/results/data/lab4_fetch/lab4_fetch_gt.json").exists() else None
+    if gt is None:
+        pytest.skip("lab4_fetch GT not found")
+    for cls in G.SMALL:
+        obj = next(o for o in gt if o["class"] == cls)
+        others = G.other_obstacles(gt, obj["name"])
+        pl = G.place_robot(obj, walls, others, G.TRY_OFFSETS[0])
+        st = G.start_pose_for(pl, walls, others)
+        assert st is not None, cls
+        assert 1.0 <= st["dist"] <= 2.0 and abs(st["dir_deg"]) <= 30.0 and st["min_clearance"] >= G.MARGIN
+        # in front of the placement: the object (behind the placement) is farther from the start than the placement is
+        d_obj = math.hypot(st["x"] - obj["x"], st["y"] - obj["y"])
+        assert d_obj > math.hypot(st["x"] - pl["x"], st["y"] - pl["y"])

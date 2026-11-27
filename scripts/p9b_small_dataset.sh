@@ -14,8 +14,8 @@ BODY_SCENES=${BODY_SCENES:-350}
 WRIST_SCENES=${WRIST_SCENES:-250}
 EPOCHS=${EPOCHS:-150}
 BASE=${BASE:-vision/runs/det_v2_s/weights/best.pt}     # fine-tune from the deployed detector (old classes start good)
-run_sim() { docker compose run --rm sim "$@"; }
-run_vis() { docker compose run --rm vision "$@"; }
+run_sim() { docker compose run --rm -T sim "$@"; }
+run_vis() { docker compose --profile vision run --rm -T vision "$@"; }
 case "${1:-}" in
   plan)
     run_sim python3 vision/generate_dataset.py plan --out datasets/synth_v3_body  --scenes "$BODY_SCENES"  --views 12 --seed 31 --profile v3-body

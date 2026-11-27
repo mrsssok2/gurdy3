@@ -80,6 +80,28 @@ def place_robot(obj: dict, walls, others, offset=(0.0, 0.0), n_yaw: int = 24) ->
     return best
 
 
+def start_pose_for(pl: dict, walls, others, dmin: float = 1.0, dmax: float = 2.0, max_dev: float = math.radians(30),
+                   n_dir: int = 13, step: float = 0.05) -> dict | None:
+    """Walk-to-object variant: a start pose `dmin`..`dmax` m from the grasp placement `pl`, in FRONT of it (within `max_dev`
+    of the placement heading), so the robot backs up to the object (rear first) along a straight line with the placement yaw.
+    Every point of the segment needs the same footprint clearance as the placement (FOOT_R + MARGIN to walls / other objects).
+    The farthest feasible distance wins (more walking), then the direction closest to straight ahead. -> {x, y, yaw, dist,
+    dir_deg, min_clearance} or None."""
+    px, py, yaw = pl["x"], pl["y"], pl["yaw"]
+    best = None
+    for d in np.arange(dmax, dmin - 1e-9, -0.25):
+        for k in sorted(range(n_dir), key=lambda i: abs(i - (n_dir - 1) / 2)):
+            dev = -max_dev + 2 * max_dev * k / (n_dir - 1)
+            sx, sy = px + d * math.cos(yaw + dev), py + d * math.sin(yaw + dev)
+            n = max(int(d / step), 1)
+            cl = min(clearance(px + (sx - px) * t / n, py + (sy - py) * t / n, walls, others) for t in range(n + 1)) - FOOT_R
+            if cl >= MARGIN:
+                best = {"x": round(sx, 4), "y": round(sy, 4), "yaw": yaw, "dist": round(float(d), 2),
+                        "dir_deg": round(math.degrees(dev), 1), "min_clearance": round(cl, 3)}
+                return best
+    return best
+
+
 def other_obstacles(gt_objects, target_name) -> list:
     return [(o["x"], o["y"], 0.5 * max(o["size"][:2]) if "size" in o else 0.15) for o in gt_objects if o["name"] != target_name]
 
@@ -155,6 +177,37 @@ def grasp_plan(a, robot, cls: str, xy_base, obj_yaw_base: float | None = None, l
     return GraspPlan(True, "", float(ap), qp, qg, lifts, min(0.08, obj["grip_w"] + 0.015))
 
 
+# ------------------------------------------------------------------ centring (2026-11-27, side grasps ended 1-1.5 cm off-centre)
+def grasp_centre(a, q) -> np.ndarray:
+    """Finger midpoint (grasp centre) in base_link for arm joints q."""
+    return np.asarray(A.fk(a, np.asarray(q, float))["Gc"], float)
+
+
+def object_in_gripper(a, q, obj_xyz) -> dict:
+    """Object centre relative to the finger midpoint in the palm frame: along the approach (x), along the finger closing axis
+    (y: the off-centre that pins the object against one finger), and normal (z). Metres."""
+    R = A.T_base_palm(a, np.asarray(q, float))[:3, :3]
+    d = np.asarray(obj_xyz, float) - grasp_centre(a, q)
+    return {"approach": float(d @ R[:, 0]), "finger_axis": float(d @ R[:, 1]), "normal": float(d @ R[:, 2])}
+
+
+def centre_correction(a, q_cmd, q_meas, max_shift: float = 0.02) -> np.ndarray:
+    """Shift (base_link xyz) to ADD to the grasp target so the finger midpoint lands on the object although the arm settles
+    off its command: the midpoint error at the pre-grasp (commanded - measured FK) is assumed to repeat 5 cm further on.
+    Clipped to `max_shift`."""
+    d = grasp_centre(a, q_cmd) - grasp_centre(a, q_meas)
+    n = float(np.linalg.norm(d))
+    return d * (max_shift / n) if n > max_shift else d
+
+
+def fingers_apart(fingers, cls: str, frac: float = 0.5) -> bool:
+    """Scorer rule: the object is BETWEEN the fingers only if their total opening (sum of both finger joints, each measured
+    from the centre) is at least `frac` of the class grip width. Fully closed fingers = nothing held (wedged / pushed)."""
+    if fingers is None or any(f is None or f != f for f in fingers):
+        return True                                             # unknown: do not judge
+    return float(sum(fingers)) >= frac * float(A.PICKABLE[cls]["grip_w"])
+
+
 # ------------------------------------------------------------------ outcome
 @dataclass
 class TryResult:
@@ -172,8 +225,10 @@ class TryResult:
 
 
 def classify(z_rest: float, lift_z: list, hold_z: list, xy_rest=None, xy_at_close=None, lift: float = LIFT,
-             slip_tol: float = 0.01, drop_tol: float = 0.01, lifted_frac: float = 0.6, knock_tol: float = 0.03) -> TryResult:
-    """z samples of the object (world z of the model origin): during the lift and during the hold."""
+             slip_tol: float = 0.01, drop_tol: float = 0.01, lifted_frac: float = 0.6, knock_tol: float = 0.03,
+             fingers_hold=None, cls: str | None = None) -> TryResult:
+    """z samples of the object (world z of the model origin): during the lift and during the hold. With `fingers_hold` + `cls`:
+    a lifted object with the fingers (nearly) closed was not held between them (wedged / carried on a finger) -> missed."""
     knocked = bool(xy_rest is not None and xy_at_close is not None
                    and math.hypot(xy_at_close[0] - xy_rest[0], xy_at_close[1] - xy_rest[1]) > knock_tol)
     if not lift_z and not hold_z:
@@ -182,6 +237,9 @@ def classify(z_rest: float, lift_z: list, hold_z: list, xy_rest=None, xy_at_clos
     top = max(rise)
     if top < lifted_frac * lift:
         return TryResult("missed", top, 0.0, rise[-1], knocked, f"rose only {top * 100:.1f} cm")
+    if cls is not None and not fingers_apart(fingers_hold, cls):
+        return TryResult("missed", top, 0.0, rise[-1], knocked,
+                         f"fingers closed ({sum(fingers_hold) * 1000:.0f} mm): not held between them (wedged)")
     h = [z - z_rest for z in hold_z] or [rise[-1]]
     start, low, end = h[0], min(h), h[-1]
     sank = max(start - low, 0.0)

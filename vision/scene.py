@@ -222,7 +222,7 @@ def world_sdf(sc: dict, mesh_dir: str, tex_dir: str | None = None, with_camera: 
       <specular>0.1 0.1 0.1 1</specular><direction>{s['dir'][0]:.2f} {s['dir'][1]:.2f} {s['dir'][2]:.2f}</direction></light>
 """]
     for i, l in enumerate(sc["lamps"]):
-        r, g, b = (c * l["intensity"] for c in l["rgb"])
+        r, g, b = (min(1.0, c * l["intensity"]) for c in l["rgb"])       # gz light colours must be in [0, 1] (v3 scenes had 1.02)
         parts.append(f'    <light type="point" name="lamp{i}"><pose>{l["pos"][0]:.2f} {l["pos"][1]:.2f} {l["pos"][2]:.2f} 0 0 0</pose>'
                      f'<diffuse>{r:.2f} {g:.2f} {b:.2f} 1</diffuse><specular>0.05 0.05 0.05 1</specular><attenuation><range>8</range>'
                      f'<constant>0.4</constant><linear>0.1</linear><quadratic>0.02</quadratic></attenuation><cast_shadows>false</cast_shadows></light>\n')

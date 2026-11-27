@@ -216,6 +216,44 @@ class Rig(Node):
         log.append("direct")
         return self.move_direct(q, seconds)
 
+    def walk_to(self, tx, ty, tyaw, v_max=0.08, w_max=0.3, tol=0.02, yaw_tol=0.05, timeout=90.0):
+        """Closed-loop walk on ground-truth odom to (tx, ty, tyaw): holonomic body-frame velocity toward the target (P, capped
+        at v_max), heading held / corrected (P, capped at w_max). Wall-clock timeout. -> {ok, time_s (sim), err_m, err_yaw}."""
+        t_sim0, t0 = self.now(), time.monotonic()
+        while time.monotonic() - t0 < timeout:
+            _, x, y, _, yaw = self.odom
+            ex, ey = tx - x, ty - y
+            eyaw = math.atan2(math.sin(tyaw - yaw), math.cos(tyaw - yaw))
+            if math.hypot(ex, ey) < tol and abs(eyaw) < yaw_tol:
+                break
+            c, s_ = math.cos(yaw), math.sin(yaw)
+            bx, by = c * ex + s_ * ey, -s_ * ex + c * ey
+            n = max(math.hypot(bx, by), 1e-6)
+            v = min(v_max, 1.5 * n)
+            m = self.Twist()
+            m.linear.x, m.linear.y = bx / n * v, by / n * v
+            m.angular.z = max(-w_max, min(w_max, 1.5 * eyaw))
+            self.cmd.publish(m)
+            self.spin_for(0.05)
+        self.cmd.publish(self.Twist())
+        self.spin_for(1.5)
+        _, x, y, _, yaw = self.odom
+        e = math.hypot(tx - x, ty - y)
+        ey_ = abs(math.atan2(math.sin(tyaw - yaw), math.cos(tyaw - yaw)))
+        return {"ok": bool(e < 3 * tol and ey_ < 3 * yaw_tol), "time_s": round(self.now() - t_sim0, 2), "err_m": round(e, 4),
+                "err_yaw": round(ey_, 4)}
+
+    def settle(self, q_cmd, tol=0.003, timeout=3.0):
+        """Wait until the (effort-controlled) arm is within `tol` rad of q_cmd (integral term) or `timeout` s; -> max error."""
+        t0 = time.monotonic()
+        err = float("inf")
+        while time.monotonic() - t0 < timeout:
+            self.spin_for(0.1)
+            err = float(np.max(np.abs(self.q_arm() - np.asarray(q_cmd, float))))
+            if err < tol:
+                break
+        return err
+
     def gripper(self, effort):
         self.grip.publish(self.F64(data=[float(effort), float(effort)]))
 
@@ -271,7 +309,19 @@ def one_try(rig: Rig, obj: dict, k: int, a) -> dict:
     if pl is None:
         return {**rec, "outcome": "error", "detail": "no placement"}
     rec["placement"] = pl
-    if not set_pose(ROBOT_MODEL, pl["x"], pl["y"], BASE_Z, pl["yaw"]):
+    if a.approach == "walk":                                        # walk-to-object variant: start 2.0 / 1.5 / 1.0 m away
+        d = (2.0, 1.5, 1.0)[k % 3]
+        st = G.start_pose_for(pl, walls, G.other_obstacles(GT, obj["name"]), dmin=d, dmax=d)
+        if st is None:
+            return {**rec, "outcome": "error", "detail": f"no clear start {d} m from the placement"}
+        rec["walk_start"] = st
+        if not set_pose(ROBOT_MODEL, st["x"], st["y"], BASE_Z, st["yaw"]):
+            return {**rec, "outcome": "error", "detail": "robot set_pose (start) failed"}
+        rig.spin_for(3.0)
+        rec["walk"] = rig.walk_to(pl["x"], pl["y"], pl["yaw"])
+        if rig.odom is None or rig.odom[3] < 0.06:
+            return {**rec, "outcome": "error", "detail": "robot fell while walking to the object"}
+    elif not set_pose(ROBOT_MODEL, pl["x"], pl["y"], BASE_Z, pl["yaw"]):
         return {**rec, "outcome": "error", "detail": "robot set_pose failed"}
     rig.spin_for(3.0)
     if rig.odom is None or rig.odom[3] < 0.06:
@@ -327,11 +377,30 @@ def _grasp_and_lift(rig, obj, a, rec, est, yaw_b, rest, t0):
     rec["plan"] = plan.to_dict()
     if not plan.ok:
         return {**rec, "outcome": "missed", "detail": f"plan: {plan.reason}", "time_s": None}
-    # 4. approach
+    # 4. approach: pre-grasp, settle, centre the object between the fingers (measured-FK correction), final approach
     t1 = tt()
     rig.move(plan.pre, 3.0, rec["log"])
+    rec["settle_pre_rad"] = round(rig.settle(plan.pre), 4)
+    q_pre = rig.q_arm()
+    delta = G.centre_correction(ARM, plan.pre, q_pre)
+    rec["centre_shift_m"] = [round(float(v), 4) for v in delta]
+    if a.centre == "on" and float(np.linalg.norm(delta[:2])) > 0.001:
+        p2 = G.grasp_plan(ARM, RB, cls, np.asarray(est, float) + delta[:2], yaw_b)
+        if p2.ok:
+            plan = p2
+            rec["plan_centred"] = p2.to_dict()
+            rig.move_direct(plan.pre, 1.0)
+            rig.settle(plan.pre, timeout=1.5)
+        else:
+            rec["log"].append(f"centre re-plan failed: {p2.reason}")
     rig.move_direct(plan.grasp, 2.0)
+    rec["settle_grasp_rad"] = round(rig.settle(plan.grasp, timeout=1.5), 4)
     before = rig.poses.get(name)
+    if before is not None:                                          # ground-truth diagnostic: object vs finger midpoint
+        _, x, y, _, yaw = rig.odom
+        oxy = G.world_to_base((x, y, yaw), before[:2])
+        oz = A.ground_z(RB) + A.grasp_point(A.PICKABLE[cls])
+        rec["obj_in_gripper_gt"] = {k: round(v, 4) for k, v in G.object_in_gripper(ARM, rig.q_arm(), (oxy[0], oxy[1], oz)).items()}
     rec["phase_s"]["approach"] = round(tt() - t1, 2)
     # 5. close (contact only)
     rig.gripper(-abs(a.grip_effort))
@@ -365,7 +434,8 @@ def _grasp_and_lift(rig, obj, a, rec, est, yaw_b, rest, t0):
     rec["phase_s"]["lift_hold"] = round(tt() - t2, 2)
     rec["fingers_hold"] = rig.fingers()
     rec["effort_hold"] = rig.efforts()                              # shoulder / elbow change vs on-floor = carried weight
-    res = G.classify(rest[2], lift_z, hold_z, rest[:2], before[:2] if before else None)
+    res = G.classify(rest[2], lift_z, hold_z, rest[:2], before[:2] if before else None,
+                     fingers_hold=rec["fingers_hold"], cls=cls)
     rec.update(res.to_dict())
     rec["time_s"] = round(tt() - t0, 2)
     rec["z_samples"] = {"rest": rest[2], "lift": [round(z, 4) for z in lift_z[::2]], "hold": [round(z, 4) for z in hold_z[::4]]}
@@ -391,6 +461,10 @@ def main():
     ap.add_argument("--locate", choices=("servo", "gt"), default="servo",
                     help="servo = wrist-camera visual servo (default); gt = the object's ground-truth position (first grasp test)")
     ap.add_argument("--floor", choices=("fitted", "off"), default="fitted", help="fitted body-camera floor in MoveIt's scene")
+    ap.add_argument("--approach", choices=("teleport", "walk"), default="teleport",
+                    help="walk = start 2.0 / 1.5 / 1.0 m in front of the grasp placement and walk there (closed loop on GT odom)")
+    ap.add_argument("--centre", choices=("on", "off"), default="on",
+                    help="settle at the pre-grasp and shift the target by the measured finger-midpoint error (default on)")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)

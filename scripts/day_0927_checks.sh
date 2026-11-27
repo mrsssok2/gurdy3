@@ -103,9 +103,9 @@ step_04_arm_spawn() {   # [gate] arm:=true spawns, both control blocks load, the
   case $l in PASS*) result 04_arm_spawn PASS "${l#PASS }";; *) result 04_arm_spawn FAIL "${l#FAIL }"; return 1;; esac
 }
 
-walk_step() {   # walk_step STEP LAUNCH_ARGS
+walk_step() {   # walk_step STEP LAUNCH_ARGS   (WALK_S = seconds per phase, default 30)
   LAUNCH_ARGS="$2" run_in "$1" 600 "$SIM_UP
-    python3 scripts/day0927_probe.py walk \$STEP_DIR/walk.json 30"
+    python3 scripts/day0927_probe.py walk \$STEP_DIR/walk.json ${WALK_S:-30}"
   local l; l=$(grep -E "^(PASS|FAIL)" "$OUT/$1/console.log" | tail -1)
   case $l in PASS*) result "$1" PASS "${l#PASS }";; FAIL*) result "$1" FAIL "${l#FAIL }";; *) result "$1" FAIL "no probe result";; esac
 }
