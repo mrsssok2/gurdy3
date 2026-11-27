@@ -198,3 +198,31 @@ then explores, then reports NOT_FOUND. It never walks closer inside a room, and 
   the radius of a viewpoint; the viewpoints are free-checked in the map, optional and nearest-neighbour ordered, with a full turn at each.
 * `FetchConfig.search_view_radius_m` (default None) switches it on for a fetch search only. Tests in `brain/tests/test_search_sweep.py`.
 * Not run in Gazebo.
+
+## 7. det_v3_s training + evaluation (2026-11-27)
+**Training stopped at epoch 104 of 150 because the laptop lost power (~15:15 IST); it was NOT resumed.** Validation mAP50 had plateaued
+at ~0.96 from epoch ~70 (epoch 104: mAP50 0.962, mAP50-95 0.900) and v3.1 is retrained tomorrow night anyway, so **`best.pt` is used as
+det_v3_s** = results.csv epoch 100 (Ultralytics fitness 0.1 mAP50 + 0.9 mAP50-95 = 0.9086; val mAP50 0.964, mAP50-95 0.903).
+`results.csv` ended in 122 null bytes from the power cut: only that broken tail was removed, all 104 complete rows kept. best.pt and
+last.pt both load (Ultralytics + torch, 0 non-finite weights, 12 classes). Export with the training script itself
+(`vision/train.py ... --name det_v3_s --export-only`: ONNX 256x320, opset 12) -> `models/detector/det_v3_s.onnx` + `.json`.
+Fine-tuned from det_v2_s on synth_v1 + v2 + v3 body + v3 wrist (`datasets/synth_v123.yaml`), yolo11s, 320 px, ~73 s/epoch, 2.3 GB VRAM.
+**The runtime detector is NOT switched** (detector_node default stays det_v2_s).
+
+Test splits (`scripts/p9b_small_dataset.sh eval`; files `phase9b_eval_<set>.md`, `phase9b_acceptance.md`, `phase9b_recall_by_distance.md`):
+
+| check | target | det_v2_s | det_v3_s |
+|---|---|---|---|
+| old classes mAP50, synth_v1 test | >= det_v2_s - 0.01 | 0.922 | 0.933 PASS |
+| old classes mAP50, synth_v2 test | >= det_v2_s - 0.01 | 0.871 | 0.875 PASS |
+| small classes mAP50, synth_v3_wrist test | >= 0.80 | - | 0.991 PASS |
+| small classes mAP50, synth_v3_body test | >= 0.70 | - | 0.974 PASS |
+| **acceptance** | | | **PASS** |
+
+Per old class (v2_s -> v3_s), largest drops: synth_v2 `box` 0.544 -> 0.507 (-0.037), fire_extinguisher 1.000 -> 0.989 / 0.999 -> 0.977;
+synth_v1 `box` +0.08. The agreed rule is on the mean; `box` on synth_v2 (distractor confusion, already the weakest class) got worse.
+The small-class mAP50 is on the v3 labels, which leave out objects < 6 px / 80 px^2: the recall by distance (labelled AND unlabelled
+objects from the meta GT) shows what that hides: body camera recall on labelled objects 99.6 / 96.2 / 75.5 / 42.9 % at < 1 / 1-2 / 2-3 / > 3 m,
+over ALL instances 98.4 / 89.9 / 45.6 / 2.7 %; tiny unlabelled objects per bin 0 / 8 / 23 / 172 (body), 0 / 4 / 21 / 65 (wrist), detected
+2.5 % / 0 %. So: small objects are found reliably within ~2 m of the body camera and almost never beyond 3 m -> the fetch search must
+get within ~2 m (multi-viewpoint sweep, `search_view_radius_m`), and v3.1 tests whether labelling the tiny ones helps.
