@@ -4,6 +4,7 @@
     ros2 launch gurdy_bringup sim.launch.py gui:=false sensors:=false rviz:=true
     ros2 launch gurdy_bringup sim.launch.py controller:=policy      # RL policy (ONNX) instead of the tripod gait
     ros2 launch gurdy_bringup sim.launch.py world:=semantic_lab perception:=true target_frame:=odom   # Phase 4 detector
+    ros2 launch gurdy_bringup sim.launch.py world:=semantic_lab perception:=true target_frame:=odom object3d:=true   # Phase 8c 3D positions
 Mapping / navigation (Phase 3; adds the lidar, flat_lab world, odom TF, slam_toolbox or AMCL, Nav2):
     ros2 launch gurdy_bringup sim.launch.py nav:=slam                       # map while driving (teleop or Nav2 goals)
     ros2 launch gurdy_bringup sim.launch.py nav:=localization map:=flat_lab # saved map (maps/flat_lab.yaml) + AMCL
@@ -77,7 +78,9 @@ def generate_launch_description():
                       condition=IfCondition(LaunchConfiguration("perception")),
                       parameters=[{"model": LaunchConfiguration("detector_model"), "use_sim_time": False,
                                    "target_frame": LaunchConfiguration("target_frame"),
-                                   "log_path": LaunchConfiguration("detector_log")}])
+                                   "log_path": LaunchConfiguration("detector_log"),
+                                   "position_method": PythonExpression(["'object3d' if '", LaunchConfiguration("object3d"),
+                                                                        "' == 'true' else 'pixel'"])}])
     rviz = Node(package="rviz2", executable="rviz2", condition=IfCondition(PythonExpression(
                     ["'", LaunchConfiguration("rviz"), "' == 'true' and '", LaunchConfiguration("nav"), "' == 'none'"])),
                 arguments=["-d", os.path.join(get_package_share_directory("gurdy_description"), "rviz", "display.rviz")],
@@ -96,6 +99,8 @@ def generate_launch_description():
            DeclareLaunchArgument("perception", default_value="false", description="Phase 4: detector + semantic map (camera on)"),
            DeclareLaunchArgument("detector_model", default_value="", description="ONNX in models/detector/ (default det_v2_s.onnx)"),
            DeclareLaunchArgument("detector_log", default_value="", description="JSON-lines log of every detector sighting"),
+           DeclareLaunchArgument("object3d", default_value="false",
+                                 description="Phase 8c: detector positions from all box depth pixels + floor fit + shape fit (default: Phase 4 pixel method)"),
            DeclareLaunchArgument("target_frame", default_value="map", description="frame of the semantic map (odom without SLAM)"),
            DeclareLaunchArgument("estop_gate", default_value="false", description="cmd_vel e-stop gate (gurdy_safety) in front of the controller"),
            DeclareLaunchArgument("arm", default_value="false", description="Phase 9: arm + gripper + wrist camera (gurdy_with_arm)"),

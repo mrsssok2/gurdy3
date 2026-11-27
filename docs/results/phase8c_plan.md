@@ -3,6 +3,12 @@
 Status 2026-11-26: plan plus offline code and tests, on branch `phase8c-3d`. **Nothing has run in Gazebo.** The robot
 model and launch files are NOT changed (another session is testing them).
 
+Status 2026-11-27 (branch `phase8c-wire`, from `integration-0927`): **wired into `detector_node` / `SemanticMap` behind
+`position_method:=object3d` (launch `object3d:=true`); the default stays the Phase 4 pixel method.** Fitted floor plane
+in the map frame (prior z = -0.11 m), size-adaptive rectangle fit for the generic `box` class, 3D fields in the semantic
+map JSON, Gazebo accuracy-check script (written, NOT run). Host-venv tests only; nothing built with colcon, nothing run in
+Gazebo. Details: sections 8 and 9.
+
 ## 1. What exists today (read first)
 
 **Camera: Gurdy already has an RGB-D camera.** It is defined in `robot.yaml` `sensors.depth_camera`,
@@ -87,7 +93,7 @@ Proposal (to decide with you; nothing edited yet):
   and there is a χ² gate (3 dof, 99 %) after 3 sightings.
 * top / height are the median over sightings with the top visible; width is the median over sightings not cut at the
   sides.
-* Plan for integration (Gazebo step, not done): `SemanticMap` keeps its xy association and confirmation rules, and each
+* Plan for integration (**done 2026-11-27 offline, section 8**; Gazebo step not done): `SemanticMap` keeps its xy association and confirmation rules, and each
   `Track` gets a `Track3D`. `detector_node` calls `object3d.estimate(depth, box, K, T_map_opt, shape=class prior)` and
   falls back to the Phase 4 path when it returns None. `/detector/detections` then carries the measured centre and size,
   and the JSON gets `z`, `top_z`, `height`, `width`, `yaw` and sigma. Map-level dedup remains xy.
@@ -184,8 +190,145 @@ Ready (offline, tested):
 
 Needs Gazebo:
 * convention checks (K, z-depth, TF, noise)
-* wiring `object3d` into `detector_node` / `SemanticMap` (perception code; robot model and launch untouched)
+* ~~wiring `object3d` into `detector_node` / `SemanticMap`~~ done offline 2026-11-27 (section 8); colcon build + a live run still needed
 * the depth-noise model edit (robot model: after the other session)
 * waypoint accuracy runs (GT odom, then SLAM, then walking)
 * calibrating the covariance
 * the wrist-camera spec when the arm exists
+
+## 8. Wiring into the vision path (2026-11-27, branch `phase8c-wire`; offline, host venv)
+
+**Switch.** `detector_node` parameter `position_method`: `pixel` (DEFAULT, the Phase 4 path, unchanged) or `object3d`.
+Launch: `ros2 launch gurdy_bringup sim.launch.py ... perception:=true object3d:=true` (default `false` -> `pixel`). Other
+new parameters: `floor_z` (-0.11), `floor_fit` (true), `floor_hold_s` (3.0), `object3d_stride` (2), `object3d_shape_fit`
+(true). A test checks that the default stays `pixel`.
+
+**Per frame** (only when there are detections), `gurdy_core/gurdy_core/vision/locate3d.py`:
+1. `FloorTracker`: RANSAC floor plane IN THE TARGET FRAME (map / odom) from the whole depth image (stride 4, optical z <= 3 m),
+   candidates within 6 cm of the prior plane z = `floor_z`, tilt <= 0.10 rad, the plane under the camera within 5 cm of the
+   prior (else rejected). Reuses `gurdy_core.low_obstacles.fit_floor` (9c). EMA 0.5 over frames; no usable floor in a
+   frame -> the last fit for up to 3 s, then the prior plane. Why: in the map / odom frame base_link is z 0 when standing,
+   so the floor is at **z = -0.11** (8b/8c convention check), while `object3d` assumes floor_z 0. With floor_z 0 in the map
+   frame the lower 13 cm of an object were thrown away as "floor" (test: 0.30 m box measured 0.19 m tall). The fit also
+   absorbs a small TF tilt / height error (test: 1.5 deg pitch error).
+2. Per detection: the old range gate (box depth within min_range..max_range) stays. `locate()` runs `object3d.estimate`
+   in the FLOOR frame (`floor_transform`: normal -> +z, plane -> z 0, no yaw), with the class shape prior:
+   * rectangle fit, fixed size: toolbox (+ small_box, mini_toolbox);
+   * rectangle fit, **size-adaptive**: `box` (`SIZE_RANGE` 0.25-0.50 m = the training range in `vision/objects.py`): per
+     yaw the size comes from the visible extents (0.5-99.5 pct; a face seen from the side holds only a few % of the
+     points, the 2-98 pct extent cut it), an unseen axis takes the other axis' size (near-cube assumption). Default of
+     `object3d.fit_rectangle` (no `size_range`) is unchanged, so 9e `visual_servo` behaves as before;
+   * circle fit: barrel, fire_extinguisher (+ can, mini_extinguisher);
+   * ray method: traffic_cone, chair, mannequin, mini_cone.
+   The result goes back to the map frame (centre, covariance rotated); heights are kept above the floor. `None` (too few
+   object points) -> that detection uses the pixel method (counted as `pixel fallback` in the 5 s log line).
+3. `SemanticMap.update(..., obs3d=sighting)`: each track gets a `Track3D` (information filter, chi2 gate after 3
+   sightings, min covariance floor). Once a track has 3D sightings it REPORTS the fused centre (`Track.xyz`), and
+   association / merge / dominance / `find` use it. Pixel-fallback sightings count for hits and confirmation but do not
+   move a 3D track. Truncated boxes: covariance x 1 / `truncated_weight` (x 4). Without obs3d the map is bit-for-bit the
+   old one (test: same JSON keys, `xyz == pos`).
+
+**Outputs** (only with `object3d`):
+* `/detector/detections`: measured centre, `pose.covariance` (xyz block), bbox size = class footprint + measured height
+  (prior height while the top is not seen), bbox orientation = fitted yaw.
+* `/semantic_map/objects` JSON, extra fields per object (map / odom frame, metres):
+
+| field | meaning |
+|---|---|
+| `x`, `y`, `z` | fused 3D centre (z = middle of floor..top; **a lower bound while `height_known` is false**) |
+| `pos_source` | `"object3d"` (absent = Phase 4 pixel track) |
+| `top_z`, `height`, `height_known` | median over sightings with an uncut top; None / false until one was seen |
+| `bottom_z` | floor z under the object (median of the fitted planes) |
+| `width` | median visible width perpendicular to the view (uncut sightings) |
+| `size` | (w, d, h): w, d = class prior (for `box` only the NOMINAL 0.40, not measured), h = measured height if known |
+| `yaw` | circular mean of the fitted rectangle yaws modulo the shape period (pi / 2 for square priors and `box`), None for cylinders / ray classes |
+| `sigma_xyz`, `hits_3d`, `rejected_3d`, `method_3d` | fused 1-sigma, fused / chi2-rejected sightings, `fit` or `ray` |
+
+* RViz markers: measured centre z, height and yaw when known.
+* Sightings log (`detector_log`): per record also `o3d` (the 3D sighting), `p_pixel` (the Phase 4 estimate of the same
+  box), `box`, `cam` (TF translation + quaternion) and `floor` (source + z) -> replay / scoring compares both methods on
+  the same boxes.
+* The brain's `RosBackend` reads only `id / class / color / x / y / score / hits / last_seen`: unaffected.
+
+**Synthetic dry run of the Gazebo stops** (`python3 vision/accuracy3d.py synth --seeds 3`; the planned semantic_lab stops,
+object alone, flat floor, depth noise 0.003 z^2, tight boxes, floor at odom z -0.11): **upper bounds, not Gazebo numbers.**
+
+| object | class | sightings | xy fit med / p90 cm | xy ray med / p90 cm | xy pixel (Phase 4) med / p90 cm | top fit med cm (n) |
+|---|---|---|---|---|---|---|
+| barrel_a | barrel | 36 | 0.3 / 0.4 | 4.4 / 17.3 | 2.1 / 8.0 | - (0) |
+| extinguisher | fire_extinguisher | 36 | 1.6 / 1.9 | 1.7 / 3.2 | 2.1 / 2.6 | 0.6 (9) |
+| toolbox | toolbox | 36 | 1.0 / 13.7 | 13.6 / 14.0 | 11.9 / 14.0 | 0.4 (27) |
+| barrel_b | barrel | 36 | 0.3 / 0.4 | 4.3 / 17.3 | 2.1 / 8.0 | - (0) |
+| cardboard_box | box | 36 | 1.5 / 7.3 | 5.3 / 8.7 | 3.2 / 7.0 | 0.6 (18) |
+| red_box | box | 36 | 0.9 / 5.6 | 0.6 / 5.5 | 3.3 / 5.4 | 0.6 (24) |
+| blue_box | box | 36 | 6.5 / 7.1 | 6.8 / 7.2 | 6.2 / 8.8 | 0.6 (27) |
+| yellow_box | box | 36 | 0.8 / 7.5 | 3.2 / 8.0 | 2.5 / 5.7 | 0.7 (18) |
+
+What it shows:
+* The fixed 0.40 m `box` prior was wrong for the lab boxes. Same stops with the fixed-size fit (1 seed): red 6.5 / 12.8,
+  blue 7.2 / 13.8, cardboard 2.2 / 11.3, yellow 3.0 / 12.2 cm. Found while writing the scorer test, which led to the
+  size-adaptive fit.
+* `blue_box` (0.25 x 0.40) is only approached along its 0.25 m axis, so it is seen face-on. Its depth cannot be measured
+  from those views; every method is about 6.5 cm off. A view from the side would fix it; the planner does not force one.
+* The p90 tails (toolbox 13.7, boxes 5-7.5 cm) are single-view ambiguities: an end-on toolbox, or a box side seen at a
+  grazing angle (unit test case: 0.40 cube at yaw 0.3 from the origin, 3.7 cm). Fusing views from different directions
+  (Track3D) is the remedy. The pixel method has the same tails.
+* Tops: 0.4-0.7 cm when visible. Barrel tops are never visible from the body camera (as in section 2).
+
+Tests (host venv, Python 3.14 / numpy 2.5): `gurdy_core/tests/test_locate3d.py` (18: shape priors, circular yaw mean,
+floor fit / wrong prior / hold / fit off, box centre + height + yaw in the -0.11 floor frame, the floor_z 0 failure
+case, tilt error, cylinder + ray classes, floor-only box, 4 robot poses, semantic map 3D JSON, unchanged JSON without 3D,
+pixel fallback does not move a 3D track, truncated weight, merge, chi2 rejection), `ros2_ws/src/gurdy_perception/test`
+(+2: default stays `pixel`, barrel pipeline through locate + SemanticMap), `vision/tests/test_accuracy3d.py` (5: plan
+geometry / clearance / bearing sign, obstacle list, scorer on a synthetic run in the node's log format, semantic-map
+comparison above the floor, synthetic dry run). Whole suites: gurdy_core 258 passed / 2 skipped / **1 failed** =
+`test_scan_timing.py::test_patch_applies_to_main` (the 9f patch does not apply on top of the 9c patch; known since the
+integration-0927 merge, see `docs/results/day_0927_plan.md`; not touched here), vision 51 passed, gurdy_perception 3
+passed / 1 skipped (rclpy). **Not run:** colcon build, the node in ROS (rclpy only in the image), Gazebo.
+
+## 9. Gazebo accuracy check (written, NOT run)
+
+Files: `scripts/object3d_gazebo_check.sh` (stack + run + score), `scripts/object3d_gazebo_check.py` (ROS runner),
+`vision/accuracy3d.py` (`plan` / `score` / `synth`, pure Python, tested).
+
+```bash
+docker ps                                                     # nothing else running (rule 8)
+docker compose run --rm -T --name gurdy3_o3d sim bash -c 'cd ~/gurdy2 && cd ros2_ws && colcon build --symlink-install && cd .. && \
+    scripts/object3d_gazebo_check.sh first red_box toolbox'   # short first run: 2 objects x 12 stops
+docker compose run --rm -T --name gurdy3_o3d sim bash -c 'cd ~/gurdy2 && scripts/object3d_gazebo_check.sh all_v1'   # 132 stops
+```
+Output `docs/results/data/phase8c/gazebo/NAME/`: `report.md`, `accuracy3d.json`, `sightings.jsonl`, `stops.json`,
+`semantic.json`, `launch.log`, `rtf.txt`, `ps_top.txt`.
+
+* **Stack:** semantic_lab headless, `controller:=tripod` standing (no /cmd_vel), `odom_tf_node` (ground-truth odom ->
+  TF), `detector_node` with `object3d:=true`, `target_frame:=odom` (no SLAM: perception error only), sightings log.
+* **Stops** (`accuracy3d.plan_stops`): 11 GT objects x {0.6, 1.0, 1.5, 2.5} m (horizontal camera lens -> object
+  centre) x bearings {-20, 0, +20} deg in the view = 132 stops, none skipped. The camera point stays fixed per (object,
+  range), and the robot turns about it. The approach direction (24 candidates) needs the robot footprint circle (0.34 m)
+  >= 5 cm clear of walls, the table, the green cylinder and all GT objects, and a clear line of sight. Of those it takes
+  the one with the most clearance.
+* **Per stop:** teleport with `gz service /world/semantic_lab/set_pose` (model `gurdy`, z 0.115, level), settle 3 s sim,
+  record 2 s sim. Then check the GT odometry over the window: xy within 5 cm and yaw within 3 deg of the plan, tilt
+  < 0.25 rad, drift < 2 cm. On failure: one retry, then the stop is marked invalid with a reason.
+* **Scoring:** sightings are matched to stops by sim time. The target is the same-class GT object nearest to the
+  estimate. Errors are computed per class x range for object3d and for the Phase 4 pixel estimate of the same box; z and
+  top only with a known top; `false top` = top claimed known but more than 3 cm off. Floor z statistics, Track3D fusion
+  per stop, and the node's final semantic map vs GT (`compare_3d`, z compared above the floor). Targets as in section 5.7.
+
+**Risks / first things to check on the first run:**
+1. Teleporting a standing hexapod with `set_pose` has never been done here. The legs may splay or it may fall; the
+   tilt check catches that. If it fails often: a higher z, or a longer settle.
+2. **odom = world after a teleport** (gz OdometryPublisher integrates pose differences) is an ASSUMPTION. The pose check
+   compares the GT odometry with the commanded world pose, so if this is wrong, every stop is invalid ("pose off plan").
+   It does not give silently wrong errors.
+3. `tf2_echo` / log-line readiness gate and `gz service` reply parsing (`data: true`) are untested.
+4. Sightings during the teleport jump (TF at the image stamp across the jump) are outside the stop windows, so the
+   per-stop numbers ignore them. The node's final semantic map may still contain them: the per-stop table is the
+   primary number.
+5. The convention checks of section 5.1 (K, z-depth, noise) come first. The fitted floor z in the report is one of them
+   (expected about -0.11).
+6. Runtime ~132 x (3 + 2) s sim + teleport overhead: about 12-15 min at RTF ~0.8 (estimate, not measured).
+
+**Open after this step:** colcon build + node smoke test, the Gazebo run above, covariance calibration from it, a
+`box` size estimate in the JSON (now nominal only), multi-view planning for face-on boxes, the depth-noise model edit
+(robot model).

@@ -386,6 +386,17 @@ closer than d_safe to the footprint. Results: docs/results/phase8b_safety_shield
 
 ---
 
+## Phase 8c — 3D object positions from the depth camera (picking prep)
+Box + all depth pixels -> 3D centre, top, height, yaw, covariance; Track3D fusion. Plan and results: docs/results/phase8c_plan.md.
+- [x] Offline code + tests (`gurdy_core/vision/object3d.py`, `transforms.py`, `synth_depth.py`), synthetic eval, 3D GT for semantic_lab (2026-11-26)
+- [x] Wired into `detector_node` / `SemanticMap` behind `position_method:=object3d` (launch `object3d:=false` default), fitted floor plane (prior z -0.11 m), size-adaptive `box` fit, 3D fields in the semantic map JSON; host-venv tests (2026-11-27, branch `phase8c-wire`)
+- [x] Gazebo accuracy-check script (teleport stops 0.6 / 1.0 / 1.5 / 2.5 m x 3 bearings, scorer vs 3D GT) — written, not run
+- [ ] colcon build + node smoke test in the ROS image
+- [ ] Gazebo convention checks (K, z-depth, floor z, noise) + the accuracy run; calibrate the covariance
+- [ ] Depth-noise model in the gz sensor (robot model)
+
+---
+
 ## Phase 8 — Air-ground team (planned, not started)
 A simulated drone scouts from above, maps, detects objects and sends goals to one or more hexapods;
 the LLM brain commands the whole team through tools. Builds on Phases 3–7 (map, Nav2, YOLO, Brain,
