@@ -5,6 +5,7 @@ masses and inertias, limits/dynamics, mount poses, one-sided knees and
 forward kinematics (chaining the URDF transforms must match gurdy_core.leg_fk => axis signs right).
 Run:  colcon test --packages-select gurdy_description   or   python3 -m pytest test/
 """
+import shutil
 import subprocess
 import sys
 import xml.etree.ElementTree as ET
@@ -61,6 +62,7 @@ def _inertia_diag(link):
 
 
 # ------------------------------------------------------------------ structure
+@pytest.mark.skipif(shutil.which("check_urdf") is None, reason="check_urdf not installed (apt liburdfdom-tools; in the ROS image and in CI)")
 def test_check_urdf_passes(urdf_text, tmp_path):
     f = tmp_path / "gurdy.urdf"
     f.write_text(urdf_text)
