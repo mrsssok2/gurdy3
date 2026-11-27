@@ -281,9 +281,9 @@ case, tilt error, cylinder + ray classes, floor-only box, 4 robot poses, semanti
 pixel fallback does not move a 3D track, truncated weight, merge, chi2 rejection), `ros2_ws/src/gurdy_perception/test`
 (+2: default stays `pixel`, barrel pipeline through locate + SemanticMap), `vision/tests/test_accuracy3d.py` (5: plan
 geometry / clearance / bearing sign, obstacle list, scorer on a synthetic run in the node's log format, semantic-map
-comparison above the floor, synthetic dry run). Whole suites: gurdy_core 258 passed / 2 skipped / **1 failed** =
-`test_scan_timing.py::test_patch_applies_to_main` (the 9f patch does not apply on top of the 9c patch; known since the
-integration-0927 merge, see `docs/results/day_0927_plan.md`; not touched here), vision 51 passed, gurdy_perception 3
+comparison above the floor, synthetic dry run). Whole suites: gurdy_core 258 passed / 2 skipped / 1 failed at the time of the
+wiring commit (`test_scan_timing.py::test_patch_applies_to_main`: the 9f patch did not apply on top of the 9c patch;
+fixed later the same day by regenerating the patch, now 260 passed / 2 skipped), vision 51 passed, gurdy_perception 3
 passed / 1 skipped (rclpy). **Not run:** colcon build, the node in ROS (rclpy only in the image), Gazebo.
 
 ## 9. Gazebo accuracy check (written, NOT run)
