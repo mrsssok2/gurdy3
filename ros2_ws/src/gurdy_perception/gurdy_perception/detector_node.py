@@ -40,7 +40,7 @@ from tf2_ros import Buffer, TransformListener
 from visualization_msgs.msg import Marker, MarkerArray
 from vision_msgs.msg import Detection3D, Detection3DArray, ObjectHypothesisWithPose
 
-from gurdy_core.vision.classes import COLORS, SIZE_PRIOR, radius_prior
+from gurdy_core.vision.classes import COLORS_ALL as COLORS, SIZE_PRIOR_ALL as SIZE_PRIOR, radius_prior
 from gurdy_core.vision.colors import color_name
 from gurdy_core.vision.detector import OnnxDetector
 from gurdy_core.vision.geometry import (K_from_camera_info, backproject, box_depth, surface_to_centre, transform_point, truncation_flags,
@@ -50,7 +50,7 @@ from gurdy_core.vision.object3d import Object3DParams
 from gurdy_core.vision.transforms import R_to_quat, T_from_tq
 from gurdy_core.vision.semantic_map import SemanticMap
 
-DEFAULT_MODEL = "det_v2_s.onnx"
+DEFAULT_MODEL = "det_v3_s.onnx"   # 12 classes (Phase 9b, 2026-11-27); rollback: model:=det_v2_s.onnx (7 classes, names follow the ONNX)
 
 
 def image_to_numpy(m: Image) -> np.ndarray:

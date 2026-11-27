@@ -101,7 +101,7 @@ def generate_launch_description():
            DeclareLaunchArgument("map", default_value="", description="localization: map yaml or name in maps/"),
            OpaqueFunction(function=_nav_setup),
            DeclareLaunchArgument("perception", default_value="false", description="Phase 4: detector + semantic map (camera on)"),
-           DeclareLaunchArgument("detector_model", default_value="", description="ONNX in models/detector/ (default det_v2_s.onnx)"),
+           DeclareLaunchArgument("detector_model", default_value="", description="ONNX in models/detector/ (default det_v3_s.onnx; rollback det_v2_s.onnx)"),
            DeclareLaunchArgument("detector_log", default_value="", description="JSON-lines log of every detector sighting"),
            DeclareLaunchArgument("object3d", default_value="false",
                                  description="Phase 8c: detector positions from all box depth pixels + floor fit + shape fit (default: Phase 4 pixel method)"),

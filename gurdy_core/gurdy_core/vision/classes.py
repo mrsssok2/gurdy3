@@ -33,7 +33,7 @@ COLORS = {  # RGB 0..1 for RViz markers
 
 def radius_prior(name: str) -> float:
     """Half of the smaller horizontal extent: how far behind the visible surface the object centre is."""
-    w, d, _ = SIZE_PRIOR[name]
+    w, d, _ = size_prior(name)
     return 0.5 * min(w, d)
 
 
@@ -62,3 +62,20 @@ SIZE_PRIOR_SMALL = {   # (w, d, h) m, = vision/small_objects.py CATALOG (tested)
     "small_box": (0.05, 0.05, 0.05), "mini_toolbox": (0.12, 0.05, 0.095), "can": (0.066, 0.066, 0.12),
     "mini_cone": (0.08, 0.08, 0.10), "mini_extinguisher": (0.05, 0.05, 0.15),
 }
+SIZE_PRIOR_ALL = {**SIZE_PRIOR, **SIZE_PRIOR_SMALL}
+COLORS_SMALL = {"small_box": (0.85, 0.25, 0.25), "mini_toolbox": (0.95, 0.65, 0.10), "can": (0.60, 0.60, 0.65),
+                "mini_cone": (1.00, 0.55, 0.20), "mini_extinguisher": (0.85, 0.05, 0.05)}
+COLORS_ALL = {**COLORS, **COLORS_SMALL}
+
+
+def size_prior(name: str) -> tuple:
+    """(w, d, h) for any class of CLASSES_V3 (old + small)."""
+    return SIZE_PRIOR_ALL[name]
+
+
+def names_for_outputs(n_channels: int) -> tuple:
+    """Class names from the ONNX output width (4 box values + one score per class): det_v2_s -> CLASSES, det_v3_s -> CLASSES_V3."""
+    for names in (CLASSES, CLASSES_V3):
+        if n_channels == 4 + len(names):
+            return names
+    raise ValueError(f"no class list with {n_channels - 4} classes")

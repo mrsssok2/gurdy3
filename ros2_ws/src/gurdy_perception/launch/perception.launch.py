@@ -1,6 +1,6 @@
 """Detector + semantic map (needs the camera: sim with sensors:=true, and TF to the target frame).
 
-    ros2 launch gurdy_perception perception.launch.py model:=det_v2_s.onnx
+    ros2 launch gurdy_perception perception.launch.py model:=det_v3_s.onnx      (default; rollback: model:=det_v2_s.onnx)
     ros2 launch gurdy_bringup sim.launch.py nav:=slam world:=semantic_lab perception:=true
 """
 from launch import LaunchDescription

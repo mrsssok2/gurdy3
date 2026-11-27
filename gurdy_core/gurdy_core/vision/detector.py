@@ -11,7 +11,7 @@ from dataclasses import dataclass
 import numpy as np
 from PIL import Image
 
-from .classes import CLASSES
+from .classes import CLASSES, names_for_outputs
 
 
 @dataclass
@@ -95,7 +95,8 @@ def decode_yolo(out: np.ndarray, scale: float, pad: tuple, orig_hw: tuple, conf_
 class OnnxDetector:
     """providers='auto' -> CUDA if onnxruntime-gpu offers it, else CPU. `provider` tells which one is active."""
 
-    def __init__(self, path: str, providers: str = "auto", conf=0.35, iou=0.5, names=CLASSES, threads: int = 2):
+    def __init__(self, path: str, providers: str = "auto", conf=0.35, iou=0.5, names=None, threads: int = 2):
+        """names=None: class list from the model's output width (7 classes -> CLASSES, 12 -> CLASSES_V3)."""
         import onnxruntime as ort
         avail = ort.get_available_providers()
         if providers == "auto":
@@ -110,7 +111,10 @@ class OnnxDetector:
         self.input_name = inp.name
         h, w = inp.shape[2], inp.shape[3]
         self.hw = (h if isinstance(h, int) else 256, w if isinstance(w, int) else 320)
-        self.conf, self.iou, self.names = conf, iou, names
+        if names is None:
+            oshape = self.sess.get_outputs()[0].shape            # (1, 4+nc, N)
+            names = names_for_outputs(min(d for d in oshape[1:] if isinstance(d, int)))
+        self.conf, self.iou, self.names = conf, iou, tuple(names)
 
     def __call__(self, rgb: np.ndarray) -> list:
         x, s, pad = preprocess(rgb, self.hw)
