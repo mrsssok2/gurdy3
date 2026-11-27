@@ -1,0 +1,229 @@
+<?xml version="1.0"?>
+<!-- Phase 9a DESIGN: 5-DOF arm + parallel gripper + wrist RGB-D camera. ALL numbers from config/arm.yaml.
+     Used ONLY through gurdy_with_arm.urdf.xacro with arm:=true; the default robot (gurdy.urdf.xacro) is unchanged.
+     Inertias are computed from the shapes (box formula; links with a servo at their end use the combined CoM and the
+     box inertia of the whole link about it: an approximation, documented in docs/results/phase9a_arm_plan.md).
+     Checked offline by gurdy_core/tests/test_arm.py (expands this file with xacro, compares with gurdy_core.arm). -->
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="arm_box_inertial" params="m sx sy sz cx:=0 cy:=0 cz:=0">
+    <inertial>
+      <origin xyz="${cx} ${cy} ${cz}" rpy="0 0 0"/>
+      <mass value="${m}"/>
+      <inertia ixx="${m/12.0*(sy**2+sz**2)}" ixy="0" ixz="0" iyy="${m/12.0*(sx**2+sz**2)}" iyz="0" izz="${m/12.0*(sx**2+sy**2)}"/>
+    </inertial>
+  </xacro:macro>
+
+  <!-- Phase 9e: collision-only PROXY links on coxa / femur / tibia (the leg links themselves carry only visuals, plus the foot
+       sphere). Only for the robot_description given to MoveIt (gurdy_with_arm.urdf.xacro moveit_collision:=true), so the arm
+       planner can see the legs; Gazebo spawns without them (its contact physics stay unchanged). Sizes from robot.yaml + pad. -->
+  <xacro:macro name="leg_collision_proxies" params="cfg pad:=0.005">
+    <xacro:property name="sg" value="${cfg['legs']['segments']}"/>
+    <xacro:macro name="proxy" params="leg seg sx sy sz">
+      <joint name="${leg}_${seg}_proxy_joint" type="fixed">
+        <parent link="${leg}_${seg}"/>
+        <child link="${leg}_${seg}_proxy"/>
+        <origin xyz="${sx/2} 0 0"/>
+      </joint>
+      <link name="${leg}_${seg}_proxy">
+        <collision><geometry><box size="${sx + 2*pad} ${sy + 2*pad} ${sz + 2*pad}"/></geometry></collision>
+      </link>
+    </xacro:macro>
+    <xacro:macro name="leg_proxies" params="leg">
+      <xacro:proxy leg="${leg}" seg="coxa" sx="${sg['coxa']['length']}" sy="${sg['coxa']['size_yz'][0]}" sz="${sg['coxa']['size_yz'][1]}"/>
+      <xacro:proxy leg="${leg}" seg="femur" sx="${sg['femur']['length']}" sy="${sg['femur']['size_yz'][0]}" sz="${sg['femur']['size_yz'][1]}"/>
+      <xacro:proxy leg="${leg}" seg="tibia" sx="${sg['tibia']['length']}" sy="${2*sg['tibia']['radius']}" sz="${2*sg['tibia']['radius']}"/>
+    </xacro:macro>
+    <xacro:leg_proxies leg="lf"/><xacro:leg_proxies leg="lm"/><xacro:leg_proxies leg="lr"/>
+    <xacro:leg_proxies leg="rf"/><xacro:leg_proxies leg="rm"/><xacro:leg_proxies leg="rr"/>
+  </xacro:macro>
+
+  <xacro:macro name="gurdy_arm" params="parent arm_yaml sim_gazebo:=false fallback_model:=''">
+    <xacro:property name="A" value="${xacro.load_yaml(arm_yaml)}"/>
+    <xacro:property name="mt" value="${A['mount']}"/>
+    <xacro:property name="J" value="${A['joints']}"/>
+    <xacro:property name="Lk" value="${A['links']}"/>
+    <xacro:property name="bh" value="${mt['base']['size'][2]}"/>
+    <xacro:property name="L1" value="${Lk['upper_arm']['length']}"/>
+    <xacro:property name="L2" value="${Lk['forearm']['length']}"/>
+    <xacro:property name="Lw" value="${Lk['wrist']['length']}"/>
+    <xacro:property name="Lp" value="${Lk['palm']['length']}"/>
+    <xacro:property name="Lf" value="${Lk['finger']['length']}"/>
+
+    <material name="arm_white"><color rgba="0.85 0.85 0.85 1"/></material>
+    <material name="arm_dark"><color rgba="0.12 0.12 0.14 1"/></material>
+
+    <xacro:macro name="rev" params="name parent child xyz axis rpy:='0 0 0'">
+      <joint name="${name}" type="revolute">
+        <parent link="${parent}"/>
+        <child link="${child}"/>
+        <origin xyz="${xyz}" rpy="${rpy}"/>
+        <axis xyz="${axis}"/>
+        <limit lower="${J[name]['lower']}" upper="${J[name]['upper']}" effort="${J[name]['effort']}" velocity="${J[name]['velocity']}"/>
+        <dynamics damping="${J['damping']}"/>
+      </joint>
+    </xacro:macro>
+
+    <!-- mount: yaw-servo body fixed on the body top (rear), turned 180 deg -->
+    <joint name="arm_mount_joint" type="fixed">
+      <parent link="${parent}"/>
+      <child link="arm_mount_link"/>
+      <origin xyz="${mt['xyz'][0]} ${mt['xyz'][1]} ${mt['xyz'][2]}" rpy="0 0 ${mt['yaw']}"/>
+    </joint>
+    <link name="arm_mount_link">
+      <xacro:property name="bs" value="${mt['base']['size']}"/>
+      <visual><origin xyz="0 0 ${bh/2}"/><geometry><box size="${bs[0]} ${bs[1]} ${bs[2]}"/></geometry><material name="arm_dark"/></visual>
+      <collision><origin xyz="0 0 ${bh/2}"/><geometry><box size="${bs[0]} ${bs[1]} ${bs[2]}"/></geometry></collision>
+      <xacro:arm_box_inertial m="${mt['base']['mass']}" sx="${bs[0]}" sy="${bs[1]}" sz="${bs[2]}" cz="${bh/2}"/>
+    </link>
+
+    <!-- turret (rotates with arm_yaw): shoulder servo + bracket, centred on the shoulder axis -->
+    <xacro:rev name="arm_yaw" parent="arm_mount_link" child="arm_turret_link" xyz="0 0 ${bh}" axis="0 0 1"/>
+    <link name="arm_turret_link">
+      <xacro:property name="ts" value="${Lk['turret']['size']}"/>
+      <xacro:property name="sh" value="${Lk['turret']['shoulder_h']}"/>
+      <visual><origin xyz="0 0 ${sh}"/><geometry><box size="${ts[0]} ${ts[1]} ${ts[2]}"/></geometry><material name="arm_dark"/></visual>
+      <collision><origin xyz="0 0 ${sh}"/><geometry><box size="${ts[0]} ${ts[1]} ${ts[2]}"/></geometry></collision>
+      <xacro:arm_box_inertial m="${Lk['turret']['mass']}" sx="${ts[0]}" sy="${ts[1]}" sz="${ts[2]}" cz="${sh}"/>
+    </link>
+
+    <!-- tube links along +x with a servo mass at the far end (combined CoM) -->
+    <xacro:macro name="tube_link" params="name spec">
+      <xacro:property name="L" value="${spec['length']}"/>
+      <xacro:property name="m" value="${spec['mass'] + spec['end_mass']}"/>
+      <xacro:property name="cx" value="${(spec['mass']*L/2 + spec['end_mass']*L) / m}"/>
+      <link name="${name}">
+        <visual><origin xyz="${L/2} 0 0"/><geometry><box size="${L} ${spec['size_yz'][0]} ${spec['size_yz'][1]}"/></geometry><material name="arm_white"/></visual>
+        <collision><origin xyz="${L/2} 0 0"/><geometry><box size="${L} ${spec['size_yz'][0]} ${spec['size_yz'][1]}"/></geometry></collision>
+        <xacro:arm_box_inertial m="${m}" sx="${L}" sy="${spec['size_yz'][0]}" sz="${spec['size_yz'][1]}" cx="${cx}"/>
+      </link>
+    </xacro:macro>
+
+    <!-- pitch joints: axis -y so that + raises the next link (+x -> +z) -->
+    <xacro:rev name="arm_shoulder" parent="arm_turret_link" child="arm_upper_arm_link" xyz="0 0 ${Lk['turret']['shoulder_h']}" axis="0 -1 0"/>
+    <xacro:tube_link name="arm_upper_arm_link" spec="${Lk['upper_arm']}"/>
+    <xacro:rev name="arm_elbow" parent="arm_upper_arm_link" child="arm_forearm_link" xyz="${L1} 0 0" axis="0 -1 0"/>
+    <xacro:tube_link name="arm_forearm_link" spec="${Lk['forearm']}"/>
+    <xacro:rev name="arm_wrist_pitch" parent="arm_forearm_link" child="arm_wrist_link" xyz="${L2} 0 0" axis="0 -1 0"/>
+    <link name="arm_wrist_link">
+      <xacro:property name="ws" value="${Lk['wrist']['size']}"/>
+      <visual><origin xyz="${Lw/2} 0 0"/><geometry><box size="${ws[0]} ${ws[1]} ${ws[2]}"/></geometry><material name="arm_dark"/></visual>
+      <collision><origin xyz="${Lw/2} 0 0"/><geometry><box size="${ws[0]} ${ws[1]} ${ws[2]}"/></geometry></collision>
+      <xacro:arm_box_inertial m="${Lk['wrist']['mass']}" sx="${ws[0]}" sy="${ws[1]}" sz="${ws[2]}" cx="${Lw/2}"/>
+    </link>
+    <xacro:rev name="arm_wrist_roll" parent="arm_wrist_link" child="arm_palm_link" xyz="${Lw} 0 0" axis="1 0 0"/>
+    <link name="arm_palm_link">
+      <xacro:property name="ps" value="${Lk['palm']['size']}"/>
+      <visual><origin xyz="${Lp/2} 0 0"/><geometry><box size="${ps[0]} ${ps[1]} ${ps[2]}"/></geometry><material name="arm_dark"/></visual>
+      <collision><origin xyz="${Lp/2} 0 0"/><geometry><box size="${ps[0]} ${ps[1]} ${ps[2]}"/></geometry></collision>
+      <xacro:arm_box_inertial m="${Lk['palm']['mass']}" sx="${ps[0]}" sy="${ps[1]}" sz="${ps[2]}" cx="${Lp/2}"/>
+    </link>
+
+    <!-- two independent prismatic fingers (same command to both; no mimic joint needed in Gazebo) -->
+    <xacro:macro name="finger" params="side sign">
+      <joint name="arm_finger_${side}_joint" type="prismatic">
+        <parent link="arm_palm_link"/>
+        <child link="arm_finger_${side}_link"/>
+        <origin xyz="${Lp} 0 0"/>
+        <axis xyz="0 ${sign} 0"/>
+        <limit lower="${J['gripper_finger']['lower']}" upper="${J['gripper_finger']['upper']}"
+               effort="${J['gripper_finger']['effort']}" velocity="${J['gripper_finger']['velocity']}"/>
+        <dynamics damping="0.5"/>
+      </joint>
+      <xacro:property name="fs" value="${Lk['finger']['size']}"/>
+      <link name="arm_finger_${side}_link">
+        <visual><origin xyz="${Lf/2} ${sign*fs[1]/2} 0"/><geometry><box size="${fs[0]} ${fs[1]} ${fs[2]}"/></geometry><material name="arm_white"/></visual>
+        <collision><origin xyz="${Lf/2} ${sign*fs[1]/2} 0"/><geometry><box size="${fs[0]} ${fs[1]} ${fs[2]}"/></geometry></collision>
+        <xacro:arm_box_inertial m="${Lk['finger']['mass']}" sx="${fs[0]}" sy="${fs[1]}" sz="${fs[2]}" cx="${Lf/2}" cy="${sign*fs[1]/2}"/>
+      </link>
+      <xacro:if value="${sim_gazebo}">
+        <gazebo reference="arm_finger_${side}_link">
+          <mu1>${Lk['finger']['friction']}</mu1>
+          <mu2>${Lk['finger']['friction']}</mu2>
+        </gazebo>
+      </xacro:if>
+    </xacro:macro>
+    <xacro:finger side="left" sign="1"/>
+    <xacro:finger side="right" sign="-1"/>
+
+    <!-- tool frame for MoveIt / IK: the grasp centre between the fingers -->
+    <joint name="arm_grasp_joint" type="fixed">
+      <parent link="arm_palm_link"/>
+      <child link="arm_grasp_link"/>
+      <origin xyz="${Lp + Lf - Lk['grasp_offset']} 0 0"/>
+    </joint>
+    <link name="arm_grasp_link"/>
+
+    <!-- wrist RGB-D camera on the palm, looking along the approach axis (+x of the palm) -->
+    <xacro:property name="wc" value="${A['wrist_camera']}"/>
+    <joint name="wrist_camera_joint" type="fixed">
+      <parent link="arm_palm_link"/>
+      <child link="wrist_camera_link"/>
+      <origin xyz="${wc['pos'][0]} ${wc['pos'][1]} ${wc['pos'][2]}" rpy="0 ${wc['pitch_down']} 0"/>
+    </joint>
+    <link name="wrist_camera_link">
+      <visual><geometry><box size="0.012 0.04 0.014"/></geometry><material name="arm_dark"/></visual>
+    </link>
+    <joint name="wrist_camera_optical_joint" type="fixed">
+      <parent link="wrist_camera_link"/>
+      <child link="wrist_camera_optical_frame"/>
+      <origin xyz="0 0 0" rpy="${-pi/2} 0 ${-pi/2}"/>
+    </joint>
+    <link name="wrist_camera_optical_frame"/>
+
+    <xacro:if value="${sim_gazebo}">
+      <!-- second ros2_control hardware block (gz_ros2_control loads every <ros2_control> tag: TO VERIFY in Gazebo) -->
+      <ros2_control name="GurdyArmSystem" type="system">
+        <hardware><plugin>gz_ros2_control/GazeboSimSystem</plugin></hardware>
+        <xacro:macro name="arm_ctrl" params="name">
+          <joint name="${name}">
+            <command_interface name="position"/>
+            <state_interface name="position"><param name="initial_value">${A['poses']['folded'][['arm_yaw','arm_shoulder','arm_elbow','arm_wrist_pitch','arm_wrist_roll'].index(name)]}</param></state_interface>
+            <state_interface name="velocity"/>
+            <state_interface name="effort"/>
+          </joint>
+        </xacro:macro>
+        <xacro:arm_ctrl name="arm_yaw"/>
+        <xacro:arm_ctrl name="arm_shoulder"/>
+        <xacro:arm_ctrl name="arm_elbow"/>
+        <xacro:arm_ctrl name="arm_wrist_pitch"/>
+        <xacro:arm_ctrl name="arm_wrist_roll"/>
+        <joint name="arm_finger_left_joint"><command_interface name="effort"/><state_interface name="position"/><state_interface name="velocity"/></joint>
+        <joint name="arm_finger_right_joint"><command_interface name="effort"/><state_interface name="position"/><state_interface name="velocity"/></joint>
+      </ros2_control>
+
+      <gazebo reference="wrist_camera_link">
+        <sensor name="wrist_camera" type="rgbd_camera">
+          <gz_frame_id>wrist_camera_optical_frame</gz_frame_id>
+          <topic>/wrist_camera</topic>
+          <update_rate>${wc['rate_hz']}</update_rate>
+          <always_on>true</always_on>
+          <!-- renders only when triggered (picking); gz-sensors triggered camera: TO VERIFY for rgbd_camera -->
+          <xacro:if value="${wc['triggered']}"><triggered>true</triggered><trigger_topic>/wrist_camera/trigger</trigger_topic></xacro:if>
+          <camera>
+            <horizontal_fov>${wc['hfov']}</horizontal_fov>
+            <image><width>${wc['width']}</width><height>${wc['height']}</height><format>R8G8B8</format></image>
+            <clip><near>${wc['range'][0]}</near><far>${wc['range'][1]}</far></clip>
+            <depth_camera><clip><near>${wc['range'][0]}</near><far>${wc['range'][1]}</far></clip></depth_camera>
+            <noise><type>gaussian</type><mean>0</mean><stddev>${wc['depth_noise']}</stddev></noise>
+          </camera>
+        </sensor>
+      </gazebo>
+
+      <!-- FALLBACK ONLY (clearly labelled in every result): attach one named object model to the palm on command
+           (gz DetachableJoint). Off unless fallback_model is given. Real contact grasping is the default. -->
+      <xacro:if value="${fallback_model != ''}">
+        <gazebo>
+          <plugin filename="gz-sim-detachable-joint-system" name="gz::sim::systems::DetachableJoint">
+            <parent_link>arm_palm_link</parent_link>
+            <child_model>${fallback_model}</child_model>
+            <child_link>link</child_link>
+            <attach_topic>/arm/fallback/attach</attach_topic>
+            <detach_topic>/arm/fallback/detach</detach_topic>
+            <suppress_child_warning>true</suppress_child_warning>
+          </plugin>
+        </gazebo>
+      </xacro:if>
+    </xacro:if>
+  </xacro:macro>
+</robot>

@@ -1,0 +1,63 @@
+# Phase 9a: 5-DOF arm + parallel gripper + wrist RGB-D camera for Gurdy (DESIGN, not built; sim only).
+# Read by urdf/gurdy_arm.xacro (only with gurdy_with_arm.urdf.xacro arm:=true) and gurdy_core.arm (offline checks).
+# robot.yaml (the walking robot) is NOT changed. Units SI. Inertias are computed from these shapes (never typed).
+#
+# Frames: the arm mount sits on the body top, REAR (x = -0.10), and is turned 180 deg: arm +x points backward, so the
+# arm picks objects BEHIND the robot (behind the rear legs; the robot turns round and backs up to the object) and folds
+# FORWARD over the body. The yaw-servo base is the only part that crosses the lidar plane (rear sector).
+#
+# Servo classes (hobby, metal gear, ~6 V; masses / torques are datasheet-class values, NOT measured):
+#   MG90S 13.4 g 0.22 N·m | MG92B 13.8 g 0.34 N·m | MG996R 55 g 0.92 N·m | SG90 9 g 0.18 N·m
+
+mount:
+  xyz: [-0.10, 0.0, 0.03]          # on the body top (body half height 0.03), rear
+  yaw: 3.141593                    # arm +x = body -x (backward)
+  base:  {size: [0.04, 0.03, 0.025], mass: 0.014}    # yaw servo body (MG90S) fixed to the body
+
+joints:
+  # name: axis in the arm frame; limits rad (m for fingers); effort N·m (N for fingers); velocity rad/s (m/s)
+  arm_yaw:        {lower: -1.57, upper: 1.57, effort: 0.22, velocity: 5.0, servo: MG90S}    # 0 = straight back
+  arm_shoulder:   {lower: -0.55, upper: 2.59, effort: 0.92, velocity: 4.0, servo: MG996R}   # + = upper arm up (from horizontal)
+  arm_elbow:      {lower: -2.80, upper: 0.34, effort: 0.34, velocity: 5.0, servo: MG92B}    # + = forearm up (relative)
+  arm_wrist_pitch: {lower: -1.25, upper: 1.89, effort: 0.18, velocity: 6.0, servo: SG90}    # + = gripper up (relative)
+  arm_wrist_roll: {lower: -1.57, upper: 1.57, effort: 0.18, velocity: 6.0, servo: SG90}     # about the approach axis
+  gripper_finger: {lower: 0.0,   upper: 0.04, effort: 10.0, velocity: 0.05, servo: SG90}    # each finger, opening = 2x
+  damping: 0.05                    # N·m·s/rad (small; servo back-EMF, like the legs' 0.42 scaled to the smaller servos)
+
+links:
+  # yaw joint at the top of the base; shoulder axis `shoulder_h` above the yaw joint
+  turret:    {size: [0.040, 0.054, 0.040], mass: 0.065, shoulder_h: 0.025}   # shoulder servo (MG996R) + bracket
+  upper_arm: {length: 0.12, size_yz: [0.030, 0.020], mass: 0.015, end_mass: 0.014}   # tube + elbow servo at its end
+  forearm:   {length: 0.12, size_yz: [0.024, 0.018], mass: 0.010, end_mass: 0.009}   # tube + wrist-pitch servo at its end
+  wrist:     {length: 0.030, size: [0.030, 0.030, 0.024], mass: 0.015}             # wrist-roll servo + bracket
+  palm:      {length: 0.035, size: [0.035, 0.070, 0.030], mass: 0.045}             # gripper servo + rack + camera
+  finger:    {length: 0.040, size: [0.040, 0.008, 0.012], mass: 0.005, friction: 1.0}   # each of 2
+  grasp_offset: 0.020              # grasp centre this far back from the finger tips (palm length + finger length - this)
+
+wrist_camera:
+  # small RGB-D module on top of the palm, looking along the approach axis (gripper +x)
+  pos: [0.010, 0.0, 0.022]         # in the palm frame (roll axis origin)
+  pitch_down: 0.0
+  width: 320
+  height: 240
+  rate_hz: 10
+  hfov: 1.2
+  range: [0.07, 1.0]
+  depth_noise: 0.002               # m stddev (to verify that gz applies it to the depth image)
+  triggered: true                  # renders only while picking (trigger topic), see docs/results/phase9a_arm_plan.md
+
+payload:
+  max_kg: 0.08                     # design limit for picked objects: elbow (MG92B class) <= 80 % of rated torque in every
+                                   # feasible grasp pose; 0.10 kg needed 0.274 N·m (> 0.272). Arm 0.197 + 0.08 = 0.277 kg
+  max_width: 0.07                  # gripper opening 0.08 minus 1 cm margin
+
+poses:                             # named joint states (rad): yaw, shoulder, elbow, wrist_pitch, wrist_roll
+  folded: [0.0, 2.475, 0.225, 1.725, 0.0]   # folded FORWARD over the body (gurdy_core.arm.search_folded: lowest CoM with
+                                             # xy offset <= 1 cm and >= 0.1 rad from every limit); carried object above
+                                             # the front of the body at z ~0.12; all arm parts >= 4 cm above the lidar plane
+  ready:  [0.0, 1.20, -1.60, -1.00, 0.0]     # pre-grasp, camera looking down behind the robot
+  servo_view: [0.0, 1.95, -1.95, -1.15, 0.0]  # Phase 9e final approach: wrist camera 0.27 m above the floor, 66 deg down,
+                                             # view centre 0.335 m behind base_link (highest such pose with >= 0.1 rad limit
+                                             # margin and >= 1.5 cm clearance; the `ready` view at 0.22 m was too close for tall objects)
+  servo_view_far: [0.0, 1.80, -1.625, -1.15, 0.0]  # same for the side-grasp classes (zone 0.35 m behind): camera 0.31 m up,
+                                             # 56 deg down, view centre 0.44 m behind (a 15 cm object's top face stays in the image)

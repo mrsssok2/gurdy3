@@ -36,6 +36,9 @@ def main():
     ap.add_argument("--scale", type=int, default=2)
     a = ap.parse_args()
     data = Path(a.data)
+    global CLASSES
+    if (data / "classes.json").exists():               # Phase 9b v3 datasets carry their 12 class names
+        CLASSES = tuple(json.loads((data / "classes.json").read_text()))
     rep, items, wh = {"splits": {}}, [], []                     # items: (split, name, [(c, x1, y1, x2, y2) px])
     invalid, dup, border, per_cls_h = [], 0, 0, {c: [] for c in CLASSES}
     for split in ("train", "val", "test"):

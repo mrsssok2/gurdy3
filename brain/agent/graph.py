@@ -496,6 +496,8 @@ class Agent:
         if fast and self.gate.pending is None:
             text, speed_note = clean, [untrusted.speed_note(untrusted.configured_max_speed())]
             s = {**s, "utterance": text}
+        if self.gate.pending is None and (fr := self._fetch_route(text)) is not None:
+            return fr
         if self.gate.pending is None and (inc := self._incident_route(text)) is not None:
             return inc
         if is_stop_why(text) and (why := self._stop_explanation()):
@@ -540,6 +542,22 @@ class Agent:
             msg = f"I can't do that. I don't know what a {noun} is, and I have not seen one."
             return {"reply_parts": [msg], "next": "finish", "verdicts": [{"outcome": "none", "rule": "unknown_noun"}]}
         return {"next": "plan", "utterance": text, "notes": speed_note}
+
+    # ---- fetch commands (Phase 9d): routed without the planner, executed by brain.fetch's state machine, template replies
+    def _fetch_route(self, text: str) -> dict | None:
+        fs = getattr(self.layer.backend, "fetch_session", None)
+        if fs is None:
+            return None                                       # no arm / fetch backend: the planner handles the text as before
+        try:
+            reply = fs.handle(text)
+        except Exception as e:                                # noqa: BLE001  (a fetch bug must not take the agent down)
+            self.errors.append(f"fetch route failed: {e}")
+            return {"reply_parts": ["Something went wrong with that fetch request."], "next": "finish",
+                    "verdicts": [{"outcome": "none", "rule": "fetch_error"}]}
+        if reply is None:
+            return None
+        return {"reply_parts": [reply], "next": "finish", "calls": list(fs.calls), "has_query": False,
+                "verdicts": [{"outcome": "none", "rule": "fetch"}]}
 
     # ---- incident questions (temporal memory): routed without the planner, answered from the graph, grounded
     def _incident_route(self, text: str) -> dict | None:

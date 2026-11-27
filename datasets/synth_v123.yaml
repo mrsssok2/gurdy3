@@ -1,0 +1,19 @@
+# Phase 9b (NOT rendered yet): v1 + v2 (7 old classes) + v3_body + v3_wrist (5 small pickable classes added).
+# Old label ids 0-6 are unchanged, so the v1 / v2 label files are reused as they are. Test splits stay separate:
+# evaluate on synth_v1 / synth_v2 test (old classes: regression guard) and synth_v3_body / synth_v3_wrist test.
+path: /home/ubuntu/gurdy2/datasets
+train: [synth_v1/images/train, synth_v2/images/train, synth_v3_body/images/train, synth_v3_wrist/images/train]
+val: [synth_v1/images/val, synth_v2/images/val, synth_v3_body/images/val, synth_v3_wrist/images/val]
+names:
+  0: box
+  1: barrel
+  2: fire_extinguisher
+  3: traffic_cone
+  4: toolbox
+  5: mannequin
+  6: chair
+  7: small_box
+  8: mini_toolbox
+  9: can
+  10: mini_cone
+  11: mini_extinguisher
