@@ -39,7 +39,7 @@ def test_footprint_contains_feet_and_body(robot):
     hull = fp._hull(poly)
     for p in list(fp.foot_points_body(robot)) + [(0.15, 0.09), (-0.15, -0.09)]:
         # point inside convex CCW polygon: cross products all >= 0
-        c = [np.cross(hull[(i + 1) % len(hull)] - hull[i], p - hull[i]) for i in range(len(hull))]
+        c = [fp.cross2(hull[(i + 1) % len(hull)] - hull[i], p - hull[i]) for i in range(len(hull))]
         assert min(c) >= -1e-9, p
     assert 0.25 < fp.max_extent(poly.tolist()) < 0.45
 

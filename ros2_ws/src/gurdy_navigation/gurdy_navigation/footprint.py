@@ -25,6 +25,11 @@ def foot_points_body(robot) -> np.ndarray:
     return np.array(pts)
 
 
+def cross2(a, b) -> float:
+    """z of the 2-D cross product a x b (np.cross on 2-vectors was removed in numpy 2)."""
+    return float(a[0] * b[1] - a[1] * b[0])
+
+
 def _hull(points: np.ndarray) -> np.ndarray:
     """Convex hull (Andrew monotone chain), counter-clockwise."""
     pts = sorted(map(tuple, np.round(points, 6)))
@@ -32,7 +37,7 @@ def _hull(points: np.ndarray) -> np.ndarray:
     def half(seq):
         out = []
         for p in seq:
-            while len(out) >= 2 and np.cross(np.subtract(out[-1], out[-2]), np.subtract(p, out[-2])) <= 0:
+            while len(out) >= 2 and cross2(np.subtract(out[-1], out[-2]), np.subtract(p, out[-2])) <= 0:
                 out.pop()
             out.append(p)
         return out

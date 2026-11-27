@@ -45,9 +45,7 @@ def test_scan_to_points_drops_invalid_returns():
 
 
 def test_footprint_matches_robot_yaml():
-    np = pytest.importorskip("numpy")
-    if int(np.__version__.split(".")[0]) >= 2:
-        pytest.skip("footprint.py uses 2-D np.cross (numpy < 2, as in the images)")
+    pytest.importorskip("numpy")
     try:
         from gurdy_navigation.footprint import footprint_polygon
     except ImportError:

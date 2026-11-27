@@ -39,9 +39,7 @@ def test_deep_merge_replaces_lists_and_merges_dicts():
 def test_overlay_then_patch_nav2_params():
     """The overlay composes with the robot.yaml patch used by nav.launch.py."""
     import pytest
-    np = pytest.importorskip("numpy")
-    if int(np.__version__.split(".")[0]) >= 2:
-        pytest.skip("footprint.py needs numpy < 2 (2-D np.cross), as in the ROS image")
+    pytest.importorskip("numpy")
     from gurdy_core.robot import load_robot
     from gurdy_navigation.footprint import patch_nav2_params
     p = patch_nav2_params(apply_overlay(_base(), "low_obstacles"), load_robot())
