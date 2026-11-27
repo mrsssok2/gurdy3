@@ -107,6 +107,7 @@ class Plan:
     length_m: float = 0.0
     summary: str = ""
     notes: list = field(default_factory=list)
+    goal_landmark: dict | None = None      # "the room with the red barrel": the object that defines the goal room (re-observed)
 
     @property
     def answered(self) -> bool:
@@ -381,7 +382,7 @@ def validate(raw, text: str, world: VLNWorld) -> Plan:
             pos = (dx, dy)
         L = objs[0] if objs else None
         wps.append({"x": round(c[0], 3), "y": round(c[1], 3), "kind": a, "room": room, "label": label,
-                    **({"landmark": {"id": L["id"], "class": L["class"], "x": L["x"], "y": L["y"]}} if L and kind == "point" else {})})
+                    **({"landmark": _lm(L, world)} if L and kind == "point" else {})})
         length += math.dist(pos, c)
         pos, cur = c, room
         rooms_seq += rooms[1:]
@@ -393,8 +394,13 @@ def validate(raw, text: str, world: VLNWorld) -> Plan:
     checks += [{"type": "room_order", "rooms": rooms_seq}, {"type": "never_in", "rooms": sorted(avoid)}]
     summary = "; ".join(("go past " if w["kind"] == "pass" else "through " if w["kind"] == "door" else
                          "into " if w["kind"] == "enter" else "stop at ") + w["label"] for w in wps)
+    gl = steps[-1][4][0] if steps[-1][1] == "room" and steps[-1][4] else None
     return Plan(True, waypoints=wps, goal=goal, rooms=rooms_seq, avoid=sorted(avoid), checks=checks, length_m=round(length, 2),
-                summary=summary, notes=notes)
+                summary=summary, notes=notes, goal_landmark=_lm(gl, world) if gl else None)
+
+
+def _lm(o, world):
+    return {"id": o["id"], "class": o["class"], "color": o.get("color") or "", "x": o["x"], "y": o["y"], "label": _obj_label(o, world)}
 
 
 def _not_found(ref):

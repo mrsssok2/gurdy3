@@ -18,7 +18,7 @@ from ..tools.schema import validate
 from ..tools.specs import TOOLS
 from ..tools.why import select_why
 from ..tools.types import Result, bearing_word, fail, ok
-from .world import GtObject, World, flat_lab
+from .world import GtObject, World, flat_lab, zone_hit
 
 V_WALK = 0.10        # m/s nominal command speed
 W_TURN = 0.30        # rad/s
@@ -211,7 +211,7 @@ class MockBackend:
             cur_blocked = not self.world.is_free(self.x, self.y)
             if step > 0 and not self.world.is_free(nx, ny) and not cur_blocked:
                 return self._finish(task, "blocked")
-            if step > 0 and any(math.hypot(nx - z["x"], ny - z["y"]) <= z["r"] for z in self.zones):
+            if step > 0 and any(zone_hit(t, nx, ny) for t in self._zone_circles()):
                 return self._finish(task, "blocked")
             self.x, self.y = nx, ny
             task.travelled += step
@@ -286,10 +286,22 @@ class MockBackend:
         return m[0], None
 
     def _in_zone(self, x: float, y: float) -> bool:
-        return any(math.hypot(x - z["x"], y - z["y"]) <= z["r"] for z in self.zones)
+        return any(zone_hit(t, x, y) for t in self._zone_circles())
 
-    def _zone_circles(self) -> list[tuple[float, float, float]]:
-        return [(z["x"], z["y"], z["r"]) for z in self.zones]
+    def _zone_circles(self) -> list[tuple]:
+        """Zones as tuples for the planner: circles (x, y, r); temporary room rectangles (x0, y0, x1, y1)."""
+        return [tuple(z["rect"]) if "rect" in z else (z["x"], z["y"], z["r"]) for z in self.zones]
+
+    # ---- temporary zones (not a tool: used by an executor, e.g. VLN avoided rooms, removed when it ends)
+    def add_temp_zone(self, rect, tag: str, name: str) -> int:
+        zid = 1 + max((z["id"] for z in self.zones), default=0)
+        self.zones.append({"id": zid, "name": name, "rect": [float(v) for v in rect], "tag": tag, "temporary": True})
+        return zid
+
+    def remove_temp_zones(self, tag: str) -> int:
+        n = len(self.zones)
+        self.zones = [z for z in self.zones if z.get("tag") != tag]
+        return n - len(self.zones)
 
     def _resolve(self, place=None, object=None, object_id=None, point=None, standoff_m=0.6):
         """-> (goal_xy, face_xy|None, target_info) or a Result error."""

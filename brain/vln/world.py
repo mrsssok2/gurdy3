@@ -33,6 +33,20 @@ class VLNWorld:
                        for i, o in enumerate(gt["objects"]) if o["name"] not in drop]
         return cls(rooms, doors, list(objects), tuple(robot))
 
+    @classmethod
+    def from_backend(cls, be):
+        """The world as the backend knows it NOW: rooms, doors, the semantic map (seen objects only), the robot pose.
+        MockBackend: world.rooms / world.doors / tracks / x y yaw. Other backends: `places` rectangles + `doors` + `tracks()`
+        (RosBackend: not wired yet)."""
+        w = getattr(be, "world", None)
+        if w is not None and hasattr(w, "rooms"):
+            rooms = {n: (r.x0, r.y0, r.x1, r.y1) for n, r in w.rooms.items()}
+            doors = dict(getattr(w, "doors", {}) or {})
+            objs = [{"id": t["id"], "class": t["class"], "color": t.get("color") or "", "x": t["x"], "y": t["y"],
+                     "last_seen": t.get("last_seen")} for t in be.tracks.values() if t.get("state", "present") == "present"]
+            return cls(rooms, doors, objs, (be.x, be.y, be.yaw))
+        raise NotImplementedError("VLNWorld.from_backend: only the mock backend so far")
+
     # ---- geometry
     def room_of(self, x, y, margin: float = 0.0):
         for n, (a, b, c, d) in self.rooms.items():

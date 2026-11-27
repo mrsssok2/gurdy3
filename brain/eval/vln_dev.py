@@ -3,6 +3,7 @@
     python3 -m brain.eval.vln_dev                     # the real model (project Ollama, gurdy-sft-400): NOT run yet
     python3 -m brain.eval.vln_dev --model qwen3:1.7b --out FILE.json
     python3 -m brain.eval.vln_dev --oracle            # each case's reference plan as the "model" (checks the validator)
+    python3 -m brain.eval.vln_dev --mock [--oracle | --model M]   # END TO END through the agent on the lab4 MOCK backend (walks)
 
 DEV set, NOT held-out: written by the assistant on 2026-11-27 while building brain/vln (the user writes the blind
 held-out VLN suite). World = lab4 with all 10 big ground-truth objects in the semantic map, the robot at home (0, 0) in
@@ -76,7 +77,9 @@ DEV = [
     ("p06", "go past the barrel into room C", GO(S("pass", object=R("barrel")), S("enter", room=C_)), {"error": "AMBIGUOUS"}),
     # ---- relational goals
     # r01: seen from the A-B door, the left of the blue barrel is a 0.47 m gap to the B-D wall (the robot needs ~0.7 m): honest refusal
-    ("r01", "stop to the left of the blue barrel", GO(S("stop", relation="left_of", of=[R("barrel", "blue")])), {"error": "NO_FREE_SPOT"}),
+    # (end to end on the mock, whose map has 4 cm observation noise, the gap can come out just wide enough: an arrival is
+    # accepted there only if the final pose is free in the TRUE occupancy, see run_mock / vln_plan.md section 11)
+    ("r01", "stop to the left of the blue barrel", GO(S("stop", relation="left_of", of=[R("barrel", "blue")])), {"error": "NO_FREE_SPOT", "knife_edge": True}),
     ("r08", "stop to the left of the mannequin", GO(S("stop", relation="left_of", of=[R("mannequin")])), {"rooms": [A_, B_, D_], "goal": ("point", D_)}),
     ("r02", "wait to the right of the mannequin", GO(S("stop", relation="right_of", of=[R("mannequin")])), {"rooms": [A_, B_, D_], "goal": ("point", D_)}),
     ("r03", "go between the mannequin and the toolbox", GO(S("stop", relation="between", of=[R("mannequin"), R("toolbox")])),
@@ -162,14 +165,75 @@ def run(planner: VLNPlanner, verbose=True) -> dict:
     return out
 
 
+def mock_agent(planner):
+    """Agent (keyword planner for everything else) + lab4 mock backend, robot at home, all 10 objects already in the map
+    (like the DEV world), VLN ON."""
+    from ..agent.graph import Agent
+    from ..agent.llm import KeywordLLM
+    from ..mock import MockBackend, gazebo_lab4
+    from ..tools import ToolLayer
+    be = MockBackend(gazebo_lab4())
+    be.x, be.y, be.yaw = 0.0, 0.0, 0.0
+    for o in be.world.objects:
+        be._sight(o)
+    return Agent(ToolLayer(be), KeywordLLM(be.known_places), vln=planner), be
+
+
+def run_mock(planner_factory, verbose=True) -> dict:
+    """Every DEV case end to end on the mock: the agent's reply, the walk, and the metrics against GROUND TRUTH (the goal is
+    re-computed from the true object positions with the reference plan, not from the robot's semantic map)."""
+    from ..vln import metrics as M
+    from ..vln.plan import validate
+    gt_world = world()
+    nav, answers, rows = [], [], []
+    for cid, text, ref, exp in DEV:
+        agent, be = mock_agent(planner_factory())
+        reply = agent.say(text).reply
+        res = agent.vln_last
+        traj = res.trajectory if res else [(0.0, 0.0, 0.0), (be.now(), be.x, be.y)]
+        row = {"id": cid, "text": text, "reply": reply, "code": res.code if res else None}
+        if exp == "none":
+            row["ok"] = res is None and agent.vln.last_plan is None or (agent.vln.last_plan is not None and not agent.vln.last_plan.ok
+                                                                         and not agent.vln.last_plan.answered)
+        elif "error" in exp:
+            got = agent.vln.last_plan.error if agent.vln.last_plan else None
+            if got is None and exp["error"] == "UNKNOWN_ROOM" and "there is no room" in reply.lower():
+                got = "UNKNOWN_ROOM"                     # the agent's own room guard (brain/agent/rooms.py) answered first: same answer
+            a = M.answer_episode(exp["error"], got, traj)
+            if exp.get("knife_edge") and res is not None and res.ok and be.world.is_free(be.x, be.y):
+                a = {**a, "answer_ok": True, "knife_edge_arrival": True}
+            answers.append(a)
+            row["ok"] = a["answer_ok"] and (res is None or a.get("knife_edge_arrival", False))
+            row["knife_edge_arrival"] = a.get("knife_edge_arrival", False)
+        else:
+            g = validate(json.dumps(ref), text, gt_world)
+            e = M.episode(traj, g.goal, gt_world, g.length_m, avoid=set(g.avoid),
+                          pass_landmarks=[w["landmark"] for w in g.waypoints if w["kind"] == "pass" and "landmark" in w],
+                          claims=res.claims if res else [], arrived_claimed=bool(res and res.ok))
+            nav.append(e)
+            row.update(ok=e["success"] and e["false_claims"] == 0, episode=e)
+        rows.append(row)
+        if verbose and not row["ok"]:
+            print(f"  WRONG {cid} {text!r}: {reply!r} ({row.get('code')})")
+    agg = M.aggregate(nav, answers)
+    out = {"n": len(DEV), "ok": sum(r["ok"] for r in rows), **agg, "rows": rows}
+    if verbose:
+        print({k: v for k, v in out.items() if k != "rows"})
+    return out
+
+
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", action="append", default=[])
     ap.add_argument("--oracle", action="store_true")
+    ap.add_argument("--mock", action="store_true", help="end to end through the agent on the lab4 mock backend")
     ap.add_argument("--out")
     a = ap.parse_args(argv)
     res = []
-    if a.oracle:
+    if a.mock:
+        fac = (lambda: VLNPlanner(OracleLLM())) if a.oracle else (lambda: VLNPlanner(model=(a.model or ["gurdy-sft-400"])[0]))
+        res.append({"model": "oracle" if a.oracle else (a.model or ["gurdy-sft-400"])[0], "mode": "mock_e2e", **run_mock(fac)})
+    elif a.oracle:
         res.append({"model": "oracle", **run(VLNPlanner(OracleLLM()))})
     else:
         for m in a.model or ["gurdy-sft-400"]:
