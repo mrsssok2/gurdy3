@@ -1,0 +1,22 @@
+11:43:47 stack ready (--fetch-gt log --fetch-log /tmp/chat/attempts.jsonl)
+11:48:07 C try 1: {"variant": "C", "try": 1, "wall_s": 253, "reply": "{\"reply\": \"I picked up the blue can in room A and I'm holding it with the arm folded.\", \"seq\": 2}", "can_before": "-1.3000 0.3000", "can_after": "-0.7533 0.2562", "robot_before": "0.
+12:02:41 stack did NOT start: Nav2 never became ready (see /tmp/chat/launch.log) peak: container 2031 MiB, WSL used 4128 MiB, GPU 696 MiB (samples: /tmp/gurdy_web_ram.log) 
+# Fetch retest (20261127_114257; scripts/fetch_retest.sh)
+
+Target: blue can, GT (-1.30, 0.30), 1.33 m from the spawn point; command "pick up the blue can"; single tries.
+
+| variant | what | picked up | grasp attempts |
+|---|---|---|---|
+| C | full fetch: search + Nav2 + detector / servo pose | 0/1 | 1 |
+
+## Variant C: full fetch: search + Nav2 + detector / servo pose
+
+| try | result | wall s | can moved (m) | robot->can at start (m) | reply |
+|---|---|---|---|---|---|
+| 1 | other | 253 | 0.548 | 1.33 | {"reply": "I picked up the blue can in room A and I'm holding it with the arm folded.", "seq": 2} |
+
+| attempt | outcome | reason | est. source | robot->obj (m) | est. error vs GT (m) | plan | centre shift (m) | settle pre / grasp (rad) | fingers closed / lifted (m) | target in scene |
+|---|---|---|---|---|---|---|---|---|---|---|
+| 1 | success |  | servo | 0.369 | 0.0088 | ok | 0.0026 | 0.0095 / 0.0075 | [0.032927496290495066, 0.03311991879712207] / [0.03783599972205537, 0.02821061111746929] | True |
+
+12:02:42 done: docs/results/data/fetch_retest/20261127_114257 (docker ps: 0 containers)

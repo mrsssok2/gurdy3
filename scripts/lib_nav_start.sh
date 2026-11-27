@@ -46,7 +46,8 @@ start_nav_stack() {
     echo "$(date -u +%T) attempt $attempt/$attempts: launch started" >> "$out/nav_ready.txt"
     while [ $((SECONDS - t0)) -lt "$ctrl_to" ]; do
       kill -0 "$LAUNCH" 2>/dev/null || break   # launch died (e.g. controller spawner timeout): go to the restart path
-      [ "$(timeout 10 ros2 control list_controllers 2>/dev/null | grep -c " active")" = 2 ] && { ctrl_ok=1; break; }
+      # >= 2: joint_state_broadcaster + the leg controller; arm:=true adds arm + gripper controllers (exactly-2 raced: fetch retest C run 2)
+      [ "$(timeout 10 ros2 control list_controllers 2>/dev/null | grep -c " active")" -ge 2 ] && { ctrl_ok=1; break; }
       sleep 1
     done
     echo "$(date -u +%T) attempt $attempt/$attempts: controllers active=$ctrl_ok after $((SECONDS - t0)) s wall" >> "$out/nav_ready.txt"

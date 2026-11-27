@@ -25,14 +25,14 @@ STACK_PID=""
 log() { echo "$(date -u +%T) $*" | tee -a "$OUT/retest.log"; }
 api() { curl -s -m "${3:-10}" -H "Authorization: Bearer $TOKEN" -H "Content-Type: application/json" ${2:+-d "$2"} "localhost:8080$1"; }
 gzx() { docker exec gurdy3_agent /entrypoint.sh "$@"; }
-gt_pose() {   # model -> "x y" (gz dynamic pose; empty if unknown)
+gt_pose() {   # model -> "x y z" (gz pose; model origin = its base, so z ~0 standing on the floor; empty if unknown)
   gzx timeout 8 gz topic -e -n 1 -t /world/lab4_fetch/pose/info 2>/dev/null | python3 -c '
 import re,sys
 for blk in re.split(r"\npose \{", sys.stdin.read()):
     m = re.search(r"name: \"([^\"]+)\"", blk)
     if m and m.group(1) == sys.argv[1]:
         p = re.search(r"position \{([^}]*)\}", blk); g = lambda k: float((re.search(k + r": ([-0-9.e]+)", p.group(1)) or [0, 0])[1]) if p else 0.0
-        print("%.4f %.4f" % (g("x"), g("y")))' "$1"; }
+        print("%.4f %.4f %.4f" % (g("x"), g("y"), g("z")))' "$1"; }
 set_pose() {  # model x y z yaw
   gzx timeout 10 gz service -s /world/lab4_fetch/set_pose --reqtype gz.msgs.Pose --reptype gz.msgs.Boolean --timeout 3000 \
     --req "name: \"$1\" position {x: $2 y: $3 z: $4} orientation {x: 0 y: 0 z: $(python3 -c "import math;print(math.sin($5/2))") w: $(python3 -c "import math;print(math.cos($5/2))")}" | grep -q "data: true"; }
@@ -54,11 +54,14 @@ one_try() {       # dir variant k
   set_pose "$TARGET_MODEL" "$TX" "$TY" 0.0005 "$TYAW" || log "WARNING: can reset failed"; sleep 3
   local before robot0 t0 reply after robot1
   before=$(gt_pose "$TARGET_MODEL"); robot0=$(gt_pose gurdy); t0=$(date +%s)
-  reply=$(api /api/say "{\"text\": \"$CMD\"}" "$TRY_TIMEOUT_S")
+  local a0; a0=$(cat "$1/chat/attempts.jsonl" 2>/dev/null | wc -l)       # attempt records of this try = lines a0 .. a1
+  reply=$(api /api/say "{\"text\": \"$CMD\"}" "$TRY_TIMEOUT_S" | python3 -c 'import json,sys; t=sys.stdin.read(); print(json.loads(t).get("reply", t) if t.strip() else "")' 2>/dev/null)
   if [ -z "$reply" ]; then api /api/estop '{}' >/dev/null; sleep 10; reply="TIMEOUT after ${TRY_TIMEOUT_S}s (e-stop)"; api /api/estop/release '{}' >/dev/null; fi
-  after=$(gt_pose "$TARGET_MODEL"); robot1=$(gt_pose gurdy)
+  sleep 5; after=$(gt_pose "$TARGET_MODEL"); robot1=$(gt_pose gurdy)       # 5 s later: still held (not slipping out)?
+  local a1; a1=$(cat "$1/chat/attempts.jsonl" 2>/dev/null | wc -l)
   python3 -c 'import json,sys; v=sys.argv; print(json.dumps({"variant": v[1], "try": int(v[2]), "wall_s": int(v[3]), "reply": v[4],
-      "can_before": v[5], "can_after": v[6], "robot_before": v[7], "robot_after": v[8]}))' "$2" "$3" "$(( $(date +%s) - t0 ))" "$reply" "$before" "$after" "$robot0" "$robot1" >> "$1/tries.jsonl"
+      "can_before": v[5], "can_after": v[6], "robot_before": v[7], "robot_after": v[8], "attempts": [int(v[9]), int(v[10])]}))' \
+    "$2" "$3" "$(( $(date +%s) - t0 ))" "$reply" "$before" "$after" "$robot0" "$robot1" "$a0" "$a1" >> "$1/tries.jsonl"
   log "$2 try $3: $(tail -1 "$1/tries.jsonl" | cut -c1-240)"
   if echo "$reply" | grep -q "I picked up"; then api /api/say '{"text": "put it down"}' 600 >/dev/null; fi   # free the gripper for the next try
 }
