@@ -120,3 +120,51 @@ def test_wait_step_stands_still_for_its_time(tmp_path):
     b.find({"class": "chair"}, max_time_s=30)
     run(b, p, 8)
     assert b.task is not None                                 # still scanning after 8 s: waits and turns take time
+
+
+# ---------------------------------------------------------------- 2026-11-27: multi-viewpoint room sweep (default off)
+def _nav_points(steps):
+    return [(s["x"], s["y"]) for s in steps if s["kind"] == "nav"]
+
+
+def test_default_sweep_is_one_viewpoint_per_room(tmp_path):
+    b, _ = make(tmp_path)
+    assert b.search_view_radius_m is None
+    pts = _nav_points(b._sweep_steps())
+    assert len(pts) == 2                                                     # room a, room b
+
+
+def test_view_radius_covers_every_point_of_the_room(tmp_path):
+    b, port = make(tmp_path)
+    b.search_view_radius_m = 1.5
+    for name in [n for n, v in b.places.items() if v.get("kind") == "room"]:
+        room = b.places[name]
+        vps = b._room_viewpoints(room)
+        assert vps[0] == (room["x"], room["y"]) and len(vps) > 1
+        x0, y0, x1, y1 = room["rect"]
+        worst = max(min(math.hypot(x - vx, y - vy) for vx, vy in vps)
+                    for x in [x0 + (x1 - x0) * i / 20 for i in range(21)] for y in [y0 + (y1 - y0) * j / 20 for j in range(21)])
+        assert worst <= 1.5 + b.VIEWPOINT_CLEARANCE_M                        # grid radius + the wall-clearance shift
+    steps = b._sweep_steps()
+    assert sum(1 for s in steps if s.get("mark_room")) == 2                  # still one 'room looked at' mark per room
+    assert len(_nav_points(steps)) > 2 and all(s.get("optional") for s in steps if s["kind"] == "nav")
+
+
+def test_viewpoints_skip_occupied_cells(tmp_path):
+    b, port = make(tmp_path)
+    b.search_view_radius_m = 1.5
+    room = next(v for v in b.places.values() if v.get("kind") == "room")
+    free = b._room_viewpoints(room)
+    port.occupied = [(x, y, 0.1) for x, y in free[1:]]                       # block every extra viewpoint
+    assert b._room_viewpoints(room) == [free[0]]
+
+
+def test_fetch_search_sets_the_radius_only_for_its_search(tmp_path):
+    from brain.ros.fetch_robot import FetchConfig, RosFetchRobot
+    b, port = make(tmp_path)
+    seen = []
+    b.find = lambda **kw: (seen.append(b.search_view_radius_m), type("R", (), {"ok": False})())[1]
+    r = RosFetchRobot.__new__(RosFetchRobot)
+    r.b, r.cfg = b, FetchConfig(search_view_radius_m=1.5)
+    assert r.search({"class": "can"}) is False
+    assert seen == [1.5] and b.search_view_radius_m is None

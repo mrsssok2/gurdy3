@@ -40,6 +40,10 @@ case "${1:-}" in
     done
     for d in synth_v3_body synth_v3_wrist; do
       run_vis python3 vision/eval_detector.py --model models/detector/det_v3_s.onnx --data datasets/$d --classes v3 --out docs/results/phase9b_eval_${d}.md
-    done ;;
+    done
+    run_vis python3 vision/recall_by_distance.py --model models/detector/det_v3_s.onnx --data datasets/synth_v3_body datasets/synth_v3_wrist \
+      --out docs/results/phase9b_recall_by_distance.md
+    python3 scripts/p9b_report.py --model det_v3_s:docs/results/phase9b_eval --baseline docs/results/phase9b_eval \
+      --out docs/results/phase9b_acceptance.md ;;
   *) sed -n '2,12p' "$0"; exit 1 ;;
 esac

@@ -82,6 +82,56 @@ def _gt_for_view(sc, view):
     return S.gt_for_view(sc, view)
 
 
+def gt_3d(sc: dict, gt: list) -> list:
+    """Add the object's yaw and size (w, d, h in m: box footprint of the generated parts / small-object catalogue) and its scene
+    record kind (object / small) to each ground-truth entry, so 3D labels can be derived later."""
+    rec = {o["name"]: ("object", o) for o in sc.get("objects", [])}
+    rec.update({o["name"]: ("small", o) for o in sc.get("small", [])})
+    out = []
+    for g in gt:
+        g = dict(g)
+        kind, o = rec.get(g.get("name"), (None, None))
+        if o is not None:
+            g["yaw"] = float(o.get("yaw", 0.0))
+            g["kind"] = kind
+            try:
+                if kind == "small":
+                    from gurdy_core.vision.classes import SIZE_PRIOR_SMALL
+                    g["size"] = [float(v) for v in SIZE_PRIOR_SMALL[o["cls"]]]
+                else:
+                    from vision import objects as OBJ
+                    g["size"] = [float(v) for v in OBJ.footprint(o["cls"], o.get("scale", 1.0), o.get("variant"))]
+            except Exception:                                   # noqa: BLE001 (size is optional metadata)
+                pass
+        out.append(g)
+    return out
+
+
+def cmd_relabel(a):
+    """Rewrite labels/<split>/*.txt from meta boxes_raw with another size rule (no Gazebo). Frames rendered before boxes_raw
+    existed are skipped and counted."""
+    out = Path(a.out)
+    names = _dataset_classes(out)
+    thr = S.label_thresholds(a.labels, names)
+    n = skipped = changed = 0
+    for mf in sorted((out / "meta").glob("*/*.json")):
+        m = json.loads(mf.read_text())
+        if "boxes_raw" not in m:
+            skipped += 1
+            continue
+        W, H = m["image_wh"]
+        lines = S.yolo_lines([tuple(b) for b in m["boxes_raw"]], W, H, thresholds=thr)
+        lf = out / "labels" / mf.parent.name / (mf.stem + ".txt")
+        new = "\n".join(lines) + ("\n" if lines else "")
+        if not lf.exists() or lf.read_text() != new:
+            changed += 1
+        lf.write_text(new)
+        m["label_rule"] = a.labels
+        mf.write_text(json.dumps(m))
+        n += 1
+    print(f"relabel {out} -> rule {a.labels}: {n} frames, {changed} label files changed, {skipped} skipped (no boxes_raw)")
+
+
 def _dataset_classes(out: Path):
     f = out / "classes.json"
     return json.loads(f.read_text()) if f.exists() else list(CLASSES)
@@ -191,7 +241,8 @@ def render_scene(sc: dict, out: Path, a) -> tuple:
             H, W = rgb.shape[:2]
             boxes = [(b.label - GZ_LABEL_OFFSET, b.box.min_corner.x, b.box.min_corner.y, b.box.max_corner.x, b.box.max_corner.y)
                      for b in bb.annotated_box if 0 <= b.label - GZ_LABEL_OFFSET < _n_classes(sc)]
-            lines = S.yolo_lines(boxes, W, H)
+            thr = S.label_thresholds(getattr(a, "labels", "v3"), _dataset_classes(out))
+            lines = S.yolo_lines(boxes, W, H, thresholds=thr)
             if not lines and rng.random() > a.negative_keep:
                 continue
             name = f"s{idx:04d}_v{vi:02d}"
@@ -203,7 +254,11 @@ def render_scene(sc: dict, out: Path, a) -> tuple:
             Image.fromarray(d_mm).save(out / "depth" / split / f"{name}.png")
             (out / "meta" / split / f"{name}.json").write_text(json.dumps({
                 "scene": idx, "view": vi, "cam_pos": view["pos"], "cam_rpy": view["rpy"], "camera": sc["camera"],
-                "gt": _gt_for_view(sc, view), "stamp_ns": rgb_m.header.stamp.sec * 10**9 + rgb_m.header.stamp.nsec}))
+                "gt": gt_3d(sc, _gt_for_view(sc, view)), "stamp_ns": rgb_m.header.stamp.sec * 10**9 + rgb_m.header.stamp.nsec,
+                # ALWAYS saved (2026-11-27): the unfiltered boxes, so the label size rule can change without a re-render
+                # (`relabel`); the rule used for labels/*.txt is recorded next to them.
+                "image_wh": [W, H], "boxes_raw": [[int(c), float(x1), float(y1), float(x2), float(y2)] for c, x1, y1, x2, y2 in boxes],
+                "label_rule": getattr(a, "labels", "v3")}))
             n_ok += 1
     finally:
         srv.terminate()
@@ -234,7 +289,7 @@ def _run_worker(out: Path, idx: int, a, attempt: int):
     import signal
     log = open(out / "logs" / f"scene_{idx:04d}.try{attempt}.log", "w")
     cmd = [sys.executable, os.path.abspath(__file__), "render-scene", "--out", str(out), "--index", str(idx),
-           "--negative-keep", str(a.negative_keep)]
+           "--negative-keep", str(a.negative_keep), "--labels", getattr(a, "labels", "v3")]
     p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=log, text=True, start_new_session=True)
     try:
         so, _ = p.communicate(timeout=a.scene_timeout)
@@ -331,10 +386,16 @@ def main():
     p.add_argument("--max-fail-frac", type=float, default=0.05, help="abort if more than this share of the scenes fail")
     p.add_argument("--max-consecutive", type=int, default=3, help="abort after this many failed scenes in a row")
     p.add_argument("--views-hint", type=int, default=12, help=argparse.SUPPRESS)
+    p.add_argument("--labels", default="v3", choices=list(S.LABEL_RULES),
+                   help="label size rule: v3 (default, 6 px / 80 px^2 every class) | v3.1 (small classes 3 px / 12 px^2)")
     p.set_defaults(fn=cmd_render)
     p = sub.add_parser("render-scene", help="internal worker: one scene"); p.add_argument("--out", required=True)
     p.add_argument("--index", type=int, required=True); p.add_argument("--negative-keep", type=float, default=0.1)
+    p.add_argument("--labels", default="v3", choices=list(S.LABEL_RULES))
     p.set_defaults(fn=cmd_render_scene)
+    p = sub.add_parser("relabel", help="rewrite labels from meta boxes_raw with another size rule (no Gazebo)")
+    p.add_argument("--out", required=True); p.add_argument("--labels", required=True, choices=list(S.LABEL_RULES))
+    p.set_defaults(fn=cmd_relabel)
     p = sub.add_parser("finalize"); p.add_argument("--out", required=True); p.set_defaults(fn=cmd_finalize)
     a = ap.parse_args()
     a.fn(a)

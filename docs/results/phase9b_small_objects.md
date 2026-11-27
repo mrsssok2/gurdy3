@@ -163,3 +163,38 @@ Tests: `vision/tests` 46 pass, `gurdy_core` vision + arm 35 pass (host venv: num
 * **Contact physics for 30–80 g objects in DART is unverified.** It may need finer steps or larger pads (Phase 9a plan §5).
 * **Below the LiDAR plane:** the robot cannot avoid these objects except by placement.
 * **Synthetic only:** primitive shapes and flat colours. No real-photo validation exists for any class.
+
+## Known limitation: small objects > 2 m under-labelled in v3 (28 % body / 14 % wrist images); fixed in v3.1
+Found by a label audit on 2026-11-27, during the det_v3_s training (not stopped). `vision/scene.py:yolo_lines` drops every box under
+6 px on a side or 80 px²; that rule came from the large-object datasets. A 5 cm cube 2 m from the body camera is about 7 × 7 px
+(49 px²), so it is **visible but unlabelled** (example: `s0091_v03`, the yellow small_box at 2.08 m). Counted from the per-frame meta
+ground truth (centre in view, expected size below the rule, no label):
+
+| set | images | small objects labelled | unlabelled, expected tiny | images with ≥ 1 | unlabelled, other (occluded / cut) |
+|---|---|---|---|---|---|
+| v3 body train | 2711 | 2816 | 1125 | 757 (28 %) | 244 |
+| v3 wrist train | 2134 | 2258 | 413 | 292 (14 %) | 197 |
+| v3 body test | 565 | 605 | 203 | 150 | 43 |
+| v3 wrist test | 432 | 462 | 90 | 56 | 36 |
+
+Effects:
+* The model is taught that tiny far targets are background.
+* The test sets follow the same rule, so the agreed acceptance numbers stay comparable as defined.
+* Body-camera recall beyond ~2 m is lower than the mAP suggests. `vision/recall_by_distance.py` measures it per bin
+  (< 1, 1-2, 2-3, > 3 m) over ALL objects in view, labelled or not.
+
+The chair-labelled "T shape" in `wrist_s0011_v03` was checked too: it is the real chair model seen from low, correctly labelled.
+
+**v3.1 (prepared, not rendered).**
+* `generate_dataset.py render --labels v3.1` (default `v3`): small classes 3 px / 12 px², large classes keep 6 / 80.
+* Every frame's meta now ALWAYS stores the unfiltered boxes (`boxes_raw`, `image_wh`, `label_rule`) and the objects' 3D ground truth
+  (yaw, size). `generate_dataset.py relabel --labels ...` can change the rule later without Gazebo. Tests: `vision/tests/test_label_rules.py`.
+* One command for the next night: `scripts/p9b_v31_night.sh`. It uses the same scene seeds as v3, then render, train det_v31_s, eval with
+  the same targets plus recall by distance, and `docs/results/phase9b_v3_vs_v31.md` side by side.
+
+**Fetch search (same day).** When the target is not in the map, the search visits ONE viewpoint per room and turns a full circle there,
+then explores, then reports NOT_FOUND. It never walks closer inside a room, and lab4 room corners are ~2.8 m from the room point.
+* Added: a multi-viewpoint room sweep (`RosBackend.search_view_radius_m`, default None = unchanged). Every point of the room lies within
+  the radius of a viewpoint; the viewpoints are free-checked in the map, optional and nearest-neighbour ordered, with a full turn at each.
+* `FetchConfig.search_view_radius_m` (default None) switches it on for a fetch search only. Tests in `brain/tests/test_search_sweep.py`.
+* Not run in Gazebo.

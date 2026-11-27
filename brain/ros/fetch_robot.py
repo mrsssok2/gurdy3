@@ -48,6 +48,7 @@ class FetchConfig:
     nav_timeout_s: float = 240.0
     carry_timeout_s: float = 600.0
     search_timeout_s: float = 300.0
+    search_view_radius_m: float | None = None       # multi-viewpoint room sweep for unseen objects (None = one viewpoint per room)
     handover_timeout_s: float = 20.0
     poll_s: float = 0.2
     yaw_min_conf: float = 0.5
@@ -207,13 +208,20 @@ class RosFetchRobot:
 
     # ------------------------------------------------------------------ primitives
     def search(self, ref: dict) -> bool:
-        """Look for an object nobody has seen (RosBackend.find: room sweep + explore). True when the map has one now."""
-        r = self.b.find(object=dict(ref), approach=False, max_time_s=self.cfg.search_timeout_s)
-        if not getattr(r, "ok", False):
-            return False
-        t0 = self.now()
-        while self.b.task is not None and self.now() - t0 < self.cfg.search_timeout_s + 30:
-            self._wait(self.cfg.poll_s)
+        """Look for an object nobody has seen (RosBackend.find: room sweep + explore). True when the map has one now.
+        cfg.search_view_radius_m (default None) switches the backend's multi-viewpoint room sweep on for this search only."""
+        prev = getattr(self.b, "search_view_radius_m", None)
+        if self.cfg.search_view_radius_m:
+            self.b.search_view_radius_m = self.cfg.search_view_radius_m
+        try:
+            r = self.b.find(object=dict(ref), approach=False, max_time_s=self.cfg.search_timeout_s)
+            if not getattr(r, "ok", False):
+                return False
+            t0 = self.now()
+            while self.b.task is not None and self.now() - t0 < self.cfg.search_timeout_s + 30:
+                self._wait(self.cfg.poll_s)
+        finally:
+            self.b.search_view_radius_m = prev          # also on an e-stop (FetchAborted)
         m = self.b.missions[-1] if self.b.missions else {}
         return bool((m.get("result") or {}).get("found"))
 

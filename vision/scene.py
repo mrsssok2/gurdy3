@@ -243,13 +243,31 @@ def world_sdf(sc: dict, mesh_dir: str, tex_dir: str | None = None, with_camera: 
     return "".join(parts)
 
 
-def yolo_lines(boxes: list, w: int, h: int, min_px: float = 6.0, min_area: float = 80.0) -> list:
-    """[(class_id, x1, y1, x2, y2)] in pixels -> YOLO txt lines 'cls cx cy bw bh' (normalised); drops tiny/degenerate boxes."""
+# Label size rules (2026-11-27 audit: with 6 px / 80 px^2 for every class, a 5 cm cube 2 m from the body camera (~7 x 7 px)
+# lost its label although visible: 28 % of the v3 body / 14 % of the wrist train images had such unlabelled targets).
+LABEL_RULES = ("v3", "v3.1")
+SMALL_LABEL_NAMES = ("small_box", "mini_toolbox", "can", "mini_cone", "mini_extinguisher")
+
+
+def label_thresholds(rule: str, class_names) -> dict | None:
+    """-> {class_id: (min_px, min_area)} or None (= the v3 rule: 6 px / 80 px^2 for every class).
+    v3.1: the small pickable classes 3 px / 12 px^2, the large classes keep 6 / 80."""
+    if rule == "v3":
+        return None
+    if rule != "v3.1":
+        raise ValueError(f"unknown label rule {rule!r} (known: {LABEL_RULES})")
+    return {i: ((3.0, 12.0) if n in SMALL_LABEL_NAMES else (6.0, 80.0)) for i, n in enumerate(class_names)}
+
+
+def yolo_lines(boxes: list, w: int, h: int, min_px: float = 6.0, min_area: float = 80.0, thresholds: dict | None = None) -> list:
+    """[(class_id, x1, y1, x2, y2)] in pixels -> YOLO txt lines 'cls cx cy bw bh' (normalised); drops tiny/degenerate boxes.
+    `thresholds` {class_id: (min_px, min_area)} overrides min_px / min_area per class (label_thresholds)."""
     out = []
     for cid, x1, y1, x2, y2 in boxes:
         x1, x2, y1, y2 = max(0.0, x1), min(float(w), x2), max(0.0, y1), min(float(h), y2)
         bw, bh = x2 - x1, y2 - y1
-        if bw < min_px or bh < min_px or bw * bh < min_area:
+        mp, ma = thresholds.get(cid, (min_px, min_area)) if thresholds else (min_px, min_area)
+        if bw < mp or bh < mp or bw * bh < ma:
             continue
         out.append(f"{cid} {(x1 + x2) / 2 / w:.6f} {(y1 + y2) / 2 / h:.6f} {bw / w:.6f} {bh / h:.6f}")
     return out

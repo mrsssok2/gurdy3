@@ -649,10 +649,46 @@ class RosBackend:
                 continue
             if v.get("kind") == "hazard" or self._in_zone(v["x"], v["y"]):
                 continue
-            steps.append({"kind": "nav", "x": v["x"], "y": v["y"], "yaw": None, "name": n, "optional": True})
-            steps += self._scan_steps()
+            for k, (vx, vy) in enumerate(self._room_viewpoints(v)):
+                steps.append({"kind": "nav", "x": vx, "y": vy, "yaw": None, "name": n if k == 0 else f"{n} view {k + 1}",
+                              "optional": True})
+                steps += self._scan_steps()
             steps.append({"kind": "wait", "secs": 0.0, "mark_room": n})      # the whole circle was done without the search ending: room looked at
         return steps
+
+    # Multi-viewpoint room sweep (2026-11-27): one viewpoint per room leaves room corners ~2.8 m away in lab4, where the small
+    # pickable classes are hard to see (v3 labels drop far small objects). None = the old behaviour (the room point only).
+    search_view_radius_m: float | None = None
+    VIEWPOINT_CLEARANCE_M = 0.45                    # free map cells this far around a viewpoint (footprint 0.34 + margin)
+
+    def _room_viewpoints(self, room: dict) -> list[tuple]:
+        """The room point first; with `search_view_radius_m`, add grid points so that every point of the room rectangle is within
+        that radius of some viewpoint (square cells of side radius * sqrt 2), keeping only points whose surroundings are free
+        in the map. Unreachable ones are skipped at run time (optional nav steps)."""
+        pts = [(room["x"], room["y"])]
+        R = self.search_view_radius_m
+        if not R or "rect" not in room:
+            return pts
+        x0, y0, x1, y1 = room["rect"]
+        side = R * math.sqrt(2)
+        nx, ny = max(1, math.ceil((x1 - x0) / side)), max(1, math.ceil((y1 - y0) / side))
+        c = self.VIEWPOINT_CLEARANCE_M
+        for i in range(nx):
+            for j in range(ny):
+                gx, gy = x0 + (i + 0.5) * (x1 - x0) / nx, y0 + (j + 0.5) * (y1 - y0) / ny
+                gx, gy = min(max(gx, x0 + c), x1 - c), min(max(gy, y0 + c), y1 - c)
+                if math.hypot(gx - room["x"], gy - room["y"]) < 0.5 * R:
+                    continue                            # the room point already covers it
+                ring = [(gx + c * math.cos(a), gy + c * math.sin(a)) for a in [k * math.pi / 4 for k in range(8)]] + [(gx, gy)]
+                if all(self.p.map_cell(px, py) in ("free", None) for px, py in ring):
+                    pts.append((round(gx, 3), round(gy, 3)))
+        # nearest-neighbour order from the room point
+        out, rest = [pts[0]], pts[1:]
+        while rest:
+            q = min(rest, key=lambda p: math.hypot(p[0] - out[-1][0], p[1] - out[-1][1]))
+            rest.remove(q)
+            out.append(q)
+        return out
 
     def _step_explore(self, t: _Task, s: dict, pose) -> None:
         if not s["started"]:
