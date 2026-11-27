@@ -171,3 +171,23 @@ def estimate_yaw(depth, K, T_base_opt, cls: str, xy_hint=None, prm: YawParams | 
     yb = math.atan2(ax[1], ax[0]) % period
     return YawEstimate(yb, conf, method, period, int(layer.sum()), partial,
                        "top face cut by the image border" if partial else "")
+
+
+def standing_points(depth, K, T_base_opt, xy_base, radius: float, band=(0.005, 0.025), prm: YawParams | None = None) -> int | None:
+    """Points of something STANDING on the floor at base-frame `xy_base` (height band just above the fitted floor, within
+    `radius`). A lifted object (bottom > 2.5 cm up) or an empty spot gives ~0; None when there is no floor fit. Used to
+    verify a grasp from the view pose: the object must no longer stand where it was."""
+    prm = prm or YawParams()
+    lp = LO.LowObstacleParams(stride=prm.stride, min_range=prm.near, max_range=prm.far, floor_band=0.08)
+    p_opt, _ = LO.depth_to_points(depth, K, lp)
+    if len(p_opt) < 50:
+        return None
+    pts = LO.apply_T(T_base_opt, p_opt)
+    n, d, fitted, _ = LO.fit_floor(pts, lp)
+    if not fitted:
+        return None
+    T_fb = _floor_T(n, d)
+    f = LO.apply_T(T_fb, pts)
+    c = LO.apply_T(T_fb, np.array([[xy_base[0], xy_base[1], 0.0]]))[0, :2]
+    m = (f[:, 2] >= band[0]) & (f[:, 2] <= band[1]) & (np.hypot(f[:, 0] - c[0], f[:, 1] - c[1]) <= radius)
+    return int(m.sum())

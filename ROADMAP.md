@@ -396,6 +396,8 @@ Box + all depth pixels -> 3D centre, top, height, yaw, covariance; Track3D fusio
 - [ ] Depth-noise model in the gz sensor (robot model)
 - [x] First grasp test script for Gazebo lab4_fetch (`scripts/grasp_test.sh`, 5 classes x 3 tries, contact grip, lift + hold; `docs/results/phase9g_grasp_test.md`) — written, not run
 - [ ] Run it (after day_0927 01 / 04 / 09 PASS)
+- [x] ROS fetch backend behind `--fetch` / `FETCH=true` (default off): find / search, approach, servo, grasp, verify, fold, carry, place, hand-over; fake-port tests (`docs/results/phase9h_ros_fetch.md`) — not run in ROS
+- [ ] v3 detector (small classes) + live fetch run
 
 ---
 

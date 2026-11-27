@@ -8,17 +8,22 @@
 #   MODEL=gurdy-sft-400 (default)         # the fine-tuned brain via this project's Ollama on :11435
 #   WORLD=lab4 scripts/start_web_robot.sh # the 4-room lab4 world (default WORLD=flat_lab)
 #   GUI=true scripts/start_web_robot.sh   # also the Gazebo window (WSLg)
+#   FETCH=true scripts/start_web_robot.sh # Phase 9h (NOT run yet): world lab4_fetch + arm:=true + object3d:=true + move_group, agent --fetch
+#                                         # (brain/ros/fetch_robot.py; default FETCH=false = the stack and agent exactly as before)
 #   GURDY_WEB_TOKEN=... to choose the access token; otherwise a random one is generated and printed (never written to a file).
 # Needs: docker ps empty (one heavy workload at a time). Takes ~2.5 min until the page works. Ctrl+C stops everything.
 # RAM / VRAM are sampled every 5 s into /tmp/gurdy_web_ram.log; the peak is printed when you stop it.
 set -eo pipefail
 cd "$(dirname "$0")/.."
 export MODEL=${MODEL:-gurdy-sft-400} GUI=${GUI:-false} MEMORY=${MEMORY:-true}; PORT=11435
+export FETCH=${FETCH:-false}
+[ "$FETCH" = true ] && WORLD=${WORLD:-lab4_fetch}
 export WORLD=${WORLD:-flat_lab}
 case "$WORLD" in
   flat_lab) MAP_NAME=flat_lab_tripod_gt; MAP_ID=flat_lab; PLACES_FILE=maps/flat_lab.places.yaml ;;
   lab4) MAP_NAME=lab4_map; MAP_ID=lab4; PLACES_FILE=maps/lab4.places.yaml ;;
-  *) echo "unknown WORLD: $WORLD (flat_lab | lab4)"; exit 2 ;;
+  lab4_fetch) MAP_NAME=lab4_map; MAP_ID=lab4_fetch; PLACES_FILE=maps/lab4_fetch.places.yaml ;;   # same walls; the small objects are below the lidar plane
+  *) echo "unknown WORLD: $WORLD (flat_lab | lab4 | lab4_fetch)"; exit 2 ;;
 esac
 export MAP_NAME MAP_ID PLACES_FILE
 PUBLISH=127.0.0.1; HTTPS=false; VOICE=false; TAIL=false
@@ -42,19 +47,21 @@ LOG=/tmp/gurdy_web.log; RAM=/tmp/gurdy_web_ram.log; : > "$LOG"; : > "$RAM"
 cleanup() { $TAIL && ts_stop; [ -n "${SAMPLER:-}" ] && kill "$SAMPLER" 2>/dev/null || true; docker rm -f gurdy3_agent gurdy3_speech >/dev/null 2>&1 || true
   if [ -s "$RAM" ]; then awk '{ if ($2>c) c=$2; if ($3>w) w=$3; if ($4>g) g=$4 } END { printf "peak: container %d MiB, WSL used %d MiB, GPU %d MiB (samples: /tmp/gurdy_web_ram.log)\n", c, w, g }' "$RAM"; fi; }
 trap cleanup EXIT INT TERM
-docker compose run --rm -T --name gurdy3_agent "${PORTS[@]}" "${EXTRA[@]}" -e OLLAMA_URL -e MODEL -e GUI -e MEMORY -e WORLD -e MAP_NAME -e MAP_ID -e PLACES_FILE -e GURDY_WEB_TOKEN -e GURDY_ALLOWED_ORIGINS \
+docker compose run --rm -T --name gurdy3_agent "${PORTS[@]}" "${EXTRA[@]}" -e OLLAMA_URL -e MODEL -e GUI -e MEMORY -e WORLD -e MAP_NAME -e MAP_ID -e PLACES_FILE -e FETCH -e GURDY_WEB_TOKEN -e GURDY_ALLOWED_ORIGINS \
   -v "$HOME/.gurdy:/home/ubuntu/.gurdy" sim bash -c '
   cd ~/gurdy2 && source ros2_ws/install/setup.bash && export PYTHONPATH=$HOME/gurdy2:$HOME/gurdy2/gurdy_core:$HOME/gurdy2/sim_mujoco:$PYTHONPATH
   source scripts/lib_nav_start.sh; mkdir -p /tmp/chat; cp "$PLACES_FILE" /tmp/chat/places.yaml
   trap "stop_nav_stack" EXIT
-  start_nav_stack /tmp/chat gui:=$GUI world:=$WORLD perception:=true estop_gate:=true target_frame:=map nav:=localization map:=$MAP_NAME navigation:=true controller:=policy odom_source:=ground_truth > /tmp/chat/start.log 2>&1 < /dev/null \
+  FETCH_LAUNCH=""; FETCH_ARGS=""; [ "$FETCH" = true ] && FETCH_LAUNCH="arm:=true object3d:=true" && FETCH_ARGS="--fetch"
+  start_nav_stack /tmp/chat gui:=$GUI world:=$WORLD $FETCH_LAUNCH perception:=true estop_gate:=true target_frame:=map nav:=localization map:=$MAP_NAME navigation:=true controller:=policy odom_source:=ground_truth > /tmp/chat/start.log 2>&1 < /dev/null \
     || { echo "Nav2 never became ready (see /tmp/chat/launch.log)"; exit 1; }
   ros2 launch gurdy_safety monitors.launch.py odom_topic:=/odom > /tmp/chat/monitors.log 2>&1 < /dev/null &
   ros2 run gurdy_navigation frontier_explorer_node --ros-args -p serve_action:=true -p clock_topic:=/clock_slow -p log_path:=/tmp/chat/explore_log.json -p done_path:=/tmp/chat/explore.done > /tmp/chat/explorer.log 2>&1 < /dev/null &
+  [ "$FETCH" = true ] && { ros2 launch gurdy_arm_moveit move_group.launch.py arm:=true > /tmp/chat/move_group.log 2>&1 < /dev/null & }
   sleep 12
   MEMORY_ARGS=""; [ "$MEMORY" = true ] && MEMORY_ARGS="--memory-db /home/ubuntu/.gurdy/memory.db"
   LLM_ARGS=""; [ "$MODEL" != keyword ] && LLM_ARGS="--ollama $MODEL"
-  exec python3 -m brain.ros.run_text $LLM_ARGS --places /tmp/chat/places.yaml --map-id $MAP_ID --odom-topic /odom ${MEMORY_ARGS} --web 8080
+  exec python3 -m brain.ros.run_text $LLM_ARGS --places /tmp/chat/places.yaml --map-id $MAP_ID --odom-topic /odom ${MEMORY_ARGS} $FETCH_ARGS --web 8080
 ' > "$LOG" 2>&1 &
 AGENT_PID=$!
 # RAM sampler: <t> <container MiB> <WSL used MiB> <GPU MiB>

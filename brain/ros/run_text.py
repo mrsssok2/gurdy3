@@ -31,6 +31,8 @@ def main() -> None:
                     help="a web page allowed to use this server from a browser (CORS + WebSocket Origin), e.g. https://mrsssok2.github.io; repeatable; 'none' = only the "
                          "server's own pages. Default: env GURDY_ALLOWED_ORIGINS or https://mrsssok2.github.io. Never a wildcard; the token is still required.")
     ap.add_argument("--ollama", default=None, help="model name; needs OLLAMA_URL")
+    ap.add_argument("--fetch", action="store_true", help="Phase 9h: fetch commands on the real arm (needs the stack with arm:=true "
+                    "object3d:=true; brain/ros/fetch_robot.py). Default off: fetch phrases go to the planner as before")
     a = ap.parse_args()
     from ..agent.graph import Agent
     from ..agent.llm import KeywordLLM
@@ -49,6 +51,16 @@ def main() -> None:
     from pathlib import Path
     from ..incidents.backend import with_incidents
     be = with_incidents(be, str(Path(a.memory_db).with_name("incidents.db")) if a.memory_db else None, a.map_id)   # temporal memory; RAM-only without MEMORY
+    if a.fetch:
+        from ..fetch.session import FetchSession
+        from .fetch_robot import RosFetchRobot
+        from .rclpy_arm_port import RclpyArmPort
+        arm = RclpyArmPort()
+        if not arm.arm_ready():
+            print("--fetch: arm_controller not answering (stack started with arm:=true?): fetch stays OFF")
+        else:
+            be.fetch_session = FetchSession(RosFetchRobot(be, arm))
+            print(f"fetch: ON (MoveIt {'yes' if arm.moveit_available() else 'no: direct joint goals'})")
     if a.ollama:
         from ..agent.ollama_llm import OllamaLLM
         llm = OllamaLLM(model=a.ollama, constrain=not a.ollama.startswith("gurdy-sft"))   # fine-tuned model: unconstrained (phase5_eval_sft.md)

@@ -10,7 +10,7 @@ from __future__ import annotations
 import re
 
 from .catalog import COLOURS, label
-from .machine import FetchMachine, Outcome
+from .machine import FetchAborted, FetchMachine, Outcome
 from .mock import ROOMS, room_of
 from .replies import describe, outcome_reply, safe
 from .router import find_object, parse
@@ -106,7 +106,14 @@ class FetchSession:
         if intent["intent"] == "multi":                # several objects: one after another, in the order they were said
             self.queue = list(intent["items"][1:])
             intent = intent["items"][0]
-        return self._run_queue(self._run(intent, chosen))
+        try:
+            return self._run_queue(self._run(intent, chosen))
+        except FetchAborted as e:                        # e-stop during a real-robot primitive: stop everything, say what is true
+            self.queue, self.pending = [], None
+            held = self.r.carrying
+            what = f"I'm still holding {describe(self.r.objects[held])}." if held and held in self.r.objects else \
+                "I'm not holding anything."
+            return f"I stopped ({e}). {what}"
 
     # ---- multi-object requests: one after another; stop at the first item that does not end as asked
     def _run_queue(self, reply: str | None) -> str | None:
@@ -157,6 +164,11 @@ class FetchSession:
                 # not in the map: the machine's FIND step searches (and may fail with NOT_FOUND)
                 unseen = [o for o in self.r.objects.values() if o.cls == obj["class"] and o.name not in self.r.known
                           and (not obj.get("color") or o.color == obj["color"]) and (not obj.get("room") or o.room == obj["room"])]
+                if not unseen and callable(getattr(self.r, "search", None)):
+                    # real robot (brain/ros/fetch_robot.py): nobody has seen one yet -> search the rooms, then look again
+                    ref = {"class": obj["class"], **({"color": obj["color"]} if obj.get("color") else {})}
+                    if self.r.search(ref):
+                        unseen = self._candidates(obj)
                 if not unseen:
                     c = f"{obj['color']} " if obj.get("color") else ""
                     where = f" in {obj['room']}" if obj.get("room") else ""
