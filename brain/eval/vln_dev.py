@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -84,7 +85,10 @@ DEV = [
     ("r02", "wait to the right of the mannequin", GO(S("stop", relation="right_of", of=[R("mannequin")])), {"rooms": [A_, B_, D_], "goal": ("point", D_)}),
     ("r03", "go between the mannequin and the toolbox", GO(S("stop", relation="between", of=[R("mannequin"), R("toolbox")])),
      {"rooms": [A_, C_, D_], "goal": ("point", D_)}),
-    ("r04", "stand behind the yellow box", GO(S("stop", relation="behind", of=[R("box", "yellow")])), {"rooms": [A_, C_], "goal": ("point", C_)}),
+    # r04: ~0.10 m spare clearance to the wall (~2.5 sigma of the mock map): exact map -> arrives; noisy map (mock e2e,
+    # sigma 0.04, sigma_k 3) -> a consistent NO_FREE_SPOT is the intended behaviour (accepted there, vln_plan.md section 12)
+    ("r04", "stand behind the yellow box", GO(S("stop", relation="behind", of=[R("box", "yellow")])), {"rooms": [A_, C_], "goal": ("point", C_), "sigma_refusal_ok": True}),
+    ("r09", "stand behind the mannequin", GO(S("stop", relation="behind", of=[R("mannequin")])), {"rooms": [A_, B_, D_], "goal": ("point", D_)}),
     ("r05", "go in front of the red barrel", GO(S("stop", relation="in_front_of", of=[R("barrel", "red")])), {"rooms": [A_, B_, D_], "goal": ("point", D_)}),
     ("r06", "go next to the extinguisher", GO(S("stop", relation="next_to", of=[R("fire_extinguisher")])), {"rooms": [A_, C_], "goal": ("point", C_)}),
     ("r07", "park between the red box and the cone", GO(S("stop", relation="between", of=[R("box", "red"), R("traffic_cone")])), {"error": "AMBIGUOUS"}),
@@ -205,6 +209,9 @@ def run_mock(planner_factory, verbose=True) -> dict:
             answers.append(a)
             row["ok"] = a["answer_ok"] and (res is None or a.get("knife_edge_arrival", False))
             row["knife_edge_arrival"] = a.get("knife_edge_arrival", False)
+        elif exp.get("sigma_refusal_ok") and res is None and agent.vln.last_plan is not None and agent.vln.last_plan.error == "NO_FREE_SPOT" \
+                and math.hypot(be.x, be.y) < 0.3:
+            row.update(ok=True, sigma_refusal=True)         # borderline spot, noisy map: refused without moving (by design)
         else:
             g = validate(json.dumps(ref), text, gt_world)
             e = M.episode(traj, g.goal, gt_world, g.length_m, avoid=set(g.avoid),

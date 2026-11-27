@@ -247,8 +247,11 @@ def _relation_point(rel, objs, prev, world):
         if rel == "next_to":                             # any free side, nearest to the walker first
             cands += [(L["x"] + sx * OFFSET, L["y"] + sy * OFFSET) for sx, sy in ((lx, ly), (-lx, -ly), (ux, uy))]
     ignore = {o["id"] for o in objs}
+    sig = [o.get("sigma", 0.0) for o in objs]
+    ref = math.hypot(*sig) / 2 if rel == "between" else sig[0]          # the midpoint of two noisy points
+    clear = 0.4 + world.margin + (world.sigma_k * ref if rel == "between" else 0.0)
     for x, y in cands:
-        if world.free(x, y, ignore=ignore) and all(math.hypot(x - o["x"], y - o["y"]) >= 0.4 for o in objs):
+        if world.free(x, y, ignore=ignore, ref_sigma=ref) and all(math.hypot(x - o["x"], y - o["y"]) >= clear for o in objs):
             return x, y
     return None
 
@@ -364,7 +367,8 @@ def validate(raw, text: str, world: VLNWorld) -> Plan:
                            for t_ in [2 * math.pi * i / 16 for i in range(16)]]
                 else:
                     raw = [(L["x"] - ux * kk, L["y"] - uy * kk) for kk in (STOP_STANDOFF, 0.5, 0.8)]
-                cand = [(x, y) for x, y in raw if world.free(x, y, ignore={L["id"]}) and world.room_of(x, y) == room]
+                cand = [(x, y) for x, y in raw if world.free(x, y, ignore={L["id"]}, ref_sigma=L.get("sigma", 0.0))
+                        and world.room_of(x, y) == room]
             for c in cand:
                 seq = [pos, *pts, c]
                 ln = sum(math.dist(p, q) for p, q in zip(seq, seq[1:])) + (math.dist(c, nxt) if nxt else 0.0)

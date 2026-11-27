@@ -18,8 +18,10 @@ ROOT = Path(__file__).resolve().parents[2]
 class VLNWorld:
     rooms: dict                                  # "room A" -> (xmin, ymin, xmax, ymax)
     doors: dict                                  # "A-B" -> (x, y) doorway centre
-    objects: list = field(default_factory=list)  # semantic map: [{id, class, color, x, y, ...}]
+    objects: list = field(default_factory=list)  # semantic map: [{id, class, color, x, y, sigma?, ...}] (sigma = xy 1-sigma, m)
     robot: tuple = (0.0, 0.0, 0.0)               # x, y, yaw (map frame)
+    sigma_k: float = 3.0                         # clearance += sigma_k * position sigma (see `free`)
+    margin: float = 0.0                          # extra fixed clearance (m) for every free-spot check
 
     @classmethod
     def lab4(cls, objects=None, robot=(0.0, 0.0, 0.0), drop=()):
@@ -42,10 +44,36 @@ class VLNWorld:
         if w is not None and hasattr(w, "rooms"):
             rooms = {n: (r.x0, r.y0, r.x1, r.y1) for n, r in w.rooms.items()}
             doors = dict(getattr(w, "doors", {}) or {})
+            from ..mock.backend import OBS_SIGMA
             objs = [{"id": t["id"], "class": t["class"], "color": t.get("color") or "", "x": t["x"], "y": t["y"],
-                     "last_seen": t.get("last_seen")} for t in be.tracks.values() if t.get("state", "present") == "present"]
+                     "last_seen": t.get("last_seen"), "sigma": OBS_SIGMA}         # the mock's sighting noise
+                    for t in be.tracks.values() if t.get("state", "present") == "present"]
             return cls(rooms, doors, objs, (be.x, be.y, be.yaw))
-        raise NotImplementedError("VLNWorld.from_backend: only the mock backend so far")
+        if hasattr(be, "p") and hasattr(be, "places"):
+            return cls.from_ros(be)
+        raise NotImplementedError("VLNWorld.from_backend: mock or RosBackend")
+
+    @classmethod
+    def from_ros(cls, be, default_sigma: float = 0.10):
+        """RosBackend: rooms = the places file's rectangles (kind room), doors = the places file's `doors` if given, else
+        detected on the occupancy map (`doors_from_map`, cached per map), objects = the CONFIRMED semantic-map tracks with
+        their position sigma (object3d `sigma_xyz`, else Phase 4 `sigma_m`, else `default_sigma`), robot = TF map -> base_link."""
+        rooms = {n: tuple(float(c) for c in v["rect"]) for n, v in be.places.items() if v.get("rect") and v.get("kind", "room") == "room"}
+        doors = dict(getattr(be, "doors", None) or {})
+        if not doors:
+            key = (be.p.map_id(), tuple(sorted(rooms.items())))
+            cache = getattr(be, "_vln_doors", None)
+            if not cache or cache[0] != key:
+                be._vln_doors = (key, doors_from_map(rooms, be.p.map_cell))
+            doors = dict(be._vln_doors[1])
+        objs = []
+        for t in be.p.semantic_objects() or []:
+            sx = t.get("sigma_xyz")
+            sig = max(sx[0], sx[1]) if sx else t.get("sigma_m", default_sigma)
+            objs.append({"id": t["id"], "class": t["class"], "color": t.get("color") or "", "x": float(t["x"]), "y": float(t["y"]),
+                         "last_seen": t.get("last_seen"), "sigma": float(sig if sig is not None else default_sigma)})
+        pose = be.p.pose() or (0.0, 0.0, 0.0)
+        return cls(rooms, doors, objs, tuple(pose))
 
     # ---- geometry
     def room_of(self, x, y, margin: float = 0.0):
@@ -111,7 +139,57 @@ class VLNWorld:
         dfs(start, [start], [])
         return out
 
-    def free(self, x, y, wall_margin: float = 0.35, obj_margin: float = 0.4, ignore=()) -> bool:
-        if self.room_of(x, y, wall_margin) is None:
+    def free(self, x, y, wall_margin: float = 0.35, obj_margin: float = 0.4, ignore=(), ref_sigma: float = 0.0) -> bool:
+        """Is (x, y) a spot the robot fits? A point computed FROM a landmark (ref_sigma = that landmark's position sigma) is
+        only as sure as the landmark: the wall clearance grows by sigma_k * ref_sigma, the clearance to another object by
+        sigma_k * sqrt(sigma_obj^2 + ref_sigma^2), both plus `margin`. With sigmas the decision for a spot whose clearance is
+        within the map's noise is a consistent NO instead of a coin flip (VLN DEV r01, vln_plan.md section 12)."""
+        k, m = self.sigma_k, self.margin
+        if self.room_of(x, y, wall_margin + m + k * ref_sigma) is None:
             return False
-        return all(math.hypot(x - o["x"], y - o["y"]) >= obj_margin for o in self.objects if o.get("id") not in ignore)
+        return all(math.hypot(x - o["x"], y - o["y"]) >= obj_margin + m + k * math.hypot(o.get("sigma", 0.0), ref_sigma)
+                   for o in self.objects if o.get("id") not in ignore)
+
+
+def _letter(room: str) -> str:
+    return room.split()[-1]
+
+
+def doors_from_map(rooms: dict, map_cell, step: float = 0.05, side: float = 0.25, min_width: float = 0.5) -> dict:
+    """Doorways between rectangular rooms, found on the occupancy map: for every pair of rooms that share an edge, walk along
+    the shared edge; a sample is passable when the map is FREE on the edge and `side` m into both rooms. The longest
+    passable run of at least `min_width` is the doorway (its centre). map_cell(x, y) -> "free" | "occupied" | "unknown" | None.
+    -> {"A-B": (x, y)} (room names "room X"). Assumes axis-aligned rooms that touch (lab worlds)."""
+    out = {}
+    names = sorted(rooms)
+    for i, a in enumerate(names):
+        for b in names[i + 1:]:
+            ax0, ay0, ax1, ay1 = rooms[a]
+            bx0, by0, bx1, by1 = rooms[b]
+            edge = None
+            if abs(ax1 - bx0) < 0.06 or abs(bx1 - ax0) < 0.06:            # a vertical shared edge
+                x = ax1 if abs(ax1 - bx0) < 0.06 else ax0
+                lo, hi = max(ay0, by0), min(ay1, by1)
+                edge = ("v", x, lo, hi)
+            elif abs(ay1 - by0) < 0.06 or abs(by1 - ay0) < 0.06:          # a horizontal shared edge
+                y = ay1 if abs(ay1 - by0) < 0.06 else ay0
+                lo, hi = max(ax0, bx0), min(ax1, bx1)
+                edge = ("h", y, lo, hi)
+            if edge is None or edge[3] - edge[2] < min_width:
+                continue
+            kind, c, lo, hi = edge
+            n = int((hi - lo) / step)
+            run, best = [], []
+            for k in range(n + 1):
+                t = lo + k * step
+                pts = [(c, t), (c - side, t), (c + side, t)] if kind == "v" else [(t, c), (t, c - side), (t, c + side)]
+                if all(map_cell(px, py) == "free" for px, py in pts):
+                    run.append(t)
+                else:
+                    best, run = (run if len(run) > len(best) else best), []
+            best = run if len(run) > len(best) else best
+            if best and best[-1] - best[0] >= min_width - step:
+                mid = (best[0] + best[-1]) / 2
+                pair = sorted([_letter(a), _letter(b)])
+                out[f"{pair[0]}-{pair[1]}"] = (round(c, 3), round(mid, 3)) if kind == "v" else (round(mid, 3), round(c, 3))
+    return out

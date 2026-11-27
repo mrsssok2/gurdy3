@@ -11,8 +11,8 @@ machinery, with the checks running on the robot's REAL pose. Mock backend only s
     second look); only then "I'm in room D / at the red barrel"; otherwise the reply says what is true instead
   * e-stop at any time: the backend's e-stop flag, or the running leg cancelled by someone else (AgentHost.estop calls
     the stop tool without the agent lock) -> the walk ends at once, zones removed, "I stopped ..."
-Blocking: `run` returns when the walk is over. Time: MockBackend.advance (virtual clock); a real backend would sleep and
-tick (not used yet). The legs' task events are consumed here (no per-leg "arrived" announcements); other alerts are
+Blocking: `run` returns when the walk is over. Time: MockBackend.advance (virtual clock); RosBackend: tick() every step,
+time passes by wall sleep on the real stack (FakePort.advance in the tests). The legs' task events are consumed here (no per-leg "arrived" announcements); other alerts are
 appended to the reply.
 """
 from __future__ import annotations
@@ -60,10 +60,11 @@ class VLNExecutor:
         return bool(getattr(self.b, "estop", False) is True)
 
     def _step(self):
-        if hasattr(self.b, "advance"):
+        if hasattr(self.b, "advance"):                    # MockBackend: virtual clock
             self.b.advance(self.dt)
-        else:
-            time.sleep(self.dt)
+        else:                                             # RosBackend: let time pass (FakePort.advance in tests, wall sleep live), tick
+            adv = getattr(getattr(self.b, "p", None), "advance", None)
+            adv(self.dt) if callable(adv) else time.sleep(self.dt)
             self.b.tick()
         for ev in self.b.poll_events():
             if not ev["type"].startswith("task_") and ev["type"] not in ("path_blocked", "object_new") and ev.get("severity") in ("warning", "critical"):
@@ -169,6 +170,8 @@ class VLNExecutor:
                     min_d = min(min_d, math.hypot(x - L["x"], y - L["y"]))
             m = next((m for m in reversed(self.b.missions) if m["id"] == tid), None)
             state = m["state"] if m else "unknown"
+            if self._estop() or state == "estop":           # the backend ended the leg because of the e-stop (RosBackend.estop)
+                return VLNResult(False, "ESTOP", self._stop_reply("emergency stop"))
             if state == "cancelled" and not mine_cancel:
                 return VLNResult(False, "ESTOP", self._stop_reply("you stopped me"))
             if state not in ("reached", "done"):

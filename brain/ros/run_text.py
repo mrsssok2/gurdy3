@@ -31,6 +31,8 @@ def main() -> None:
                     help="a web page allowed to use this server from a browser (CORS + WebSocket Origin), e.g. https://mrsssok2.github.io; repeatable; 'none' = only the "
                          "server's own pages. Default: env GURDY_ALLOWED_ORIGINS or https://mrsssok2.github.io. Never a wildcard; the token is still required.")
     ap.add_argument("--ollama", default=None, help="model name; needs OLLAMA_URL")
+    ap.add_argument("--vln", action="store_true", help="VLN instructions (brain/vln: plan by the --ollama model, validated, walked with "
+                    "temporary no-go zones and progress checks). Needs a places file with room rectangles. Default off")
     ap.add_argument("--fetch", action="store_true", help="Phase 9h: fetch commands on the real arm (needs the stack with arm:=true "
                     "object3d:=true; brain/ros/fetch_robot.py). Default off: fetch phrases go to the planner as before")
     a = ap.parse_args()
@@ -66,7 +68,12 @@ def main() -> None:
         llm = OllamaLLM(model=a.ollama, constrain=not a.ollama.startswith("gurdy-sft"))   # fine-tuned model: unconstrained (phase5_eval_sft.md)
     else:
         llm = KeywordLLM(be.known_places, smart=True)
-    agent = Agent(ToolLayer(be), llm)
+    vln = None
+    if a.vln:
+        from ..vln.planner import VLNPlanner
+        vln = VLNPlanner(model=a.ollama or None)
+        print(f"VLN: ON (plan model {vln.llm.model})")
+    agent = Agent(ToolLayer(be), llm, vln=vln)
     from .chat_ui import Chat
     chat = Chat(agent, be.known_places, prompt="> ")
     print("Gurdy (ROS). Type a command; 'status' line = '?'; '!estop' / '!release' = emergency stop latch; 'quit' to exit.")

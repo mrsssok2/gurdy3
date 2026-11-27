@@ -224,7 +224,7 @@ from the true object positions): **45 / 45**. 30 navigation episodes: success ra
 wrong-room 0, avoid violations 0, false claims 0; 11 answer cases: accuracy 1.0; 4 not-nav: not routed. 1.4 s wall for
 all 45 (virtual clock).
 
-**Finding (r01, knife edge).** "Stop to the left of the blue barrel" is NO_FREE_SPOT with the true positions (0.47 m
+**Finding (r01, knife edge) — addressed in section 12 (sigma in the clearance).** "Stop to the left of the blue barrel" is NO_FREE_SPOT with the true positions (0.47 m
 gap), but the mock's map has 4 cm observation noise, and with it the gap comes out just wide enough: the robot walks
 there and arrives (the spot IS free in the mock's true occupancy, which uses a smaller robot inflation than the VLN
 margins). Scored as correct only because of that check. Lesson for Gazebo: free-spot decisions within the map's sigma
@@ -240,3 +240,96 @@ of the margin flip; add sigma (object3d `sigma_xyz`) to the clearance before the
   and tick), `VLNWorld.from_backend` only for the mock (needs the places rectangles + doors + semantic map).
 * Blocking: while walking, the agent answers nothing but the e-stop (same as the ROS fetch).
 * One re-plan only; the re-plan reuses the model's first output (no second LLM call).
+
+## 12. Clearance with position uncertainty + VLN on the ROS backend (2026-11-27; host tests only, nothing run in ROS)
+
+### 12.1 Sigma in the free-spot check (`VLNWorld.free`, `plan._relation_point`)
+
+Every landmark carries its xy sigma:
+* object3d tracks: `sigma_xyz` (max of x, y);
+* Phase 4 tracks: `sigma_m`;
+* unknown: 0.10 m;
+* mock: 0.04 m (its sighting noise);
+* ground truth: 0.
+
+A point computed from a landmark (stop / pass / relation) is only as sure as that landmark, so:
+* wall clearance = 0.35 + `margin` + `sigma_k` · σ_landmark;
+* object clearance = 0.4 + `margin` + `sigma_k` · √(σ_obj² + σ_landmark²);
+* "between" uses the midpoint's σ = √(σa² + σb²) / 2.
+
+Parameters on the world: `sigma_k` (default **3.0**) and `margin` (default 0.0, a fixed extra clearance).
+
+**Measured: the blue-barrel case (DEV r01).** The 0.47 m gap to the wall, with 4 cm map noise:
+
+| sigma_k | refused (of 500 draws) |
+|---|---|
+| 0 | 305 (61 %, a coin flip) |
+| 2.0 | 496 |
+| 2.5 | 499 |
+| 3.0 | **500** |
+
+Over 1000 more draws at k = 3 it was never accepted (test).
+
+**What it does NOT do.** It moves the decision boundary; it cannot remove it. Under the same noise:
+
+| case | accepted (of 200) |
+|---|---|
+| r02, r03, r05, r06, r09 | 200 |
+| r08 | 199 |
+| r04 "behind the yellow box" (about 0.10 m spare ≈ 2.5 σ) | **96 (still a coin flip)** |
+
+The flip band has moved from "spare ≈ 0" (the robot does not fit, but the spot is accepted: the dangerous side) to "spare
+≈ 3σ" (the robot would fit, but the spot is refused: the safe side). The DEV mock e2e accepts a refusal for r04 (marked
+`sigma_refusal_ok`) and keeps a positive "behind" case (r09). On an exact map (σ = 0) nothing changes: the oracle DEV
+run is 46/46, as before.
+
+### 12.2 RosBackend (behind `run_text --vln` / `VLN=true scripts/start_web_robot.sh`, default off)
+
+**Temporary zones** (`RosBackend.add_temp_zone(rect, tag, name, ttl_s=1800)` / `remove_temp_zones(tag | None)`):
+* They go into the SAME `zones` list as the user's no-go zones, as rectangles, so they get the same enforcement:
+  * goals are refused inside them;
+  * the Nav2 plan check and `_detour` apply;
+  * running legs re-check their path (`zones_version` is bumped);
+  * straight walks check them.
+* They are removed:
+  * by tag in the executor's `finally` (normal end, failure, exception);
+  * all of them on `estop(True)`;
+  * by their TTL in `tick()` (event `zone_expired`), if the executor never comes back.
+* They are never written to the places file (`_save_places` filters them; `_load_places` drops any found there), so a
+  process crash loses them too.
+
+**World model** (`VLNWorld.from_ros`):
+* rooms: the places-file rectangles;
+* doors: the places file's optional `doors:` section, else detected on `/map` (`doors_from_map`) and cached per map
+  id + rooms;
+  * `doors_from_map`: along each shared room edge, where the map is free on the edge and 0.25 m into both rooms, the
+    longest free run ≥ 0.5 m is the doorway centre;
+  * on the lab4 walls: within 2.5 cm of the ground-truth doorways;
+* objects: the confirmed semantic-map tracks with their σ;
+* pose: TF.
+
+**Executor on ROS:**
+* It ticks RosBackend every 0.5 s and sleeps (FakePort.advance in the tests).
+* E-stop: the port's `estop_active()`, a cancelled leg, or a leg that RosBackend ended with state `estop`.
+* The re-observation uses the detector's `last_seen` (sim time, the same clock as `now()`).
+
+**Tests** (`brain/tests/test_vln_ros.py`, 16; RosBackend + a FakePort with the lab4 walls on `/map` and a fake detector
+that marks objects in the camera cone as seen):
+* sigma: consistency of the blue barrel; roomy spots unaffected; never accepting a no-room spot; margin and σ terms
+* temporary zones: enforced, not saved, removed by tag, on e-stop and by TTL, ignored when found in a file
+* world: rooms / doors / σ / pose from RosBackend; places-file doors win; synthetic door detection (gap, no gap, too narrow)
+* walks: an avoid walk on RosBackend (zone = room B, never entered, removed after); the agent's red-barrel walk with
+  re-observation; a blind detector → no arrival claim; e-stop mid walk → zones removed; a crash mid walk → zones removed,
+  the robot stopped, "Something went wrong"; flag off
+
+**Suites:** brain 1178 passed / 3 skipped; VLN DEV oracle 46/46; mock end to end 46/46 (SR 1.0, SPL 0.995, 0 false claims,
+0 avoid violations, answers 11/11); fetch DEV 42/42; keyword v1 57.0 % (unchanged); web OK.
+
+**Not verified:**
+* Nothing ran in ROS or Gazebo.
+* The real `/map` has noise and unknown cells: door detection may need a looser free test.
+* Nav2 does not know the temporary zones (backend-side checks only, as for the user's zones; the keepout filter is
+  still "NEW").
+* The walk is blocking: the agent answers only the e-stop while walking.
+
+**Stop here (user, 2026-11-27):** no more new features until the Gazebo tests catch up.
