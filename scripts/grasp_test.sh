@@ -34,7 +34,8 @@ if docker ps --format '{{.Names}}' | grep -q .; then
 fi
 git rev-parse HEAD > "$OUT/commit.txt" 2>/dev/null || true
 
-timeout --signal=INT "${GRASP_TIMEOUT:-3600}" docker compose run --rm -T --name "$NAME" sim bash -c "
+SERVICE=sim; [ "$MOVEIT" != off ] && SERVICE=sim_moveit     # MoveIt lives only in gurdy3/ros:jazzy-moveit
+timeout --signal=INT "${GRASP_TIMEOUT:-3600}" docker compose --profile moveit run --rm -T --name "$NAME" $SERVICE bash -c "
   set -o pipefail; cd ~/gurdy2; set +u; source ros2_ws/install/setup.bash
   export PYTHONPATH=\$HOME/gurdy2/gurdy_core:\$HOME/gurdy2:\$HOME/gurdy2/scripts:\${PYTHONPATH:-}
   D=$OUT

@@ -1,0 +1,148 @@
+[INFO] [launch]: All log files can be found below /home/ubuntu/.ros/log/2026-11-27-04-04-21-108491-24dc26b888ec-349
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [move_group-1]: process started with pid [353]
+[move_group-1] [WARN] [1795752261.380625520] [move_group]: Using default pipeline 'ompl'
+[move_group-1] [INFO] [1795752261.384468100] [move_group.moveit.moveit.ros.rdf_loader]: Loaded robot model in 0 seconds
+[move_group-1] [INFO] [1795752261.384580583] [move_group.moveit.moveit.core.robot_model]: Loading robot model 'gurdy'...
+[move_group-1] [WARN] [1795752261.384644560] [move_group.moveit.moveit.core.robot_model]: Link wrist_camera_link has visual geometry but no collision geometry. Collision geometry will be left empty. Fix your URDF file by explicitly specifying collision geometry.
+[move_group-1] [WARN] [1795752261.384655093] [move_group.moveit.moveit.core.robot_model]: Link camera_link has visual geometry but no collision geometry. Collision geometry will be left empty. Fix your URDF file by explicitly specifying collision geometry.
+[move_group-1] [WARN] [1795752261.384666297] [move_group.moveit.moveit.core.robot_model]: Link lf_coxa has visual geometry but no collision geometry. Collision geometry will be left empty. Fix your URDF file by explicitly specifying collision geometry.
+[move_group-1] [WARN] [1795752261.384676839] [move_group.moveit.moveit.core.robot_model]: Link lf_femur has visual geometry but no collision geometry. Collision geometry will be left empty. Fix your URDF file by explicitly specifying collision geometry.
+[move_group-1] [WARN] [1795752261.384686352] [move_group.moveit.moveit.core.robot_model]: Link lidar_link has visual geometry but no collision geometry. Collision geometry will be left empty. Fix your URDF file by explicitly specifying collision geometry.
+[move_group-1] [WARN] [1795752261.384691556] [move_group.moveit.moveit.core.robot_model]: Link lm_coxa has visual geometry but no collision geometry. Collision geometry will be left empty. Fix your URDF file by explicitly specifying collision geometry.
+[move_group-1] [WARN] [1795752261.384696897] [move_group.moveit.moveit.core.robot_model]: Link lm_femur has visual geometry but no collision geometry. Collision geometry will be left empty. Fix your URDF file by explicitly specifying collision geometry.
+[move_group-1] [WARN] [1795752261.384704480] [move_group.moveit.moveit.core.robot_model]: Link lr_coxa has visual geometry but no collision geometry. Collision geometry will be left empty. Fix your URDF file by explicitly specifying collision geometry.
+[move_group-1] [WARN] [1795752261.384710561] [move_group.moveit.moveit.core.robot_model]: Link lr_femur has visual geometry but no collision geometry. Collision geometry will be left empty. Fix your URDF file by explicitly specifying collision geometry.
+[move_group-1] [WARN] [1795752261.384717936] [move_group.moveit.moveit.core.robot_model]: Link rf_coxa has visual geometry but no collision geometry. Collision geometry will be left empty. Fix your URDF file by explicitly specifying collision geometry.
+[move_group-1] [WARN] [1795752261.384723510] [move_group.moveit.moveit.core.robot_model]: Link rf_femur has visual geometry but no collision geometry. Collision geometry will be left empty. Fix your URDF file by explicitly specifying collision geometry.
+[move_group-1] [WARN] [1795752261.384730678] [move_group.moveit.moveit.core.robot_model]: Link rm_coxa has visual geometry but no collision geometry. Collision geometry will be left empty. Fix your URDF file by explicitly specifying collision geometry.
+[move_group-1] [WARN] [1795752261.384736092] [move_group.moveit.moveit.core.robot_model]: Link rm_femur has visual geometry but no collision geometry. Collision geometry will be left empty. Fix your URDF file by explicitly specifying collision geometry.
+[move_group-1] [WARN] [1795752261.384743607] [move_group.moveit.moveit.core.robot_model]: Link rr_coxa has visual geometry but no collision geometry. Collision geometry will be left empty. Fix your URDF file by explicitly specifying collision geometry.
+[move_group-1] [WARN] [1795752261.384748773] [move_group.moveit.moveit.core.robot_model]: Link rr_femur has visual geometry but no collision geometry. Collision geometry will be left empty. Fix your URDF file by explicitly specifying collision geometry.
+[move_group-1] [INFO] [1795752261.406586397] [move_group.moveit.moveit.ros.planning_scene_monitor]: Publishing maintained planning scene on 'monitored_planning_scene'
+[move_group-1] [INFO] [1795752261.406782966] [move_group.moveit.moveit.ros.moveit_cpp]: Listening to 'joint_states' for joint states
+[move_group-1] [INFO] [1795752261.407457415] [move_group.moveit.moveit.ros.current_state_monitor]: Listening to joint states on topic 'joint_states'
+[move_group-1] [INFO] [1795752261.408176735] [move_group.moveit.moveit.ros.planning_scene_monitor]: Listening to '/attached_collision_object' for attached collision objects
+[move_group-1] [INFO] [1795752261.408229285] [move_group.moveit.moveit.ros.planning_scene_monitor]: Stopping existing planning scene publisher.
+[move_group-1] [INFO] [1795752261.408540177] [move_group.moveit.moveit.ros.planning_scene_monitor]: Stopped publishing maintained planning scene.
+[move_group-1] [INFO] [1795752261.409054235] [move_group.moveit.moveit.ros.planning_scene_monitor]: Publishing maintained planning scene on 'monitored_planning_scene'
+[move_group-1] [INFO] [1795752261.409265632] [move_group.moveit.moveit.ros.planning_scene_monitor]: Starting planning scene monitor
+[move_group-1] [INFO] [1795752261.409908903] [move_group.moveit.moveit.ros.planning_scene_monitor]: Listening to '/planning_scene'
+[move_group-1] [INFO] [1795752261.409940552] [move_group.moveit.moveit.ros.planning_scene_monitor]: Starting world geometry update monitor for collision objects, attached objects, octomap updates.
+[move_group-1] [INFO] [1795752261.410229393] [move_group.moveit.moveit.ros.planning_scene_monitor]: Listening to 'collision_object'
+[move_group-1] [INFO] [1795752261.410498382] [move_group.moveit.moveit.ros.planning_scene_monitor]: Listening to 'planning_scene_world' for planning scene world geometry
+[move_group-1] [WARN] [1795752261.410755838] [move_group.moveit.moveit.ros.occupancy_map_monitor]: Resolution not specified for Octomap. Assuming resolution = 0.1 instead
+[move_group-1] [ERROR] [1795752261.410785726] [move_group.moveit.moveit.ros.occupancy_map_monitor]: No 3D sensor plugin(s) defined for octomap updates
+[move_group-1] [INFO] [1795752261.422257891] [move_group.moveit.moveit.ros.planning_pipeline]: Successfully loaded planner 'OMPL'
+[move_group-1] [INFO] [1795752261.423050313] [move_group]: Try loading adapter 'default_planning_request_adapters/ResolveConstraintFrames'
+[move_group-1] [INFO] [1795752261.423828274] [move_group]: Loaded adapter 'default_planning_request_adapters/ResolveConstraintFrames'
+[move_group-1] [INFO] [1795752261.423904918] [move_group]: Try loading adapter 'default_planning_request_adapters/ValidateWorkspaceBounds'
+[move_group-1] [INFO] [1795752261.424087480] [move_group]: Loaded adapter 'default_planning_request_adapters/ValidateWorkspaceBounds'
+[move_group-1] [INFO] [1795752261.424096733] [move_group]: Try loading adapter 'default_planning_request_adapters/CheckStartStateBounds'
+[move_group-1] [INFO] [1795752261.424114797] [move_group]: Loaded adapter 'default_planning_request_adapters/CheckStartStateBounds'
+[move_group-1] [INFO] [1795752261.424117915] [move_group]: Try loading adapter 'default_planning_request_adapters/CheckStartStateCollision'
+[move_group-1] [INFO] [1795752261.424126486] [move_group]: Loaded adapter 'default_planning_request_adapters/CheckStartStateCollision'
+[move_group-1] [INFO] [1795752261.424814877] [move_group]: Try loading adapter 'default_planning_response_adapters/AddTimeOptimalParameterization'
+[move_group-1] [INFO] [1795752261.426666496] [move_group]: Loaded adapter 'default_planning_response_adapters/AddTimeOptimalParameterization'
+[move_group-1] [INFO] [1795752261.426701752] [move_group]: Try loading adapter 'default_planning_response_adapters/ValidateSolution'
+[move_group-1] [INFO] [1795752261.428405117] [move_group]: Loaded adapter 'default_planning_response_adapters/ValidateSolution'
+[move_group-1] [INFO] [1795752261.447354339] [move_group.moveit.moveit.plugins.simple_controller_manager]: Added FollowJointTrajectory controller for arm_controller
+[move_group-1] [INFO] [1795752261.447591014] [move_group.moveit.moveit.plugins.simple_controller_manager]: Returned 1 controllers in list
+[move_group-1] [INFO] [1795752261.447622344] [move_group.moveit.moveit.plugins.simple_controller_manager]: Returned 1 controllers in list
+[move_group-1] [INFO] [1795752261.448516848] [move_group.moveit.moveit.ros.trajectory_execution_manager]: Trajectory execution is not managing controllers
+[move_group-1] [INFO] [1795752261.448818959] [move_group]: MoveGroup debug mode is ON
+[move_group-1] [INFO] [1795752261.463597688] [move_group.moveit.moveit.ros.move_group.executable]: 
+[move_group-1] 
+[move_group-1] ********************************************************
+[move_group-1] * MoveGroup using: 
+[move_group-1] *     - apply_planning_scene_service
+[move_group-1] *     - clear_octomap_service
+[move_group-1] *     - get_group_urdf
+[move_group-1] *     - load_geometry_from_file
+[move_group-1] *     - CartesianPathService
+[move_group-1] *     - execute_trajectory_action
+[move_group-1] *     - get_planning_scene_service
+[move_group-1] *     - kinematics_service
+[move_group-1] *     - move_action
+[move_group-1] *     - motion_plan_service
+[move_group-1] *     - query_planners_service
+[move_group-1] *     - state_validation_service
+[move_group-1] *     - save_geometry_to_file
+[move_group-1] ********************************************************
+[move_group-1] 
+[move_group-1] [INFO] [1795752261.463694674] [move_group.moveit.moveit.ros.move_group.context]: MoveGroup context using pipeline ompl
+[move_group-1] [INFO] [1795752261.463704859] [move_group.moveit.moveit.ros.move_group.context]: MoveGroup context initialization complete
+[move_group-1] [96mLoading 'move_group/ApplyPlanningSceneService'...[0m
+[move_group-1] [96mLoading 'move_group/ClearOctomapService'...[0m
+[move_group-1] [96mLoading 'move_group/GetUrdfService'...[0m
+[move_group-1] [96mLoading 'move_group/LoadGeometryFromFileService'...[0m
+[move_group-1] [96mLoading 'move_group/MoveGroupCartesianPathService'...[0m
+[move_group-1] [96mLoading 'move_group/MoveGroupExecuteTrajectoryAction'...[0m
+[move_group-1] [96mLoading 'move_group/MoveGroupGetPlanningSceneService'...[0m
+[move_group-1] [96mLoading 'move_group/MoveGroupKinematicsService'...[0m
+[move_group-1] [96mLoading 'move_group/MoveGroupMoveAction'...[0m
+[move_group-1] [96mLoading 'move_group/MoveGroupPlanService'...[0m
+[move_group-1] [96mLoading 'move_group/MoveGroupQueryPlannersService'...[0m
+[move_group-1] [96mLoading 'move_group/MoveGroupStateValidationService'...[0m
+[move_group-1] [96mLoading 'move_group/SaveGeometryToFileService'...[0m
+[move_group-1] 
+[move_group-1] [92mYou can start planning now![0m
+[move_group-1] 
+[move_group-1] [INFO] [1795752304.337117107] [move_group.moveit.moveit.ros.move_group.move_action]: MoveGroupMoveAction: Received request
+[move_group-1] [INFO] [1795752304.337621497] [move_group.moveit.moveit.ros.move_group.move_action]: executing..
+[move_group-1] [INFO] [1795752304.342715452] [move_group.moveit.moveit.ros.move_group.move_action]: Combined planning and execution request received for MoveGroup action. Forwarding to planning and execution pipeline.
+[move_group-1] [WARN] [1795752304.342835279] [move_group.moveit.moveit.ros.move_group.capability]: Execution of motions should always start at the robot's current state. Ignoring the state supplied as start state in the motion planning request
+[move_group-1] [WARN] [1795752304.342864365] [move_group.moveit.moveit.ros.move_group.capability]: Execution of motions should always start at the robot's current state. Ignoring the state supplied as difference in the planning scene diff
+[move_group-1] [INFO] [1795752304.342926831] [move_group.moveit.moveit.ros.plan_execution]: Planning attempt 1 of at most 1
+[move_group-1] [INFO] [1795752304.343278535] [move_group]: Calling PlanningRequestAdapter 'ResolveConstraintFrames'
+[move_group-1] [INFO] [1795752304.343389669] [move_group]: Calling PlanningRequestAdapter 'ValidateWorkspaceBounds'
+[move_group-1] [WARN] [1795752304.343424514] [move_group.moveit.moveit.ros.validate_workspace_bounds]: It looks like the planning volume was not specified. Using default values.
+[move_group-1] [INFO] [1795752304.343444228] [move_group]: Calling PlanningRequestAdapter 'CheckStartStateBounds'
+[move_group-1] [INFO] [1795752304.343465826] [move_group]: Calling PlanningRequestAdapter 'CheckStartStateCollision'
+[move_group-1] [INFO] [1795752304.344362545] [move_group.moveit.moveit.planners.ompl.model_based_planning_context]: Planner configuration 'arm' will use planner 'geometric::RRTConnect'. Additional configuration parameters will be set when the planner is constructed.
+[move_group-1] [INFO] [1795752304.344559548] [move_group]: Calling Planner 'OMPL'
+[move_group-1] [INFO] [1795752304.374203901] [move_group]: Calling PlanningResponseAdapter 'AddTimeOptimalParameterization'
+[move_group-1] [WARN] [1795752304.374283758] [move_group.moveit.moveit.core.time_optimal_trajectory_generation]: Invalid max_acceleration_scaling_factor 0.000000 specified, defaulting to 1.000000 instead.
+[move_group-1] [INFO] [1795752304.377775357] [move_group]: Calling PlanningResponseAdapter 'ValidateSolution'
+[move_group-1] [WARN] [1795752304.378400325] [move_group.moveit.moveit.ros.planning_pipeline]: The planner plugin did not fill out the 'planner_id' field of the MotionPlanResponse. Setting it to the planner ID name of the MotionPlanRequest assuming that the planner plugin does warn you if it does not use the requested planner.
+[move_group-1] [INFO] [1795752304.378595674] [move_group.moveit.moveit.plugins.simple_controller_manager]: Returned 1 controllers in list
+[move_group-1] [INFO] [1795752304.378628894] [move_group.moveit.moveit.plugins.simple_controller_manager]: Returned 1 controllers in list
+[move_group-1] [INFO] [1795752304.378707233] [move_group.moveit.moveit.ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.02
+[move_group-1] [INFO] [1795752304.382438731] [move_group.moveit.moveit.ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-1] [INFO] [1795752304.382577227] [move_group.moveit.moveit.plugins.simple_controller_manager]: Returned 1 controllers in list
+[move_group-1] [INFO] [1795752304.382604940] [move_group.moveit.moveit.plugins.simple_controller_manager]: Returned 1 controllers in list
+[move_group-1] [INFO] [1795752304.382781107] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to arm_controller
+[move_group-1] [INFO] [1795752304.383762487] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: arm_controller started execution
+[move_group-1] [INFO] [1795752304.383801892] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[move_group-1] [INFO] [1795752307.234069678] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'arm_controller' successfully finished
+[move_group-1] [INFO] [1795752307.242325217] [move_group.moveit.moveit.ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-1] [INFO] [1795752307.242826516] [move_group.moveit.moveit.ros.move_group.move_action]: Solution was found and executed.
+[move_group-1] [INFO] [1795752329.342885204] [move_group.moveit.moveit.ros.move_group.move_action]: MoveGroupMoveAction: Received request
+[move_group-1] [INFO] [1795752329.343709773] [move_group.moveit.moveit.ros.move_group.move_action]: executing..
+[move_group-1] [INFO] [1795752329.351377253] [move_group.moveit.moveit.ros.move_group.move_action]: Combined planning and execution request received for MoveGroup action. Forwarding to planning and execution pipeline.
+[move_group-1] [WARN] [1795752329.351484539] [move_group.moveit.moveit.ros.move_group.capability]: Execution of motions should always start at the robot's current state. Ignoring the state supplied as start state in the motion planning request
+[move_group-1] [WARN] [1795752329.351520898] [move_group.moveit.moveit.ros.move_group.capability]: Execution of motions should always start at the robot's current state. Ignoring the state supplied as difference in the planning scene diff
+[move_group-1] [INFO] [1795752329.351539330] [move_group.moveit.moveit.ros.plan_execution]: Planning attempt 1 of at most 1
+[move_group-1] [INFO] [1795752329.351846542] [move_group]: Calling PlanningRequestAdapter 'ResolveConstraintFrames'
+[move_group-1] [INFO] [1795752329.351891177] [move_group]: Calling PlanningRequestAdapter 'ValidateWorkspaceBounds'
+[move_group-1] [WARN] [1795752329.351895467] [move_group.moveit.moveit.ros.validate_workspace_bounds]: It looks like the planning volume was not specified. Using default values.
+[move_group-1] [INFO] [1795752329.351903525] [move_group]: Calling PlanningRequestAdapter 'CheckStartStateBounds'
+[move_group-1] [INFO] [1795752329.351921465] [move_group]: Calling PlanningRequestAdapter 'CheckStartStateCollision'
+[move_group-1] [INFO] [1795752329.352278404] [move_group.moveit.moveit.planners.ompl.model_based_planning_context]: Planner configuration 'arm' will use planner 'geometric::RRTConnect'. Additional configuration parameters will be set when the planner is constructed.
+[move_group-1] [INFO] [1795752329.352418684] [move_group]: Calling Planner 'OMPL'
+[move_group-1] [INFO] [1795752329.377945843] [move_group]: Calling PlanningResponseAdapter 'AddTimeOptimalParameterization'
+[move_group-1] [WARN] [1795752329.378043688] [move_group.moveit.moveit.core.time_optimal_trajectory_generation]: Invalid max_acceleration_scaling_factor 0.000000 specified, defaulting to 1.000000 instead.
+[move_group-1] [INFO] [1795752329.381218765] [move_group]: Calling PlanningResponseAdapter 'ValidateSolution'
+[move_group-1] [WARN] [1795752329.381962849] [move_group.moveit.moveit.ros.planning_pipeline]: The planner plugin did not fill out the 'planner_id' field of the MotionPlanResponse. Setting it to the planner ID name of the MotionPlanRequest assuming that the planner plugin does warn you if it does not use the requested planner.
+[move_group-1] [INFO] [1795752329.382113467] [move_group.moveit.moveit.plugins.simple_controller_manager]: Returned 1 controllers in list
+[move_group-1] [INFO] [1795752329.382129887] [move_group.moveit.moveit.plugins.simple_controller_manager]: Returned 1 controllers in list
+[move_group-1] [INFO] [1795752329.382193072] [move_group.moveit.moveit.ros.trajectory_execution_manager]: Validating trajectory with allowed_start_tolerance 0.02
+[move_group-1] [INFO] [1795752329.388828940] [move_group.moveit.moveit.ros.trajectory_execution_manager]: Starting trajectory execution ...
+[move_group-1] [INFO] [1795752329.388922849] [move_group.moveit.moveit.plugins.simple_controller_manager]: Returned 1 controllers in list
+[move_group-1] [INFO] [1795752329.388971996] [move_group.moveit.moveit.plugins.simple_controller_manager]: Returned 1 controllers in list
+[move_group-1] [INFO] [1795752329.389187042] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: sending trajectory to arm_controller
+[move_group-1] [INFO] [1795752329.389665423] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: arm_controller started execution
+[move_group-1] [INFO] [1795752329.389691827] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Goal request accepted!
+[move_group-1] [INFO] [1795752331.840025208] [moveit.simple_controller_manager.follow_joint_trajectory_controller_handle]: Controller 'arm_controller' successfully finished
+[move_group-1] [INFO] [1795752331.841061036] [move_group.moveit.moveit.ros.trajectory_execution_manager]: Completed trajectory execution with status SUCCEEDED ...
+[move_group-1] [INFO] [1795752331.848938807] [move_group.moveit.moveit.ros.move_group.move_action]: Solution was found and executed.

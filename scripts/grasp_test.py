@@ -111,8 +111,8 @@ class Rig(Node):
         from std_msgs.msg import Bool, Float64MultiArray
         self.FJT, self.Twist, self.F64, self.Bool = FollowJointTrajectory, Twist, Float64MultiArray, Bool
         self.a = a
-        self.js, self.odom, self.depth, self.K = {}, None, None, None
-        self.create_subscription(JointState, "/joint_states", lambda m: self.js.update(dict(zip(m.name, m.position))), 20)
+        self.js, self.eff, self.odom, self.depth, self.K = {}, {}, None, None, None
+        self.create_subscription(JointState, "/joint_states", self._js, 20)
         self.create_subscription(Odometry, "/odom/ground_truth", self._odom, 20)
         self.create_subscription(Image, "/wrist_camera/depth_image", self._depth, 2)
         self.create_subscription(CameraInfo, "/wrist_camera/camera_info", lambda m: setattr(self, "K", (m.k[0], m.k[4], m.k[2], m.k[5])), 2)
@@ -127,6 +127,20 @@ class Rig(Node):
             ac = ActionClient(self, MoveGroup, "/move_action")
             self.mg = ac if ac.wait_for_server(timeout_sec=15.0) else None
         self.poses = PoseStream(f"/world/{WORLD}/dynamic_pose/info")
+
+    def _js(self, m):
+        self.js.update(dict(zip(m.name, m.position)))
+        if len(m.effort) == len(m.name):
+            self.eff.update(dict(zip(m.name, m.effort)))
+
+    def efforts(self):
+        """Joint efforts (N m arm, N fingers) averaged over 0.5 s."""
+        acc = []
+        for _ in range(10):
+            self.spin_for(0.05)
+            acc.append([self.eff.get(n, float("nan")) for n in A.ARM_JOINTS + ["arm_finger_left_joint", "arm_finger_right_joint"]])
+        m = np.nanmean(np.array(acc), axis=0)
+        return {n: round(float(v), 4) for n, v in zip(A.ARM_JOINTS + ["finger_left", "finger_right"], m)}
 
     def _odom(self, m):
         p, q = m.pose.pose.position, m.pose.pose.orientation
@@ -193,12 +207,13 @@ class Rig(Node):
 
     def move(self, q, seconds=3.0, log=None):
         """Big motion: MoveIt when available (falls back to a direct goal on failure), else direct."""
+        log = log if log is not None else []              # (was `(log or [])`: an EMPTY list was replaced, nothing logged)
         if self.mg is not None:
             if self.move_moveit(q):
-                (log or []).append("moveit")
+                log.append("moveit")
                 return True
-            (log or []).append("moveit_failed->direct")
-        (log or []).append("direct")
+            log.append("moveit_failed->direct")
+        log.append("direct")
         return self.move_direct(q, seconds)
 
     def gripper(self, effort):
@@ -265,6 +280,16 @@ def one_try(rig: Rig, obj: dict, k: int, a) -> dict:
     if rest is None:
         return {**rec, "outcome": "error", "detail": f"no pose of {name} in dynamic_pose/info"}
     t0 = tt()
+    if a.locate == "gt":                                            # first grasp: KNOWN ground-truth position, no servo
+        _, x, y, _, yaw = rig.odom
+        sres = None
+        est = np.array(G.world_to_base((x, y, yaw), rest[:2]))
+        rec["true_xy_base"] = rec["est_xy_base"] = [round(float(v), 4) for v in est]
+        rec["locate"] = "gt"
+        gt_b = math.atan2(math.sin(obj.get("yaw", 0.0) - yaw), math.cos(obj.get("yaw", 0.0) - yaw))
+        rec["yaw"] = {"method": "gt", "used": gt_b if a.yaw == "gt" else (0.0 if a.yaw == "none" else gt_b), "used_src": "gt",
+                      "confidence": 1.0, "err_deg": 0.0}
+        return _grasp_and_lift(rig, obj, a, rec, est, rec["yaw"]["used"], rest, t0)
     # 1. view pose + 2. servo
     rig.move(ARM.poses[VIEW_POSE[cls]], 3.0, rec["log"])
     rig.spin_for(1.0)
@@ -292,6 +317,12 @@ def one_try(rig: Rig, obj: dict, k: int, a) -> dict:
         ye = WY.YawEstimate(None, 0.0, "none", WY.PERIOD.get(cls), reason=f"wrist view: {e!r}")
     rec["yaw"] = G.yaw_record(cls, ye, gt_b, a.yaw, a.yaw_min_conf)
     yaw_b = rec["yaw"]["used"]
+    return _grasp_and_lift(rig, obj, a, rec, est, yaw_b, rest, t0)
+
+
+def _grasp_and_lift(rig, obj, a, rec, est, yaw_b, rest, t0):
+    cls, name = obj["class"], obj["model"]
+    tt = lambda: round(rig.now(), 3)                                # noqa: E731
     plan = G.grasp_plan(ARM, RB, cls, est, yaw_b)
     rec["plan"] = plan.to_dict()
     if not plan.ok:
@@ -306,6 +337,7 @@ def one_try(rig: Rig, obj: dict, k: int, a) -> dict:
     rig.gripper(-abs(a.grip_effort))
     rig.spin_for(1.5)
     rec["fingers_closed"] = rig.fingers()
+    rec["effort_closed_on_floor"] = rig.efforts()
     # 6. lift + hold
     t2 = tt()
     lift_z, hold_z = [], []
@@ -332,6 +364,7 @@ def one_try(rig: Rig, obj: dict, k: int, a) -> dict:
     th.join()
     rec["phase_s"]["lift_hold"] = round(tt() - t2, 2)
     rec["fingers_hold"] = rig.fingers()
+    rec["effort_hold"] = rig.efforts()                              # shoulder / elbow change vs on-floor = carried weight
     res = G.classify(rest[2], lift_z, hold_z, rest[:2], before[:2] if before else None)
     rec.update(res.to_dict())
     rec["time_s"] = round(tt() - t0, 2)
@@ -355,6 +388,9 @@ def main():
     ap.add_argument("--yaw-min-conf", type=float, default=0.5, help="below this wrist-yaw confidence the roll is 0")
     ap.add_argument("--moveit", choices=("auto", "off"), default="auto")
     ap.add_argument("--grip-effort", type=float, default=3.0, help="N per finger (joint effort limit 10 N)")
+    ap.add_argument("--locate", choices=("servo", "gt"), default="servo",
+                    help="servo = wrist-camera visual servo (default); gt = the object's ground-truth position (first grasp test)")
+    ap.add_argument("--floor", choices=("fitted", "off"), default="fitted", help="fitted body-camera floor in MoveIt's scene")
     a = ap.parse_args()
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
@@ -369,7 +405,13 @@ def main():
             rig.spin_for(0.1)
             if rig.odom and rig.js:
                 break
-        print(f"grasp test: moveit {'yes' if rig.mg else 'no (direct joint goals)'}, step {a.step}, yaw {a.yaw}, grip {a.grip_effort} N", flush=True)
+        if rig.mg is not None and a.floor == "fitted":
+            from moveit_floor import add_fitted_floor
+            rig.spin_for(5.0)                                       # move_group's state monitor
+            fl = add_fitted_floor(rig, margin=0.005)
+            (out / "floor.json").write_text(json.dumps(fl, indent=1))
+            print(f"floor in MoveIt: added {fl['added']}, fitted {fl['fitted']}, z {fl['z0']:.4f} m", flush=True)
+        print(f"grasp test: locate {a.locate}, moveit {'yes' if rig.mg else 'no (direct joint goals)'}, step {a.step}, yaw {a.yaw}, grip {a.grip_effort} N", flush=True)
         with open(out / "tries.jsonl", "w") as fh:
             for cls in a.classes:
                 obj = next(o for o in GT if o["class"] == cls)
