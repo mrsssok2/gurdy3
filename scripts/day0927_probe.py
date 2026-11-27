@@ -29,9 +29,16 @@ class Probe(Node):
         super().__init__("day0927_probe")
         from nav_msgs.msg import Odometry
         from sensor_msgs.msg import JointState
-        self.js, self.odom = {}, []
-        self.create_subscription(JointState, "/joint_states", lambda m: self.js.update(dict(zip(m.name, m.position))), 10)
+        self.js, self.js_eff, self.odom, self.arm_dev = {}, {}, [], []
+        self.create_subscription(JointState, "/joint_states", self._js, 10)
         self.create_subscription(Odometry, "/odom/ground_truth", self._odom, 10)
+
+    def _js(self, m):
+        self.js.update(dict(zip(m.name, m.position)))
+        if len(m.effort) == len(m.name):
+            self.js_eff.update(dict(zip(m.name, m.effort)))
+        if all(n in self.js for n in A.ARM_JOINTS):
+            self.arm_dev.append(max(abs(self.js[n] - f) for n, f in zip(A.ARM_JOINTS, ARM.poses["folded"])))
 
     def _odom(self, m):
         p, q, v = m.pose.pose.position, m.pose.pose.orientation, m.twist.twist
@@ -83,6 +90,10 @@ def walk(p, out, seconds=30.0):
         p.spin_for(3.0)
     fell = any(r["min_z"] < 0.06 for r in res.values())
     msg = ", ".join(f"{k} {v['err_pct']:.0f} % err" for k, v in res.items()) + (", FELL" if fell else ", no fall")
+    if p.arm_dev:                                    # arm:=true: how well the folded pose was held while walking
+        res["arm_max_dev_rad"] = float(max(p.arm_dev))
+        res["arm_effort_nm"] = {n: p.js_eff.get(n) for n in A.ARM_JOINTS}
+        msg += f", arm max deviation from folded {res['arm_max_dev_rad']:.3f} rad"
     done(not fell, msg + " (compare with the arm:=false run: acceptance <= +5 points)", out, res)
 
 

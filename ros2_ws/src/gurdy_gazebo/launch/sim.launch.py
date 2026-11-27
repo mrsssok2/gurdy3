@@ -14,7 +14,7 @@ import tempfile
 import xacro
 import yaml
 from launch import LaunchDescription
-from launch.actions import (DeclareLaunchArgument, IncludeLaunchDescription, OpaqueFunction,
+from launch.actions import (DeclareLaunchArgument, ExecuteProcess, IncludeLaunchDescription, OpaqueFunction,
                             RegisterEventHandler)
 from launch.event_handlers import OnProcessExit
 from launch.launch_description_sources import PythonLaunchDescriptionSource
@@ -47,9 +47,10 @@ def controllers_params(robot, js_rate: int) -> dict:
     }
 
 
-def arm_controllers(ctrl: dict) -> dict:
+def arm_controllers(ctrl: dict, arm_cfg: dict | None = None) -> dict:
     """Phase 9 (arm:=true only): add the arm / gripper controllers of gurdy_arm_moveit/config/ros2_controllers.yaml to
-    the controller-manager parameters (loaded lazily: without the arm nothing here runs)."""
+    the controller-manager parameters (loaded lazily: without the arm nothing here runs). arm.yaml `control: effort`
+    switches arm_controller to the effort command interface with the arm.yaml `pd_gains` (PID per joint)."""
     with open(os.path.join(get_package_share_directory("gurdy_arm_moveit"), "config", "ros2_controllers.yaml")) as f:
         extra = yaml.safe_load(f)
     out = dict(ctrl)
@@ -58,7 +59,22 @@ def arm_controllers(ctrl: dict) -> dict:
     for k, v in extra.items():
         if k != "controller_manager":
             out[k] = v
+    if (arm_cfg or {}).get("control", "position") == "effort":
+        p = dict(out["arm_controller"]["ros__parameters"])
+        p["command_interfaces"] = ["effort"]
+        p["gains"] = {j: {k: float(v) for k, v in g.items()} for j, g in arm_cfg["pd_gains"].items()}
+        out["arm_controller"] = {"ros__parameters": p}
     return out
+
+
+def folded_goal_cmd(arm_cfg: dict) -> list:
+    """`ros2 action send_goal` to arm_controller: folded in 2 s (sent once the arm controllers are active: with effort
+    control the arm hangs on gravity until then, and the controller would hold that sagged pose)."""
+    names = ["arm_yaw", "arm_shoulder", "arm_elbow", "arm_wrist_pitch", "arm_wrist_roll"]
+    q = ", ".join(str(float(v)) for v in arm_cfg["poses"]["folded"])
+    goal = "{trajectory: {joint_names: [" + ", ".join(names) + "], points: [{positions: [" + q + "], time_from_start: {sec: 2}}]}}"
+    return ["ros2", "action", "send_goal", "/arm_controller/follow_joint_trajectory",
+            "control_msgs/action/FollowJointTrajectory", goal]
 
 
 WRIST_BRIDGE = ["/wrist_camera/image@sensor_msgs/msg/Image[gz.msgs.Image",
@@ -80,18 +96,19 @@ def _setup(context):
         os.path.join(desc_share, "config", "robot.yaml")
     robot = load_robot(robot_yaml)
 
+    arm_yaml = (LaunchConfiguration("arm_yaml").perform(context) or os.path.join(desc_share, "config", "arm.yaml")) if arm else ""
+    arm_cfg = yaml.safe_load(open(arm_yaml)) if arm else {}
     fd, ctrl_yaml = tempfile.mkstemp(prefix="gurdy_controllers_", suffix=".yaml")
     with os.fdopen(fd, "w") as f:
         ctrl = controllers_params(robot, int(LaunchConfiguration("js_rate").perform(context)))
-        yaml.safe_dump(arm_controllers(ctrl) if arm else ctrl, f)
+        yaml.safe_dump(arm_controllers(ctrl, arm_cfg) if arm else ctrl, f)
 
     q0 = leg_ik(robot, nominal_foot(robot))
     base_z = 0.3 if fixed else robot.stance["body_height"] + 0.005
     urdf = xacro.process_file(
         os.path.join(desc_share, "urdf", "gurdy_with_arm.urdf.xacro" if arm else "gurdy.urdf.xacro"),
         mappings={"sim_gazebo": "true", "controllers_yaml": ctrl_yaml, "robot_yaml": robot_yaml,
-                  **({"arm": "true", "arm_yaml": LaunchConfiguration("arm_yaml").perform(context)
-                      or os.path.join(desc_share, "config", "arm.yaml")} if arm else {}),
+                  **({"arm": "true", "arm_yaml": arm_yaml} if arm else {}),
                   "initial_q": " ".join(f"{v:.6f}" for v in q0),
                   "fixed_base": str(fixed).lower(), "base_z": str(base_z),
                   "sensors": str(sensors).lower(), "lidar": str(lidar).lower()},
@@ -128,7 +145,9 @@ def _setup(context):
     if arm:      # Phase 9: arm + gripper controllers after the legs' PD, wrist camera topics + trigger
         arm_sp = Node(package="controller_manager", executable="spawner",
                       arguments=["arm_controller", "gripper_controller", "--controller-manager-timeout", "60"])
+        fold = ExecuteProcess(cmd=folded_goal_cmd(arm_cfg), output="screen")     # effort control: lift to folded once active
         actions += [RegisterEventHandler(OnProcessExit(target_action=pd, on_exit=[arm_sp])),
+                    RegisterEventHandler(OnProcessExit(target_action=arm_sp, on_exit=[fold])),
                     Node(package="ros_gz_bridge", executable="parameter_bridge", output="screen", arguments=WRIST_BRIDGE,
                          parameters=[{"use_sim_time": True}])]
     return actions

@@ -24,6 +24,21 @@ joints:
   gripper_finger: {lower: 0.0,   upper: 0.04, effort: 10.0, velocity: 0.05, servo: SG90}    # each finger, opening = 2x
   damping: 0.05                    # N·m·s/rad (small; servo back-EMF, like the legs' 0.42 scaled to the smaller servos)
 
+# Arm control (2026-11-27): `effort` = joint_trajectory_controller on the EFFORT interface with these PID gains (like the
+# legs' PD on effort; servo torque limits and contacts act), `position` = the old kinematic position interface (Gazebo sets
+# the joint; comparison only). Gains: about half the explicit-PD stability bounds at the 500 Hz controller rate
+# (omega*dt <= 0.53, kd*dt/I <= 0.35) for the SMALLEST effective inertia of each joint over 3000 random poses (point masses +
+# box terms): I_min yaw 3.4e-5, shoulder 3.9e-4, elbow 1.1e-3, wrist pitch 1.8e-4, roll 3.0e-5 kg m^2; the URDF joint
+# damping (0.05, implicit in DART) does the damping where kd = 0. i (1/s ~ kp) removes the gravity sag (shoulder up to
+# 0.52 N m with 80 g -> 0.04 rad at kp 12 without it); i_clamp = the joint's effort limit.
+control: effort
+pd_gains:
+  arm_yaw:         {p: 1.2,  i: 1.2,  d: 0.0,   i_clamp: 0.22}
+  arm_shoulder:    {p: 12.0, i: 12.0, d: 0.03,  i_clamp: 0.92}
+  arm_elbow:       {p: 20.0, i: 20.0, d: 0.08,  i_clamp: 0.34}
+  arm_wrist_pitch: {p: 6.0,  i: 6.0,  d: 0.015, i_clamp: 0.18}
+  arm_wrist_roll:  {p: 1.0,  i: 1.0,  d: 0.0,   i_clamp: 0.18}
+
 links:
   # yaw joint at the top of the base; shoulder axis `shoulder_h` above the yaw joint
   turret:    {size: [0.040, 0.054, 0.040], mass: 0.065, shoulder_h: 0.025}   # shoulder servo (MG996R) + bracket
