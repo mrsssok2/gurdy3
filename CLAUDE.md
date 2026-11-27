@@ -149,6 +149,20 @@ gurdy2/
 └── .github/workflows/
 ```
 
+## Host tests (no Docker; light-work days)
+Venv shared by all checkouts / worktrees: **`~/projects/.venv-gurdy3`** (Python 3.14, numpy 2.5; system python3 has no numpy/pytest).
+Recreate: `scripts/make_host_venv.sh [--force] [--lock]` (`requirements/host-tests.txt`, exact versions in `requirements/host-tests.lock`).
+```bash
+P=~/projects/.venv-gurdy3/bin/python
+(cd gurdy_core && $P -m pytest -q tests); $P -m pytest -q vision/tests
+PYTHONPATH=gurdy_core $P -m pytest -q brain/tests          # brain needs PYTHONPATH=gurdy_core (eval CLI subprocesses)
+PYTHONPATH=gurdy_core $P -m unittest discover -s web/tests -t .
+(cd ros2_ws/src/gurdy_perception && PYTHONPATH=../../../gurdy_core $P -m pytest -q test)
+```
+2026-11-27 baseline: gurdy_core 260 passed / 2 skipped, vision 51, brain 1029 / 3 skipped, web OK, gurdy_perception 3 / 1 skipped.
+Host-only failures (environment, not code): gurdy_navigation footprint (numpy 2 removed 2-D np.cross), gurdy_description (no check_urdf),
+rl (no mujoco), rclpy tests skipped. The images remain the reference environment.
+
 ## Common commands
 ```bash
 docker compose build sim                          # build ROS/Gazebo image (gurdy2/ros:jazzy, ~5 GB)

@@ -1,0 +1,10 @@
+# Host (no Docker) test venv for gurdy3: gurdy_core, vision, brain, web, gurdy_arm_moveit, gurdy_perception tests.
+# NOT the image environment: the images have numpy 1.x, ROS (rclpy), mujoco. Known host-only failures: see CLAUDE.md.
+# Recreate:   scripts/make_host_venv.sh          (-> ~/projects/.venv-gurdy3, Python 3.14)
+# Exact versions of the last working venv: requirements/host-tests.lock (pip install -r requirements/host-tests.lock).
+numpy==2.5.5
+pytest==9.2.0
+PyYAML==6.0.4
+langgraph==1.2.24
+pillow==13.0.0
+xacro==2.1.1
