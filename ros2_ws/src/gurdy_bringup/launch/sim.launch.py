@@ -78,6 +78,10 @@ def generate_launch_description():
                       parameters=[{"model": LaunchConfiguration("detector_model"), "use_sim_time": False,
                                    "target_frame": LaunchConfiguration("target_frame"),
                                    "log_path": LaunchConfiguration("detector_log")}])
+    rec_dir = LaunchConfiguration("costmap_record_dir")     # Phase 8a cause 2: costmap + pose at each planner failure
+    costmap_rec = Node(package="gurdy_navigation", executable="costmap_recorder_node", output="screen",
+                       condition=IfCondition(PythonExpression(["'", rec_dir, "' != ''"])),
+                       parameters=[{"out_dir": rec_dir, "use_sim_time": True}])
     rviz = Node(package="rviz2", executable="rviz2", condition=IfCondition(PythonExpression(
                     ["'", LaunchConfiguration("rviz"), "' == 'true' and '", LaunchConfiguration("nav"), "' == 'none'"])),
                 arguments=["-d", os.path.join(get_package_share_directory("gurdy_description"), "rviz", "display.rviz")],
@@ -102,4 +106,6 @@ def generate_launch_description():
            DeclareLaunchArgument("arm_yaml", default_value="", description="Phase 9: alternative arm.yaml"),
            DeclareLaunchArgument("shield", default_value="false",
                                  description="Phase 8b LiDAR safety shield (CBF) on /cmd_vel; needs a /scan (nav:=slam|localization)"),
-           DeclareLaunchArgument("model", default_value=""), sim, gait, policy, estop_gate, safety_shield, perception, rviz])
+           DeclareLaunchArgument("costmap_record_dir", default_value="",
+                                 description="Phase 8a: save the global costmap + pose at every planner failure into this dir (empty = off)"),
+           DeclareLaunchArgument("model", default_value=""), sim, gait, policy, estop_gate, safety_shield, perception, costmap_rec, rviz])

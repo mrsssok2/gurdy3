@@ -87,17 +87,26 @@ def walk(p, out, seconds=30.0):
 
 
 def moveit(p, out):
+    """Plan only, chained: folded (current) -> servo_view, then servo_view (end of plan 1) -> pre_grasp. Every waypoint
+    of both trajectories is checked with /check_state_validity (full robot state incl. the legs from /joint_states,
+    MoveIt's description has the leg collision proxies) and contacts with leg links are reported."""
     from moveit_msgs.action import MoveGroup
-    from moveit_msgs.msg import Constraints, JointConstraint, MoveItErrorCodes
+    from moveit_msgs.msg import Constraints, JointConstraint, MoveItErrorCodes, RobotState
+    from moveit_msgs.srv import GetStateValidity
     from rclpy.action import ActionClient
+    from sensor_msgs.msg import JointState
     ac = ActionClient(p, MoveGroup, "/move_action")
-    if not ac.wait_for_server(timeout_sec=30.0):
+    if not ac.wait_for_server(timeout_sec=60.0):
         done(False, "no /move_action server (move_group not running)", out, {})
+    sv = p.create_client(GetStateValidity, "/check_state_validity")
+    sv.wait_for_service(timeout_sec=30.0)
+    p.spin_for(2.0)
     rb = A.load_robot()
     gz = A.ground_z(rb)
     pg = A.plan_grasp(ARM, rb, A.PICKABLE["small_box"], (-0.27, 0.0), gz)
     targets = {"servo_view": ARM.poses["servo_view"], "pre_grasp": pg[0] if pg else None}
-    res = {}
+    base_js = {k: v for k, v in p.js.items()}
+    res, start = {}, None
     for name, q in targets.items():
         if q is None:
             done(False, "no analytic pre-grasp", out, res)
@@ -105,24 +114,77 @@ def moveit(p, out):
         goal.request.group_name = "arm"
         goal.request.num_planning_attempts = 3
         goal.request.allowed_planning_time = 5.0
+        if start is not None:
+            js = JointState(name=list(base_js), position=[float(v) for v in base_js.values()])
+            for n, v in zip(A.ARM_JOINTS, start):
+                js.position[js.name.index(n)] = float(v)
+            goal.request.start_state = RobotState(joint_state=js, is_diff=False)
         c = Constraints()
         for n, v in zip(A.ARM_JOINTS, q):
             c.joint_constraints.append(JointConstraint(joint_name=n, position=float(v), tolerance_above=0.01,
                                                        tolerance_below=0.01, weight=1.0))
         goal.request.goal_constraints.append(c)
         goal.planning_options.plan_only = True
+        t0 = time.monotonic()
         f = ac.send_goal_async(goal)
         rclpy.spin_until_future_complete(p, f, timeout_sec=10.0)
         h = f.result()
         if h is None or not h.accepted:
             done(False, f"{name}: goal rejected", out, res)
         r = h.get_result_async()
-        rclpy.spin_until_future_complete(p, r, timeout_sec=30.0)
-        code = r.result().result.error_code.val if r.result() else None
-        res[name] = {"error_code": code, "planning_time": r.result().result.planning_time if r.result() else None}
+        rclpy.spin_until_future_complete(p, r, timeout_sec=60.0)
+        wall = time.monotonic() - t0
+        rr = r.result().result if r.result() else None
+        code = rr.error_code.val if rr else None
+        res[name] = {"error_code": code, "planning_time_s": rr.planning_time if rr else None, "wall_s": wall}
         if code != MoveItErrorCodes.SUCCESS:
             done(False, f"{name}: plan failed, MoveIt error code {code}", out, res)
-    done(True, "plans folded -> servo_view and -> pre_grasp found (plan only)", out, res)
+        jt = rr.planned_trajectory.joint_trajectory
+        n_pts, bad, leg_contacts = len(jt.points), 0, set()
+        for pt in jt.points:
+            js = JointState(name=list(base_js), position=[float(v) for v in base_js.values()])
+            for n, v in zip(jt.joint_names, pt.positions):
+                if n in js.name:
+                    js.position[js.name.index(n)] = float(v)
+                else:
+                    js.name.append(n); js.position.append(float(v))
+            req = GetStateValidity.Request(robot_state=RobotState(joint_state=js), group_name="arm")
+            fv = sv.call_async(req)
+            rclpy.spin_until_future_complete(p, fv, timeout_sec=5.0)
+            v = fv.result()
+            if v is None:
+                continue
+            if not v.valid:
+                bad += 1
+            for ct in v.contacts:
+                pair = tuple(sorted((ct.contact_body_1, ct.contact_body_2)))
+                if any(("coxa" in b or "femur" in b or "tibia" in b or "foot" in b or "leg" in b) for b in pair):
+                    leg_contacts.add(pair)
+        res[name].update({"waypoints": n_pts, "invalid_waypoints": bad, "leg_contacts": sorted(leg_contacts),
+                          "end": list(jt.points[-1].positions) if jt.points else None,
+                          "joint_names": list(jt.joint_names), "points": [list(pt.positions) for pt in jt.points]})
+        start = [jt.points[-1].positions[jt.joint_names.index(n)] for n in A.ARM_JOINTS] if jt.points else q
+    # sanity: random arm poses through the same service; the checker must flag some leg contacts or it proves nothing
+    rng = np.random.default_rng(0)
+    lo = np.array([ARM.limits[n][0] for n in A.ARM_JOINTS]); hi = np.array([ARM.limits[n][1] for n in A.ARM_JOINTS])
+    n_inv = n_leg = 0
+    for _ in range(200):
+        qr = rng.uniform(lo, hi)
+        js = JointState(name=list(base_js), position=[float(v) for v in base_js.values()])
+        for n, v in zip(A.ARM_JOINTS, qr):
+            js.position[js.name.index(n)] = float(v)
+        fv = sv.call_async(GetStateValidity.Request(robot_state=RobotState(joint_state=js), group_name="arm"))
+        rclpy.spin_until_future_complete(p, fv, timeout_sec=5.0)
+        v = fv.result()
+        if v is not None and not v.valid:
+            n_inv += 1
+            if any("proxy" in c.contact_body_1 or "proxy" in c.contact_body_2 for c in v.contacts):
+                n_leg += 1
+    res["sanity_random"] = {"n": 200, "invalid": n_inv, "with_leg_proxy_contact": n_leg}
+    ok = all(r["invalid_waypoints"] == 0 and not r["leg_contacts"] for k, r in res.items() if k != "sanity_random") and n_leg > 0
+    msg = f"sanity: {n_inv}/200 random poses invalid, {n_leg} touch a leg proxy; " + "; ".join(f"{k}: SUCCESS {v['planning_time_s']:.2f} s plan ({v['wall_s']:.1f} s wall), {v['waypoints']} pts, "
+                    f"{v['invalid_waypoints']} invalid, leg contacts {len(v['leg_contacts'])}" for k, v in res.items() if k != "sanity_random")
+    done(ok, msg, out, res)
 
 
 def wrist(p, out):

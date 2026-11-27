@@ -1,15 +1,8 @@
  Container gurdy3_day0927 Creating 
  Container gurdy3_day0927 Created 
 launch args: arm:=true
-Traceback (most recent call last):
-  File "/home/ubuntu/gurdy2/scripts/day0927_probe.py", line 183, in <module>
-    main()
-  File "/home/ubuntu/gurdy2/scripts/day0927_probe.py", line 175, in main
-    {"arm_state": lambda: arm_state(p, out), "walk": lambda: walk(p, out, float(sys.argv[3]) if len(sys.argv) > 3 else 30.0),
-  File "/home/ubuntu/gurdy2/scripts/day0927_probe.py", line 176, in <lambda>
-    "moveit": lambda: moveit(p, out), "wrist": lambda: wrist(p, out)}[cmd]()
-                      ^^^^^^^^^^^^^^
-  File "/home/ubuntu/gurdy2/scripts/day0927_probe.py", line 90, in moveit
-    from moveit_msgs.action import MoveGroup
-ModuleNotFoundError: No module named 'moveit_msgs'
 
+Summary: 1 package finished [1.25s]
+/opt/ros/jazzy
+/opt/ros/jazzy
+PASS sanity: 36/200 random poses invalid, 22 touch a leg proxy; servo_view: SUCCESS 0.03 s plan (0.0 s wall), 25 pts, 0 invalid, leg contacts 0; pre_grasp: SUCCESS 0.01 s plan (0.0 s wall), 20 pts, 0 invalid, leg contacts 0

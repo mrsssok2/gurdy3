@@ -84,16 +84,59 @@ def test_tool_reads_text_log(tmp_path):
     assert _tool().main([str(f)])["p"] is not None
 
 
-def test_patch_applies_to_main(tmp_path):
-    """The node patch (docs/results/data/phase9f/shield_scan_timeout.patch) applies cleanly to main's shield node."""
+NODE = "ros2_ws/src/gurdy_safety/gurdy_safety/safety_shield_node.py"
+PATCH = ROOT / "docs/results/data/phase9f/shield_scan_timeout.patch"
+
+
+def _patch(args, cwd):
     try:
-        src = subprocess.run(["git", "show", "main:ros2_ws/src/gurdy_safety/gurdy_safety/safety_shield_node.py"],
-                             cwd=ROOT, capture_output=True, text=True, check=True).stdout
-    except (subprocess.CalledProcessError, FileNotFoundError):
-        pytest.skip("no git / no main branch here")
-    d = tmp_path / "ros2_ws/src/gurdy_safety/gurdy_safety"
+        mode = ["--batch"] if "-R" in args else ["--forward"]       # --batch would silently auto-reverse an applied patch
+        return subprocess.run(["patch", "-p1", "--dry-run", *mode, *args, "-i", str(PATCH)], cwd=cwd, capture_output=True, text=True)
+    except FileNotFoundError:
+        pytest.skip("no `patch` binary")
+
+
+def test_patch_applies_to_tree(tmp_path):
+    """The node patch applies cleanly to the shield node AS IT IS IN THIS TREE (since 2026-11-27: main's 8b node + the 9c
+    depth patch, as integrated in integration-0927), or is already applied there. It touches only the node; the
+    scan_timing module it imports must exist in the tree."""
+    assert (ROOT / "gurdy_core/gurdy_core/scan_timing.py").exists()
+    text = PATCH.read_text()
+    assert "+++ b/" + NODE in text and text.count("+++ b/") == 1
+    d = tmp_path / Path(NODE).parent
     d.mkdir(parents=True)
-    (d / "safety_shield_node.py").write_text(src)
-    r = subprocess.run(["patch", "-p1", "--dry-run", "-i", str(ROOT / "docs/results/data/phase9f/shield_scan_timeout.patch")],
-                       cwd=tmp_path, capture_output=True, text=True)
-    assert r.returncode == 0, r.stdout + r.stderr
+    (tmp_path / NODE).write_text((ROOT / NODE).read_text())
+    fwd = _patch([], tmp_path)
+    if fwd.returncode != 0:
+        rev = _patch(["-R"], tmp_path)
+        assert rev.returncode == 0, "patch neither applies nor is already applied:\n" + fwd.stdout + fwd.stderr
+        pytest.skip("patch already applied to the tree")
+    assert "scan_timeout\": 0.6" in (ROOT / NODE).read_text()          # 0.6 s since 2026-11-27 (measured /scan gaps)
+
+
+def test_patched_node_parses_and_keeps_the_default(tmp_path):
+    d = tmp_path / Path(NODE).parent
+    d.mkdir(parents=True)
+    (tmp_path / NODE).write_text((ROOT / NODE).read_text())
+    try:
+        r = subprocess.run(["patch", "-p1", "--forward", "-i", str(PATCH)], cwd=tmp_path, capture_output=True, text=True)
+    except FileNotFoundError:
+        pytest.skip("no `patch` binary")
+    if r.returncode != 0:
+        pytest.skip("already applied (see test_patch_applies_to_tree)")
+    src = (tmp_path / NODE).read_text()
+    import ast
+    ast.parse(src)
+    assert "validate_timeout(g(\"scan_timeout\"))" in src and "\"scan_timeout\": 0.6" in src
+    assert "use_depth_obstacles" in src                                    # 9c part kept
+
+
+def test_tree_node_is_patched_with_the_decided_default():
+    """2026-11-27: the 9f patch is applied to the tree's node and the default is 0.6 s (day_0927 step 10: p99 gap 0.327 s,
+    max 0.512 s, 2 gaps > 0.5 s in 10 min; user decision 0.6 s). ShieldConfig's default matches the node's."""
+    src = (ROOT / NODE).read_text()
+    assert "validate_timeout(g(\"scan_timeout\"))" in src and "\"scan_timeout\": 0.6" in src
+    from gurdy_core.safety_shield import ShieldConfig
+    assert ShieldConfig.__dataclass_fields__["scan_timeout"].default == 0.6
+    from gurdy_core.scan_timing import validate_timeout
+    assert validate_timeout(0.6)[0] == 0.6

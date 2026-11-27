@@ -37,7 +37,7 @@ class ShieldConfig:
     self_margin: float = 0.02                # points closer than this to the footprint = self-hits, ignored
     influence: float = 0.60                  # m beyond d_safe; points farther away never bind and are dropped
     sector_deg: float = 10.0                 # keep the nearest point per angular sector (bounds the QP size)
-    scan_timeout: float = 0.5                # s; older scan -> zero command
+    scan_timeout: float = 0.6                # s; older scan -> zero command (0.6: day_0927 step 10, user 2026-11-27)
     lidar_origin: tuple = (0.0, 0.0)         # lidar position in the body frame (x, y)
     scale_only: bool = False                 # True: each axis may only shrink toward 0 (no added sideways / reverse motion)
     iters: int = 300                         # Dykstra iterations (max)

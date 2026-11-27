@@ -11,7 +11,7 @@ Branch **`integration-0927`** (local, from `main` at `30e1f91`), prepared 2026-1
 | merge `phase8c-3d` | **1 conflict, CLAUDE.md only**: both sides added status lines → kept all of them (main's 8a / 8b, then 8c). No code conflicts. |
 | merge `phase9a-arm` (9a–9f) | **1 conflict, CLAUDE.md only** → all lines kept (8a / 8b / 8c, then 9a–9f). No code conflicts: the 8c files present on both branches (`vision/object3d.py`, `transforms.py`, `synth_depth.py`, `tests/test_object3d.py`) are byte-identical to `phase8c-3d` (checked). |
 | apply 9c shield depth patch | **applied cleanly** (`use_depth_obstacles` default **false**) |
-| apply 9f scan-timeout patch | **PENDING.** It applies cleanly to main's node alone, but not on top of the 9c patch (same lines; it would need fuzz). Its new file `scan_timing.py` is already here through the 9a-arm merge. To do: regenerate the node part on top of 9c after step 10 picks the timeout value. |
+| apply 9f scan-timeout patch | **Regenerated 2026-11-27** on top of 9c (node only, default 0.5 s; branch `phase8c-wire`), NOT applied to the node yet: apply after step 10 picks the timeout. Old note: **PENDING.** It applies cleanly to main's node alone, but not on top of the 9c patch (same lines; it would need fuzz). Its new file `scan_timing.py` is already here through the 9a-arm merge. To do: regenerate the node part on top of 9c after step 10 picks the timeout value. |
 | new on this branch | `sim.launch.py` (bringup + gazebo) flags **`arm:=false`** and **`arm_yaml:=""`**: with the arm, `gurdy_with_arm.urdf.xacro`, the arm controllers merged into the controller file, an arm + gripper spawner after the leg PD, the wrist-camera bridge (+ trigger). Needed for tomorrow's arm checks. With the default the xacro file, mappings and controllers are exactly as before. |
 
 **Default behaviour = main.** Every new flag defaults OFF:
@@ -140,3 +140,68 @@ Gates: 01 PASS, 04 PASS, so nothing stopped the sequence.
 5. **9f scan-timeout patch** must be regenerated on top of 9c; `test_patch_applies_to_main` fails until then. Today's data says keep 0.5 s (tool) or take 0.6 s (removes the 2 gaps > 0.5 s seen in 10 min); one 10-min sample only.
 6. **Phase 8a leftovers** (`phase8a_nav2_doorways.md` §6): `long_path` 8.0 m confirmation on the return leg (3 overnight failures), route switch before door B-D, and cause-2 costmap marks (record the costmap at planner failures).
 7. Not started on request: step 11 (small-object render), step 03 (8c wiring).
+
+## 7. Follow-up 2026-11-27 (user decisions: MoveIt option A, shield scan_timeout 0.6 s, keep the 8 m `long_path` confirmation)
+
+### 7.1 MoveIt 2 image + plans (step 08 now PASS)
+* New image **`gurdy3/ros:jazzy-moveit`** (`docker/ros-moveit/Dockerfile`, `FROM gurdy2/ros:jazzy`, +80 MB: MoveIt 2.12.4 move_group / OMPL /
+  kinematics / simple controller manager / configs utils / msgs + **pick_ik 1.1.2**, which has a Jazzy package, so no KDL fallback is needed).
+  `gurdy2/ros:jazzy` is unchanged (same image ID 1a21daf9d753). Compose service `sim_moveit` (profile `moveit`). Only step 08 (move_group) uses it
+  (`SERVICE=sim_moveit` in `run_in`); every other arm:=true run stays on `gurdy2/ros:jazzy`.
+* `move_group arm:=true`, MoveIt's description with the leg collision proxies (`*_coxa/femur/tibia_proxy`; no moving-arm-link vs proxy pair is
+  disabled in the SRDF), plan only, chained (the second plan starts at the end of the first):
+
+| plan | result | planning time | waypoints | invalid waypoints (`/check_state_validity`, legs included) | leg contacts | min clearance (offline `arm.clearances`): legs / body / lidar / floor |
+|---|---|---|---|---|---|---|
+| folded -> servo_view | SUCCESS | 0.03 s | 25 | 0 | 0 | 5.8 / 2.9 / 4.1 / 17.3 cm |
+| servo_view -> pre-grasp (cube at (-0.27, 0)) | SUCCESS | 0.01 s | 20 | 0 | 0 | 7.1 / 4.2 / 5.8 / **0.5** cm |
+
+  Sanity check of the checker: 200 random arm poses through the same service gave 36 invalid states, 22 of them touching a leg proxy, so leg
+  collisions are detected. **No floor in MoveIt's planning scene yet** (the launch file says it is added from the fitted plane at run time;
+  nothing does that), so the 5 mm floor clearance of the pre-grasp is not protected by the planner. Octomap: "No 3D sensor plugin" (fine, not used).
+
+### 7.2 Walking with the arm, 3 runs each (`docs/results/data/day_0927/repeats/`, 30 s at 0.10 m/s + 30 s at 0.3 rad/s, GT odom)
+
+| config | forward error mean (range) | turn error mean (range) | falls | min body z |
+|---|---|---|---|---|
+| no arm | 8.3 % (0.9-19.7) | 1.9 % (0.6-2.7) | 0/3 | 0.080 m |
+| arm folded | 13.7 % (6.4-19.9) | 2.5 % (1.9-3.1) | 0/3 | 0.079 m |
+| arm folded + 80 g | 14.5 % (9.7-19.7) | 3.1 % (2.1-4.1) | 0/3 | 0.078 m |
+
+0 falls in 9 runs. By the mean, forward error is +5.4 / +6.2 points over no-arm, just above the +5-point rule, while turning is within it. But
+the run-to-run spread of the SAME configuration (0.9-19.7 %) is 3x the difference, so 3 runs cannot show whether the arm changes forward tracking.
+Not met as stated, and not shown to be worse either. A longer window (e.g. 120 s) or ~10 runs would be needed to resolve 5 points.
+
+### 7.3 Wrist camera cost (`docs/results/data/day_0927/wrist_rtf/`, `scripts/wrist_rtf_check.sh`)
+* **Root cause of "always on"**: `<triggered>` / `<trigger_topic>` were children of `<sensor>`; SDFormat wants them under `<camera>`. Moved
+  (`gurdy_arm.xacro`, test `test_wrist_camera_trigger_is_a_camera_child_and_can_be_disabled`). Now: **0 frames without a trigger, one frame per
+  trigger message** (step 09 re-run: 25 frames for 25 triggers in 5 s, fx 233.9, floor -0.107 m, PASS). New `wrist_camera.enabled` (default true)
+  removes the sensor for measurements.
+* RTF, robot standing, 3 rounds x 3 x 15 s: no arm 0.89 (0.83-0.92); arm + camera off 0.73 (0.69-0.75); always on 10 Hz 0.75 (0.69-0.82);
+  always on 2 Hz 0.82 (0.63-0.95); triggered (idle) 0.75 (0.65-0.90). **The camera modes cannot be told apart**: another session ran host
+  `pytest` (~190 % CPU) during these rounds. The ARM itself (camera off) looks like a real cost vs no arm (0.69-0.75 vs 0.83-0.92, no overlap);
+  cause not measured (7 extra joints, two controllers, position interface).
+* **Decision: keep `triggered: true`** (now effective). The camera renders only while the pick code triggers it, which costs nothing between picks
+  by construction. The visual servo must publish a trigger per frame it needs.
+
+### 7.4 Shield scan_timeout 0.6 s + 9f patch + costmap recording
+* 9f patch (regenerated on `phase8c-wire`, c234906) applied to the node; the default is now **0.6 s** in `safety_shield_node` and `ShieldConfig`. The
+  live 8b numbers were measured at 0.5 s; a stale scan now stops after ~0.65 s instead of 0.55 s. Tests: GNU `patch --batch` silently
+  auto-reverses an applied patch (exit 0), so the patch tests used `--forward` instead; new test pins 0.6 s in node + config; the stale-scan test reads the default.
+* **Costmap recorder** (`gurdy_navigation/costmap_recorder.py` + `costmap_recorder_node`, launch `costmap_record_dir:=<dir>`, default empty = off;
+  `p5_final_eval.sh RECORD_COSTMAP=true` -> `<stack dir>/costmaps`): on every planner_server failure line in /rosout it saves the last two global
+  costmaps (received BEFORE the clear), the parsed start / goal, the GT pose and the lethal-cell count within 0.3 m of the start (.npz/.json/.pgm).
+  Live check in lab4 (goal off the map): recorded 20 ms after the failure; the snapshot shows doorway A-B at cost 41 at the gap centre (doc 1.3: ~40),
+  99-100 at the jambs. Bursts are debounced 0.5 s (the second off-map goal 38 ms later was not saved). Unit tests `test_costmap_recorder.py`.
+* Tests in the images: gurdy_core 244 passed, 2 skipped (patch already applied); gurdy_navigation 29, gurdy_safety 3, gurdy_description 9,
+  gurdy_arm_moveit 8 passed; brain (brain image) 1029 passed, 3 skipped.
+
+### 7.5 lab4_fetch smoke test
+`world:=lab4_fetch arm:=true` loads; all 8 small objects exist (inline models, no `model://`) and are still at their spawn poses after 20 s.
+
+### 7.6 Next blocker for the first grasp test
+**The arm joints use a position command interface**: Gazebo sets them kinematically, so a grasp exercises neither the arm's torque limits nor any
+compliance when the fingers or palm touch the object or the floor, and the pre-grasp sits 5 mm above a floor that MoveIt does not know about. Before a
+first grasp: (1) add the floor (fitted plane) as a collision object in MoveIt's scene; (2) switch the arm to effort + PD like the legs (or at least
+check contact forces); (3) execute the plan (not plan_only) through `arm_controller` and close the effort-controlled gripper on `f_red_cube` with its
+GT pose (no detector needed for the first test; the v3 small-object detector is not rendered / trained yet, step 11).

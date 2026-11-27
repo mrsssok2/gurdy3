@@ -34,6 +34,7 @@ from std_msgs.msg import String
 
 from gurdy_core.robot import load_robot
 from gurdy_core.safety_shield import SafetyShield, ShieldConfig, scan_to_points
+from gurdy_core.scan_timing import validate_timeout
 from gurdy_navigation.footprint import footprint_polygon
 
 
@@ -42,23 +43,29 @@ class SafetyShieldNode(Node):
         super().__init__("safety_shield_node")
         p = {"robot_yaml": "", "input_topic": "/cmd_vel", "output_topic": "/cmd_vel_shielded", "scan_topic": "/scan",
              "status_topic": "/shield/status", "d_safe": 0.10, "alpha": 2.0, "self_margin": 0.02, "influence": 0.60,
-             "footprint_margin": 0.04, "scan_timeout": 0.5, "cmd_timeout": 0.5, "rate_hz": 20.0, "scale_only": False,
+             "footprint_margin": 0.04, "scan_timeout": 0.6, "cmd_timeout": 0.5, "rate_hz": 20.0, "scale_only": False,
              "use_depth_obstacles": False, "depth_topic": "/low_obstacles/shield", "depth_timeout": 0.5}
         for k, v in p.items():
             self.declare_parameter(k, v)
         g = lambda k: self.get_parameter(k).value          # noqa: E731
         robot = load_robot(g("robot_yaml") or None)
         lim = robot.command_limits
+        # scan_timeout: choose it from the measured p99 /scan gap (scripts/scan_gaps.py), capped at 1.0 s like the Nav2
+        # collision monitor source_timeout; values above the cap / invalid values are replaced (warning). Default 0.5 s.
+        scan_timeout, warn = validate_timeout(g("scan_timeout"))
+        if warn:
+            self.get_logger().warn(warn)
         cfg = ShieldConfig(footprint=footprint_polygon(robot, float(g("footprint_margin"))),
                            d_safe=float(g("d_safe")), alpha=float(g("alpha")),
                            limits=(float(lim["vx"]), float(lim["vy"]), float(lim["wz"])),
                            self_margin=float(g("self_margin")), influence=float(g("influence")),
-                           scan_timeout=float(g("scan_timeout")), scale_only=bool(g("scale_only")),
+                           scan_timeout=scan_timeout, scale_only=bool(g("scale_only")),
                            lidar_origin=tuple(robot.sensors["lidar"]["pos"][:2]))
         self.shield = SafetyShield(cfg)
         self.cmd_timeout = float(g("cmd_timeout"))
         self.cmd, self.cmd_t = None, None
         self.last_state, self.last_status_t = None, 0.0
+        self.last_scan_t, self.last_gap, self.gap_max, self.stale_since, self.n_stale = None, 0.0, 0.0, None, 0
         self.pub = self.create_publisher(Twist, g("output_topic"), 10)
         self.status_pub = self.create_publisher(String, g("status_topic"), 10)
         self.create_subscription(Twist, g("input_topic"), self.on_cmd, 10)
@@ -86,10 +93,15 @@ class SafetyShieldNode(Node):
         return self.use_depth and self.depth_t is not None and self.now() - self.depth_t <= self.depth_timeout
 
     def on_scan(self, m: LaserScan):
+        t = self.now()
+        if self.last_scan_t is not None:
+            self.last_gap = t - self.last_scan_t
+            self.gap_max = max(self.gap_max, self.last_gap)
+        self.last_scan_t = t
         pts = scan_to_points(m.ranges, m.angle_min, m.angle_increment, m.range_min, m.range_max, self.shield.cfg.lidar_origin)
         if self.depth_fresh():
             pts = pts + self.depth_xy                     # low obstacles (base_link xy) from the body depth camera
-        self.shield.update_scan(pts, self.now())
+        self.shield.update_scan(pts, t)
 
     def on_cmd(self, m: Twist):
         self.cmd, self.cmd_t = (m.linear.x, m.linear.y, m.angular.z), self.now()
@@ -107,13 +119,20 @@ class SafetyShieldNode(Node):
         self.pub.publish(out)
         if st.state != self.last_state:
             if st.state in ("stale", "no_scan"):
+                self.stale_since = t
+                self.n_stale += 1
                 self.get_logger().warn(f"shield: {st.state} -> zero velocity")
             elif self.last_state in ("stale", "no_scan"):
-                self.get_logger().info("shield: scan back")
+                dur = t - self.stale_since if self.stale_since is not None else float("nan")
+                self.get_logger().info(f"shield: scan back after {dur:.2f} s stale (stale periods so far: {self.n_stale})")
         if st.state != self.last_state or t - self.last_status_t >= 0.2:
             d = st.as_dict()
             d["cmd_in"] = [round(v, 4) for v in self.cmd]
             d["cmd_out"] = [round(v, 4) for v in u]
+            d["scan_timeout"] = self.shield.cfg.scan_timeout
+            d["scan_gap_last"] = round(self.last_gap, 3)
+            d["scan_gap_max"] = round(self.gap_max, 3)
+            d["stale_events"] = self.n_stale
             if self.use_depth:
                 d["depth_points"] = len(self.depth_xy) if self.depth_fresh() else 0
                 d["depth_stale"] = not self.depth_fresh()

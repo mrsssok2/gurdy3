@@ -52,6 +52,25 @@ services:
     # terminal:  docker compose exec sim bash  ->  ros2 run teleop_twist_keyboard ...
     command: ["/home/ubuntu/gurdy2/scripts/start_sim.sh"]
 
+  # Phase 9e: the same as `sim` plus MoveIt 2 + pick_ik (derived image, gurdy2/ros:jazzy untouched). Only for arm:=true
+  # work that needs move_group:  docker compose run --rm sim_moveit bash
+  sim_moveit:
+    profiles: [moveit]
+    image: gurdy3/ros:jazzy-moveit
+    build:
+      context: docker/ros-moveit
+    <<: *wslg
+    volumes:
+      - /mnt/wslg:/mnt/wslg
+      - /mnt/wslg/.X11-unix:/tmp/.X11-unix
+      - /usr/lib/wsl:/usr/lib/wsl:ro
+      - .:/home/ubuntu/gurdy2
+    mem_limit: 6g
+    init: true
+    stdin_open: true
+    tty: true
+    command: ["bash"]
+
   # Phase 5 brain: agent + tool layer + mock world + eval harness (no ROS / GPU).
   #   docker compose run --rm brain python3 -m pytest -q brain/tests
   #   docker compose run --rm brain python3 -m brain.eval.run --agent keyword

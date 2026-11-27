@@ -1,19 +1,24 @@
+Phase 9f shield scan-timeout patch, REGENERATED 2026-11-27 for the integrated shield node (integration-0927 / phase8c-wire:
+main 8b node + the Phase 9c depth patch, commit 1ee81b4). Node only: gurdy_core/gurdy_core/scan_timing.py is already in the tree.
+Default scan_timeout stays 0.5 s until the /scan gap measurement (scripts/scan_gaps.py). Apply: patch -p1 -i <this file>
+Checked by gurdy_core/tests/test_scan_timing.py::test_patch_applies_to_tree.
+
 --- a/ros2_ws/src/gurdy_safety/gurdy_safety/safety_shield_node.py
 +++ b/ros2_ws/src/gurdy_safety/gurdy_safety/safety_shield_node.py
-@@ -28,6 +28,7 @@
+@@ -34,6 +34,7 @@
  
  from gurdy_core.robot import load_robot
- from gurdy_core.safety_shield import SafetyShield, ShieldConfig
+ from gurdy_core.safety_shield import SafetyShield, ShieldConfig, scan_to_points
 +from gurdy_core.scan_timing import validate_timeout
  from gurdy_navigation.footprint import footprint_polygon
  
  
-@@ -42,16 +43,22 @@
+@@ -49,16 +50,22 @@
          g = lambda k: self.get_parameter(k).value          # noqa: E731
          robot = load_robot(g("robot_yaml") or None)
          lim = robot.command_limits
 +        # scan_timeout: choose it from the measured p99 /scan gap (scripts/scan_gaps.py), capped at 1.0 s like the Nav2
-+        # collision monitor source_timeout; values above the cap / invalid values are replaced (warning)
++        # collision monitor source_timeout; values above the cap / invalid values are replaced (warning). Default 0.5 s.
 +        scan_timeout, warn = validate_timeout(g("scan_timeout"))
 +        if warn:
 +            self.get_logger().warn(warn)
@@ -28,26 +33,28 @@
          self.cmd_timeout = float(g("cmd_timeout"))
          self.cmd, self.cmd_t = None, None
          self.last_state, self.last_status_t = None, 0.0
-+        self.last_scan_t, self.gap_max, self.stale_since, self.n_stale = None, 0.0, None, 0
++        self.last_scan_t, self.last_gap, self.gap_max, self.stale_since, self.n_stale = None, 0.0, 0.0, None, 0
          self.pub = self.create_publisher(Twist, g("output_topic"), 10)
          self.status_pub = self.create_publisher(String, g("status_topic"), 10)
          self.create_subscription(Twist, g("input_topic"), self.on_cmd, 10)
-@@ -65,7 +72,13 @@
-         return time.monotonic()
+@@ -86,10 +93,15 @@
+         return self.use_depth and self.depth_t is not None and self.now() - self.depth_t <= self.depth_timeout
  
      def on_scan(self, m: LaserScan):
--        self.shield.update_laserscan(m.ranges, m.angle_min, m.angle_increment, m.range_min, m.range_max, self.now())
 +        t = self.now()
 +        if self.last_scan_t is not None:
-+            gap = t - self.last_scan_t
-+            self.gap_max = max(self.gap_max, gap)
-+            self.last_gap = gap
++            self.last_gap = t - self.last_scan_t
++            self.gap_max = max(self.gap_max, self.last_gap)
 +        self.last_scan_t = t
-+        self.shield.update_laserscan(m.ranges, m.angle_min, m.angle_increment, m.range_min, m.range_max, t)
+         pts = scan_to_points(m.ranges, m.angle_min, m.angle_increment, m.range_min, m.range_max, self.shield.cfg.lidar_origin)
+         if self.depth_fresh():
+             pts = pts + self.depth_xy                     # low obstacles (base_link xy) from the body depth camera
+-        self.shield.update_scan(pts, self.now())
++        self.shield.update_scan(pts, t)
  
      def on_cmd(self, m: Twist):
          self.cmd, self.cmd_t = (m.linear.x, m.linear.y, m.angular.z), self.now()
-@@ -83,13 +96,20 @@
+@@ -107,13 +119,20 @@
          self.pub.publish(out)
          if st.state != self.last_state:
              if st.state in ("stale", "no_scan"):
@@ -63,74 +70,9 @@
              d["cmd_in"] = [round(v, 4) for v in self.cmd]
              d["cmd_out"] = [round(v, 4) for v in u]
 +            d["scan_timeout"] = self.shield.cfg.scan_timeout
-+            d["scan_gap_last"] = round(getattr(self, "last_gap", 0.0), 3)
++            d["scan_gap_last"] = round(self.last_gap, 3)
 +            d["scan_gap_max"] = round(self.gap_max, 3)
 +            d["stale_events"] = self.n_stale
-             self.status_pub.publish(String(data=json.dumps(d)))
-             self.last_state, self.last_status_t = st.state, t
- 
---- /dev/null
-+++ b/gurdy_core/gurdy_core/scan_timing.py
-@@ -0,0 +1,62 @@
-+"""Scan inter-arrival statistics and the safety-shield stale-scan timeout rule (no ROS, stdlib only).
-+
-+Decision rule (docs/results/phase9f_small_items.md):
-+    timeout = clamp(margin x p99(gap), floor, cap)        margin 1.2, floor 0.5 s (today's default), cap 1.0 s
-+The cap is the Nav2 collision monitor's source_timeout (nav2_params.yaml: 1.0 s): the shield must not be laxer than
-+the layer before it. If p99 x margin exceeds the cap, the timeout stays at the cap and the cause (late scans, e.g.
-+detector CPU load) must be fixed instead; the result says so (`capped`).
-+"""
-+from __future__ import annotations
-+
-+import math
-+
-+FLOOR_S, CAP_S, MARGIN, PCT = 0.5, 1.0, 1.2, 99.0
-+
-+
-+def gaps(times) -> list:
-+    t = sorted(float(x) for x in times)
-+    return [b - a for a, b in zip(t, t[1:])]
-+
-+
-+def percentile(v, p):
-+    v = sorted(v)
-+    if not v:
-+        return math.nan
-+    k = (len(v) - 1) * p / 100.0
-+    lo, hi = math.floor(k), math.ceil(k)
-+    return v[lo] + (v[hi] - v[lo]) * (k - lo)
-+
-+
-+def stats(g, thresholds=(0.3, 0.5, 1.0)) -> dict:
-+    if not g:
-+        return {"n": 0}
-+    out = {"n": len(g), "mean": sum(g) / len(g), "p50": percentile(g, 50), "p95": percentile(g, 95),
-+           "p99": percentile(g, 99), "max": max(g)}
-+    for th in thresholds:
-+        out[f"n_over_{th}"] = sum(x > th for x in g)
-+    return out
-+
-+
-+def choose_timeout(g, pct=PCT, margin=MARGIN, floor=FLOOR_S, cap=CAP_S) -> dict:
-+    """-> {timeout, p, raw, capped, reason}"""
-+    if len(g) < 100:
-+        return {"timeout": floor, "p": None, "raw": None, "capped": False,
-+                "reason": f"only {len(g)} gaps: keep the default {floor} s, record longer (>= 100 gaps, ideally 10 min under load)"}
-+    p = percentile(g, pct)
-+    raw = margin * p
-+    t = min(max(raw, floor), cap)
-+    capped = raw > cap
-+    reason = (f"p{pct:g} gap {p:.3f} s x {margin} = {raw:.3f} s"
-+              + (f" > cap {cap} s: timeout stays {cap} s; FIX THE LATE SCANS (load) instead of raising it" if capped else
-+                 f" -> {t:.2f} s" + (" (floor)" if raw < floor else "")))
-+    return {"timeout": round(t, 3), "p": p, "raw": raw, "capped": capped, "reason": reason}
-+
-+
-+def validate_timeout(value: float, cap=CAP_S, minimum=0.05) -> tuple:
-+    """Parameter check for the node: -> (used value, warning or None)."""
-+    v = float(value)
-+    if not math.isfinite(v) or v < minimum:
-+        return FLOOR_S, f"scan_timeout {value!r} invalid: using {FLOOR_S} s"
-+    if v > cap:
-+        return cap, f"scan_timeout {v} s above the cap {cap} s (Nav2 collision monitor source_timeout): using {cap} s"
-+    return v, None
+             if self.use_depth:
+                 d["depth_points"] = len(self.depth_xy) if self.depth_fresh() else 0
+                 d["depth_stale"] = not self.depth_fresh()

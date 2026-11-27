@@ -251,3 +251,21 @@ def test_wrist_camera_frame_matches_urdf(ar):
         Tu = chain_fk(dict(zip(A.ARM_JOINTS, q)), "wrist_camera_optical_frame")
         assert np.allclose(Tu, A.T_base_wrist_optical(a, q), atol=1e-9)
         assert np.allclose(chain_fk(dict(zip(A.ARM_JOINTS, q)), "arm_palm_link"), A.T_base_palm(a, q), atol=1e-9)
+
+
+def test_wrist_camera_trigger_is_a_camera_child_and_can_be_disabled(tmp_path):
+    """day_0927: <triggered>/<trigger_topic> under <sensor> were ignored by gz (camera always on, 7.1 Hz); SDFormat wants them
+    under <camera>. With the fix the camera rendered 0 frames without a trigger. wrist_camera.enabled: false removes it."""
+    import xml.etree.ElementTree as ET
+    sim = {"arm": "true", "sim_gazebo": "true"}
+    root = ET.fromstring(_expand(**sim))
+    s = [e for e in root.iter("sensor") if e.get("name") == "wrist_camera"]
+    assert len(s) == 1
+    assert s[0].find("triggered") is None and s[0].find("camera/triggered").text == "true"
+    assert s[0].find("camera/trigger_topic").text == "/wrist_camera/trigger"
+    import yaml
+    d = yaml.safe_load((DESC / "config/arm.yaml").read_text())
+    d["wrist_camera"]["enabled"] = False
+    (tmp_path / "arm.yaml").write_text(yaml.safe_dump(d))
+    root = ET.fromstring(_expand(arm_yaml=str(tmp_path / "arm.yaml"), **sim))
+    assert not [e for e in root.iter("sensor") if e.get("name") == "wrist_camera"]

@@ -24,8 +24,10 @@ Nothing had to be made configurable. The change adds what was missing; the defau
   the counts of gaps > 0.3 / 0.5 / 1.0 s, and the recommended timeout. MCAP is not supported: convert, or export times.
   * **Recording plan:** 10 min of `ros2 bag record /scan` with the detector + Nav2 running (the load that caused the
     stops).
-* **Patch for main** (`docs/results/data/phase9f/shield_scan_timeout.patch`, applies cleanly to main's node; a test
-  checks it with `git show main:`):
+* **Patch** (`docs/results/data/phase9f/shield_scan_timeout.patch`). It was first written for main's node. **Regenerated
+  2026-11-27** for the integrated node (main + the 9c depth patch, integration-0927): now node only, since `scan_timing.py`
+  is already in the tree, and the default stays 0.5 s. `test_scan_timing.py::test_patch_applies_to_tree` checks it
+  against the tree's node (or accepts it as already applied):
   * `validate_timeout` on the parameter
   * every scan gap recorded
   * each stale period's **duration logged** ("scan back after 0.27 s stale (stale periods so far: 9)"), which directly

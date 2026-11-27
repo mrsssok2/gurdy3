@@ -176,6 +176,7 @@ def test_doorway_not_slowed_down_much():
 def test_stale_scan_stops_within_timeout():
     r = run_scenario("stale_scan", shielded=True)
     t_zero = next(t for t, *_rest, cmd_out, state in r.trace if t > 2.0 and state == "stale")
-    assert t_zero <= 2.0 + 0.5 + 0.05                       # last scan at 1.9 s + timeout 0.5 + one control period
+    tmo = shield_config().scan_timeout                     # 0.6 s default since 2026-11-27 (measured /scan gaps)
+    assert t_zero <= 2.0 + tmo + 0.05                       # last scan at 1.9 s + timeout + one control period
     assert distance_after(r, t_zero + 1.0) < 1e-3          # fully stopped 1 s later (lag tau 0.2 s)
     assert run_scenario("no_scan", shielded=True).path_len == 0.0

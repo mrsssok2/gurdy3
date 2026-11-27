@@ -10,3 +10,15 @@ FAIL 08_moveit_plan 2026-11-27 02:08:25 no probe result (move_group.log)
 PASS 09_wrist_camera 2026-11-27 02:09:05 45 frames in 5 s, fx 233.9 (arm.yaml 233.9), fitted floor z -0.107 m in base_link (expected about -0.11)
 FAIL 10_scan_gaps 2026-11-27 02:35:04 no gap statistics (bag.log / console.log)
 NOTE 10_scan_gaps 2026-11-27 02:35:28 step timed out (1500 s) in goal round 3 (rounds take ~12 min wall each); bag was complete (617 s, 3434 scans) and analysed offline afterwards: recommended scan_timeout: 0.5 s  (p99 gap 0.327 s x 1.2 = 0.392 s -> 0.50 s (floor)); gaps > 0.5 s: 2 (max 0.512); Nav2 rounds 1-2: 6/6 goals SUCCEEDED
+PASS 08_moveit_plan 2026-11-27 02:48:38 servo_view: SUCCESS 0.02 s plan (0.0 s wall), 25 pts, 0 invalid, leg contacts 0; pre_grasp: SUCCESS 0.02 s plan (0.0 s wall), 20 pts, 0 invalid, leg contacts 0
+PASS 08_moveit_plan 2026-11-27 02:50:20 sanity: 36/200 random poses invalid, 22 touch a leg proxy; servo_view: SUCCESS 0.03 s plan (0.0 s wall), 25 pts, 0 invalid, leg contacts 0; pre_grasp: SUCCESS 0.01 s plan (0.0 s wall), 20 pts, 0 invalid, leg contacts 0
+PASS 05_walk_no_arm 2026-11-27 02:52:02 forward 1 % err, turn 1 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+PASS 06_walk_arm_folded 2026-11-27 02:53:29 forward 6 % err, turn 2 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+PASS 07_walk_arm_object 2026-11-27 02:54:58 forward 10 % err, turn 2 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+PASS 05_walk_no_arm 2026-11-27 02:56:22 forward 20 % err, turn 2 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+PASS 06_walk_arm_folded 2026-11-27 02:57:49 forward 15 % err, turn 3 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+PASS 07_walk_arm_object 2026-11-27 02:59:13 forward 20 % err, turn 4 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+PASS 05_walk_no_arm 2026-11-27 03:00:41 forward 4 % err, turn 3 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+PASS 06_walk_arm_folded 2026-11-27 03:02:05 forward 20 % err, turn 3 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+PASS 07_walk_arm_object 2026-11-27 03:03:30 forward 14 % err, turn 3 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+PASS 09_wrist_camera 2026-11-27 03:32:53 25 frames in 5 s, fx 233.9 (arm.yaml 233.9), fitted floor z -0.107 m in base_link (expected about -0.11)

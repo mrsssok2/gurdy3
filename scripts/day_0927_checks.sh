@@ -36,7 +36,7 @@ run_in() {
   if docker ps --format '{{.Names}}' | grep -q .; then
     echo "other containers are running:"; docker ps --format '  {{.Names}}'; result "$step" FAIL "not started: docker ps not empty"; return 1
   fi
-  timeout --signal=INT "$tmo" docker compose run --rm -T --name "$NAME" sim bash -c "
+  timeout --signal=INT "$tmo" docker compose run --rm -T --name "$NAME" "${SERVICE:-sim}" bash -c "
     set -o pipefail; cd ~/gurdy2; set +u; source ros2_ws/install/setup.bash 2>/dev/null || true
     export PYTHONPATH=\$HOME/gurdy2/gurdy_core:\$HOME/gurdy2:\$HOME/gurdy2/scripts:\${PYTHONPATH:-}
     export STEP_DIR=$dir
@@ -123,7 +123,11 @@ EOF
 }
 
 step_08_moveit_plan() {   # move_group with the generated SRDF; plan only: folded -> servo_view, -> analytic pre-grasp
-  LAUNCH_ARGS="arm:=true" run_in 08_moveit_plan 900 "$SIM_UP
+  # MoveIt 2 + pick_ik live only in the derived image gurdy3/ros:jazzy-moveit (compose service sim_moveit)
+  SERVICE=sim_moveit LAUNCH_ARGS="arm:=true" run_in 08_moveit_plan 900 "
+    (cd ros2_ws && colcon build --symlink-install --packages-select gurdy_arm_moveit 2>&1 | tail -2) && source ros2_ws/install/setup.bash
+    ros2 pkg prefix pick_ik && ros2 pkg prefix moveit_ros_move_group
+    $SIM_UP
     (ros2 launch gurdy_arm_moveit move_group.launch.py arm:=true > \$STEP_DIR/move_group.log 2>&1 &)
     sleep 25
     python3 scripts/day0927_probe.py moveit \$STEP_DIR/moveit.json"

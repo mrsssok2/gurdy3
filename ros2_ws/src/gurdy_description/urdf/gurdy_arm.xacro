@@ -192,15 +192,17 @@
         <joint name="arm_finger_right_joint"><command_interface name="effort"/><state_interface name="position"/><state_interface name="velocity"/></joint>
       </ros2_control>
 
+      <xacro:if value="${wc.get('enabled', True)}">
       <gazebo reference="wrist_camera_link">
         <sensor name="wrist_camera" type="rgbd_camera">
           <gz_frame_id>wrist_camera_optical_frame</gz_frame_id>
           <topic>/wrist_camera</topic>
           <update_rate>${wc['rate_hz']}</update_rate>
           <always_on>true</always_on>
-          <!-- renders only when triggered (picking); gz-sensors triggered camera: TO VERIFY for rgbd_camera -->
-          <xacro:if value="${wc['triggered']}"><triggered>true</triggered><trigger_topic>/wrist_camera/trigger</trigger_topic></xacro:if>
           <camera>
+            <!-- renders only when triggered (picking). SDFormat: triggered / trigger_topic are children of <camera>
+                 (under <sensor> they were ignored: day_0927 step 09, 7.1 Hz without a trigger) -->
+            <xacro:if value="${wc['triggered']}"><triggered>true</triggered><trigger_topic>/wrist_camera/trigger</trigger_topic></xacro:if>
             <horizontal_fov>${wc['hfov']}</horizontal_fov>
             <image><width>${wc['width']}</width><height>${wc['height']}</height><format>R8G8B8</format></image>
             <clip><near>${wc['range'][0]}</near><far>${wc['range'][1]}</far></clip>
@@ -209,6 +211,7 @@
           </camera>
         </sensor>
       </gazebo>
+      </xacro:if>
 
       <!-- FALLBACK ONLY (clearly labelled in every result): attach one named object model to the palm on command
            (gz DetachableJoint). Off unless fallback_model is given. Real contact grasping is the default. -->
