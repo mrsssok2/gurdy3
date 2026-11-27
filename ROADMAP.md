@@ -394,6 +394,8 @@ Box + all depth pixels -> 3D centre, top, height, yaw, covariance; Track3D fusio
 - [ ] colcon build + node smoke test in the ROS image
 - [ ] Gazebo convention checks (K, z-depth, floor z, noise) + the accuracy run; calibrate the covariance
 - [ ] Depth-noise model in the gz sensor (robot model)
+- [x] First grasp test script for Gazebo lab4_fetch (`scripts/grasp_test.sh`, 5 classes x 3 tries, contact grip, lift + hold; `docs/results/phase9g_grasp_test.md`) — written, not run
+- [ ] Run it (after day_0927 01 / 04 / 09 PASS)
 
 ---
 

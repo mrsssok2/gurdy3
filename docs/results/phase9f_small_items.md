@@ -133,7 +133,7 @@ Nothing had to be made configurable. The change adds what was missing; the defau
   Output: `docs/results/data/fetch_picker/dev_<ts>.{json,log}`, with `ok`, per group, `false_fetch` (a non-fetch text
   turned into an action: the dangerous error), `wrong_fetch`, `missed` (safe fall-through), `prefilter_miss`, counters,
   and the WRONG lines with the raw model text.
-* **Router findings (NOT fixed, outside the picker; the picker never sees these because the router answers first).**
+* **Router findings: FIXED 2026-11-27** (`brain/tests/test_fetch_router_fixes.py`: a named object makes "hand X" a fetch; bring / fetch / hand / give / pass default to the user; an explicit destination room beats "for me"; the modal "can" is not an object; objects are found in order; several objects joined by and / , / then run ONE AFTER ANOTHER and stop at the first item that is not done; two things to HOLD -> the robot asks). Originally (outside the picker; the picker never sees these because the router answers first):
   Candidate phrasings that the deterministic router parses WRONGLY:
   * "could you hand the green cone to me" -> `hand_over` (the object is lost)
   * "please fetch that blue tin you saw in room A" -> `pick` (should be fetch to the user)
