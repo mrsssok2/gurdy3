@@ -134,3 +134,22 @@ def test_yolo_render_failure_stops_the_block(tmp_path):
 def test_smoke_has_no_yolo_block(tmp_path):
     out, ev, md, log = run(tmp_path, "--smoke")
     assert not yolo_calls(out) and "## d) YOLO v3.1" in md and "Not run." in md.split("## d)")[1].split("##")[0]
+
+
+def test_report_marks_a_run_cut_off_by_power_loss(tmp_path):
+    """The real 2026-11-27/28 data stops after the render stage (laptop powered off during training)."""
+    D = tmp_path / "run"
+    (D / "yolo").mkdir(parents=True)
+    (D / "run.log").write_text("18:05:46 start\n00:43:11 d) train (train budget 2.1 h)\n")
+    (D / "yolo/stages.jsonl").write_text('{"stage": "render", "rc": "0", "wall_s": 7023, "train_time_h": "0"}\n')
+    (D / "events.jsonl").write_text('{"t": "22:46:08", "type": "block_start", "block": "yolo"}\n')
+    p = subprocess.run(["python3", str(ROOT / "scripts/overnight_1127_report.py"), str(D), "--cut-off", "02:36-02:42 UTC"],
+                       capture_output=True, text=True, timeout=60)
+    assert p.returncode == 0, p.stderr
+    md = p.stdout
+    assert "**Run cut off by power loss at 02:36-02:42 UTC.**" in md
+    assert "| render | 0 | 117 | 0 |" in md
+    for stg in ("train", "eval", "report"):
+        assert f"| {stg} | cut off (power loss) | - | - |" in md and f"yolo {stg}: cut off by the power loss" in md
+    q = subprocess.run(["python3", str(ROOT / "scripts/overnight_1127_report.py"), str(D)], capture_output=True, text=True, timeout=60)
+    assert "cut off" not in q.stdout                                       # default: unchanged report

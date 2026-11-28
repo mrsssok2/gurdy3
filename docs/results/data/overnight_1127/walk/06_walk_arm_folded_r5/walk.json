@@ -1,0 +1,24 @@
+{
+ "pass": true,
+ "msg": "forward 20 % err, turn 2 % err, no fall, arm max deviation from folded 0.049 rad (compare with the arm:=false run: acceptance <= +5 points)",
+ "forward": {
+  "cmd": 0.1,
+  "measured": 0.07996435869626013,
+  "err_pct": 20.035641303739872,
+  "min_z": 0.07844142273244183
+ },
+ "turn": {
+  "cmd": 0.3,
+  "measured": 0.29522786959277686,
+  "err_pct": 1.5907101357410434,
+  "min_z": 0.10313686239904228
+ },
+ "arm_max_dev_rad": 0.0486199409090246,
+ "arm_effort_nm": {
+  "arm_yaw": -0.0002295678116749964,
+  "arm_shoulder": -0.1992918316856002,
+  "arm_elbow": -0.0980881391036401,
+  "arm_wrist_pitch": -0.009269670417318562,
+  "arm_wrist_roll": -0.0005059799434734477
+ }
+}

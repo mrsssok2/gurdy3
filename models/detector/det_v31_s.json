@@ -1,0 +1,25 @@
+{
+ "input_hw": [
+  256,
+  320
+ ],
+ "classes": {
+  "0": "box",
+  "1": "barrel",
+  "2": "fire_extinguisher",
+  "3": "traffic_cone",
+  "4": "toolbox",
+  "5": "mannequin",
+  "6": "chair",
+  "7": "small_box",
+  "8": "mini_toolbox",
+  "9": "can",
+  "10": "mini_cone",
+  "11": "mini_extinguisher"
+ },
+ "trainer": "ultralytics (AGPL-3.0)",
+ "data": "/home/ubuntu/gurdy2/datasets/synth_v1231.yaml",
+ "epochs": 150,
+ "time_h": 2.1,
+ "base": "vision/runs/det_v2_s/weights/best.pt"
+}

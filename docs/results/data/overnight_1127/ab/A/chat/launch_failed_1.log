@@ -1,0 +1,803 @@
+[INFO] [launch]: All log files can be found below /home/ubuntu/.ros/log/2026-11-27-20-37-35-616276-41ec3ea95f7d-35
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [odom_tf_node-1]: process started with pid [41]
+[INFO] [scan_self_filter_node-2]: process started with pid [42]
+[INFO] [map_server-3]: process started with pid [43]
+[INFO] [amcl-4]: process started with pid [44]
+[INFO] [lifecycle_manager-5]: process started with pid [45]
+[INFO] [controller_server-6]: process started with pid [46]
+[INFO] [smoother_server-7]: process started with pid [47]
+[INFO] [planner_server-8]: process started with pid [48]
+[INFO] [route_server-9]: process started with pid [49]
+[INFO] [behavior_server-10]: process started with pid [50]
+[INFO] [bt_navigator-11]: process started with pid [51]
+[INFO] [waypoint_follower-12]: process started with pid [52]
+[INFO] [velocity_smoother-13]: process started with pid [53]
+[INFO] [collision_monitor-14]: process started with pid [185]
+[INFO] [opennav_docking-15]: process started with pid [190]
+[INFO] [lifecycle_manager-16]: process started with pid [191]
+[INFO] [cmd_vel_min_speed_node-17]: process started with pid [195]
+[INFO] [gazebo-18]: process started with pid [203]
+[INFO] [robot_state_publisher-19]: process started with pid [204]
+[INFO] [parameter_bridge-20]: process started with pid [210]
+[INFO] [create-21]: process started with pid [211]
+[INFO] [parameter_bridge-22]: process started with pid [212]
+[INFO] [policy_node-23]: process started with pid [214]
+[INFO] [estop_gate_node-24]: process started with pid [215]
+[INFO] [detector_node-25]: process started with pid [217]
+[amcl-4] [INFO] [1795811856.273289856] [amcl]: 
+[amcl-4] 	amcl lifecycle node launched. 
+[amcl-4] 	Waiting on external lifecycle transitions to activate
+[amcl-4] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[amcl-4] [INFO] [1795811856.273881947] [amcl]: Creating
+[lifecycle_manager-5] [INFO] [1795811856.281315890] [lifecycle_manager_localization]: Creating
+[smoother_server-7] [INFO] [1795811856.283347549] [smoother_server]: 
+[smoother_server-7] 	smoother_server lifecycle node launched. 
+[smoother_server-7] 	Waiting on external lifecycle transitions to activate
+[smoother_server-7] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[smoother_server-7] [INFO] [1795811856.287723349] [smoother_server]: Creating smoother server
+[behavior_server-10] [INFO] [1795811856.281147920] [behavior_server]: 
+[behavior_server-10] 	behavior_server lifecycle node launched. 
+[behavior_server-10] 	Waiting on external lifecycle transitions to activate
+[behavior_server-10] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-8] [INFO] [1795811856.299172294] [planner_server]: 
+[planner_server-8] 	planner_server lifecycle node launched. 
+[planner_server-8] 	Waiting on external lifecycle transitions to activate
+[planner_server-8] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-8] [INFO] [1795811856.301869395] [planner_server]: Creating
+[velocity_smoother-13] [INFO] [1795811856.302464996] [velocity_smoother]: 
+[velocity_smoother-13] 	velocity_smoother lifecycle node launched. 
+[velocity_smoother-13] 	Waiting on external lifecycle transitions to activate
+[velocity_smoother-13] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[bt_navigator-11] [INFO] [1795811856.313151522] [bt_navigator]: 
+[bt_navigator-11] 	bt_navigator lifecycle node launched. 
+[bt_navigator-11] 	Waiting on external lifecycle transitions to activate
+[bt_navigator-11] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[bt_navigator-11] [INFO] [1795811856.316342456] [bt_navigator]: Creating
+[lifecycle_manager-5] [INFO] [1795811856.316564985] [lifecycle_manager_localization]: [34m[1mCreating and initializing lifecycle service clients[0m[0m
+[map_server-3] [INFO] [1795811856.324834778] [map_server]: 
+[map_server-3] 	map_server lifecycle node launched. 
+[map_server-3] 	Waiting on external lifecycle transitions to activate
+[map_server-3] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[map_server-3] [INFO] [1795811856.324945433] [map_server]: Creating
+[controller_server-6] [INFO] [1795811856.342393663] [controller_server]: 
+[controller_server-6] 	controller_server lifecycle node launched. 
+[controller_server-6] 	Waiting on external lifecycle transitions to activate
+[controller_server-6] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[waypoint_follower-12] [INFO] [1795811856.342909603] [waypoint_follower]: 
+[waypoint_follower-12] 	waypoint_follower lifecycle node launched. 
+[waypoint_follower-12] 	Waiting on external lifecycle transitions to activate
+[waypoint_follower-12] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[waypoint_follower-12] [INFO] [1795811856.343663458] [waypoint_follower]: Creating
+[route_server-9] [INFO] [1795811856.344186835] [route_server]: 
+[route_server-9] 	route_server lifecycle node launched. 
+[route_server-9] 	Waiting on external lifecycle transitions to activate
+[route_server-9] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[controller_server-6] [INFO] [1795811856.355904141] [controller_server]: Creating controller server
+[planner_server-8] [INFO] [1795811856.387222469] [global_costmap.global_costmap]: 
+[planner_server-8] 	global_costmap lifecycle node launched. 
+[planner_server-8] 	Waiting on external lifecycle transitions to activate
+[planner_server-8] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-8] [INFO] [1795811856.388118786] [global_costmap.global_costmap]: Creating Costmap
+[opennav_docking-15] [INFO] [1795811856.437136986] [docking_server]: 
+[opennav_docking-15] 	docking_server lifecycle node launched. 
+[opennav_docking-15] 	Waiting on external lifecycle transitions to activate
+[opennav_docking-15] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[opennav_docking-15] [INFO] [1795811856.442684212] [docking_server]: Creating docking_server
+[robot_state_publisher-19] [INFO] [1795811856.447440623] [robot_state_publisher]: Robot initialized
+[controller_server-6] [INFO] [1795811856.491358582] [local_costmap.local_costmap]: 
+[controller_server-6] 	local_costmap lifecycle node launched. 
+[controller_server-6] 	Waiting on external lifecycle transitions to activate
+[controller_server-6] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[controller_server-6] [INFO] [1795811856.492088173] [local_costmap.local_costmap]: Creating Costmap
+[create-21] [INFO] [1795811856.494264007] [ros_gz_sim]: Requesting list of world names.
+[parameter_bridge-22] [INFO] [1795811856.494411948] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/wrist_camera/image (gz.msgs.Image) -> /wrist_camera/image (sensor_msgs/msg/Image)] (Lazy 0)
+[parameter_bridge-22] [INFO] [1795811856.505805294] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/wrist_camera/depth_image (gz.msgs.Image) -> /wrist_camera/depth_image (sensor_msgs/msg/Image)] (Lazy 0)
+[parameter_bridge-22] [INFO] [1795811856.512807132] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/wrist_camera/camera_info (gz.msgs.CameraInfo) -> /wrist_camera/camera_info (sensor_msgs/msg/CameraInfo)] (Lazy 0)
+[parameter_bridge-22] [INFO] [1795811856.522696000] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/wrist_camera/trigger (std_msgs/msg/Bool) -> /wrist_camera/trigger (gz.msgs.Boolean)] (Lazy 0)
+[lifecycle_manager-5] [INFO] [1795811856.566621217] [lifecycle_manager_localization]: [34m[1mStarting managed nodes bringup...[0m[0m
+[lifecycle_manager-5] [INFO] [1795811856.566714289] [lifecycle_manager_localization]: [34m[1mConfiguring map_server[0m[0m
+[map_server-3] [INFO] [1795811856.570953048] [map_server]: Configuring
+[map_server-3] [INFO] [1795811856.571030491] [map_io]: Loading yaml file: /home/ubuntu/gurdy2/maps/lab4_map.yaml
+[map_server-3] [INFO] [1795811856.571288827] [map_io]: resolution: 0.05
+[map_server-3] [INFO] [1795811856.571304475] [map_io]: origin[0]: -2.10602
+[map_server-3] [INFO] [1795811856.571307348] [map_io]: origin[1]: -2.06765
+[map_server-3] [INFO] [1795811856.571311045] [map_io]: origin[2]: 0
+[map_server-3] [INFO] [1795811856.571314436] [map_io]: free_thresh: 0.196
+[map_server-3] [INFO] [1795811856.571317306] [map_io]: occupied_thresh: 0.65
+[map_server-3] [INFO] [1795811856.571321122] [map_io]: mode: trinary
+[map_server-3] [INFO] [1795811856.571324607] [map_io]: negate: 0
+[map_server-3] [INFO] [1795811856.571528791] [map_io]: Loading image_file: /home/ubuntu/gurdy2/maps/lab4_map.pgm
+[map_server-3] [INFO] [1795811856.572219513] [map_io]: Read map /home/ubuntu/gurdy2/maps/lab4_map.pgm: 163 X 162 map @ 0.05 m/cell
+[lifecycle_manager-16] [INFO] [1795811856.579928332] [lifecycle_manager_navigation]: Creating
+[lifecycle_manager-16] [INFO] [1795811856.602077203] [lifecycle_manager_navigation]: [34m[1mCreating and initializing lifecycle service clients[0m[0m
+[collision_monitor-14] [INFO] [1795811856.625237943] [collision_monitor]: 
+[collision_monitor-14] 	collision_monitor lifecycle node launched. 
+[collision_monitor-14] 	Waiting on external lifecycle transitions to activate
+[collision_monitor-14] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[map_server-3] [WARN] [1795811856.689045332] [map_server.rclcpp]: failed to send response to /map_server/change_state (timeout): client will not receive response, at ./src/rmw_response.cpp:153, at ./src/rcl/service.c:400
+[lifecycle_manager-16] [INFO] [1795811856.883727663] [lifecycle_manager_navigation]: [34m[1mStarting managed nodes bringup...[0m[0m
+[lifecycle_manager-16] [INFO] [1795811856.883804196] [lifecycle_manager_navigation]: [34m[1mConfiguring controller_server[0m[0m
+[controller_server-6] [INFO] [1795811856.884762098] [controller_server]: Configuring controller interface
+[controller_server-6] [INFO] [1795811856.884792760] [controller_server]: getting progress checker plugins..
+[controller_server-6] [INFO] [1795811856.886546073] [controller_server]: getting goal checker plugins..
+[controller_server-6] [INFO] [1795811856.887572499] [controller_server]: Controller frequency set to 10.0000Hz
+[controller_server-6] [INFO] [1795811856.887689799] [local_costmap.local_costmap]: Configuring
+[controller_server-6] [INFO] [1795811856.912770591] [local_costmap.local_costmap]: Using plugin "obstacle_layer"
+[controller_server-6] [INFO] [1795811856.937043251] [local_costmap.local_costmap]: Subscribed to Topics: scan
+[controller_server-6] [INFO] [1795811856.987072013] [local_costmap.local_costmap]: Initialized plugin "obstacle_layer"
+[controller_server-6] [INFO] [1795811856.987156937] [local_costmap.local_costmap]: Using plugin "inflation_layer"
+[controller_server-6] [INFO] [1795811856.990684892] [local_costmap.local_costmap]: Initialized plugin "inflation_layer"
+[controller_server-6] [INFO] [1795811857.038252898] [controller_server]: Created progress_checker : progress_checker of type nav2_controller::SimpleProgressChecker
+[controller_server-6] [INFO] [1795811857.039035638] [controller_server]: Controller Server has progress_checker  progress checkers available.
+[controller_server-6] [INFO] [1795811857.039707451] [controller_server]: Created goal checker : general_goal_checker of type nav2_controller::SimpleGoalChecker
+[controller_server-6] [INFO] [1795811857.047572454] [controller_server]: Controller Server has general_goal_checker  goal checkers available.
+[controller_server-6] [INFO] [1795811857.049557968] [controller_server]: Created controller : FollowPath of type nav2_mppi_controller::MPPIController
+[controller_server-6] [INFO] [1795811857.060001460] [controller_server]: Controller period is equal to model dt. Control sequence shifting is ON
+[controller_server-6] [INFO] [1795811857.064726169] [controller_server]: ConstraintCritic instantiated with 1 power and 4.000000 weight.
+[controller_server-6] [INFO] [1795811857.066642130] [controller_server]: Critic loaded : mppi::critics::ConstraintCritic
+[controller_server-6] [INFO] [1795811857.073341629] [controller_server]: InflationCostCritic instantiated with 1 power and 300.000000 / 0.015000 weights. Critic will collision check based on footprint cost.
+[controller_server-6] [INFO] [1795811857.073455665] [controller_server]: Critic loaded : mppi::critics::CostCritic
+[controller_server-6] [INFO] [1795811857.076487056] [controller_server]: GoalCritic instantiated with 1 power and 5.000000 weight.
+[controller_server-6] [INFO] [1795811857.076545897] [controller_server]: Critic loaded : mppi::critics::GoalCritic
+[controller_server-6] [INFO] [1795811857.078736546] [controller_server]: GoalAngleCritic instantiated with 1 power, 3.000000 weight, 0.500000 angular threshold and symmetric_yaw_tolerance disabled
+[controller_server-6] [INFO] [1795811857.078779998] [controller_server]: Critic loaded : mppi::critics::GoalAngleCritic
+[controller_server-6] [INFO] [1795811857.079166567] [controller_server]: ReferenceTrajectoryCritic instantiated with 1 power and 14.000000 weight
+[controller_server-6] [INFO] [1795811857.079310611] [controller_server]: Critic loaded : mppi::critics::PathAlignCritic
+[controller_server-6] [INFO] [1795811857.079581182] [controller_server]: Critic loaded : mppi::critics::PathFollowCritic
+[policy_node-23] [INFO] [1795811857.087885854] [policy_node]: policy node: mode=policy model=terrain_dr2_15M.onnx (checkpoint rl/runs/terrain_dr2/checkpoints/ppo_latest.zip) 50 Hz
+[controller_server-6] [INFO] [1795811857.091443925] [controller_server]: PathAngleCritic instantiated with 1 power and 2.000000 weight. Mode set to: Forward Preference
+[controller_server-6] [INFO] [1795811857.091511403] [controller_server]: Critic loaded : mppi::critics::PathAngleCritic
+[controller_server-6] [INFO] [1795811857.094076902] [controller_server]: Optimizer reset
+[controller_server-6] [INFO] [1795811857.100904685] [MPPIController]: Configured MPPI Controller: FollowPath
+[controller_server-6] [INFO] [1795811857.100940748] [controller_server]: Controller Server has FollowPath  controllers available.
+[create-21] [INFO] [1795811857.117145092] [ros_gz_sim]: Waiting messages on topic [robot_description].
+[lifecycle_manager-16] [INFO] [1795811857.118185257] [lifecycle_manager_navigation]: [34m[1mConfiguring smoother_server[0m[0m
+[smoother_server-7] [INFO] [1795811857.118458869] [smoother_server]: Configuring smoother server
+[create-21] [INFO] [1795811857.129302989] [ros_gz_sim]: Entity creation successful.
+[smoother_server-7] [INFO] [1795811857.135736224] [smoother_server]: Created smoother : simple_smoother of type nav2_smoother::SimpleSmoother
+[smoother_server-7] [INFO] [1795811857.136214882] [smoother_server]: Smoother Server has simple_smoother  smoothers available.
+[lifecycle_manager-16] [INFO] [1795811857.149981051] [lifecycle_manager_navigation]: [34m[1mConfiguring planner_server[0m[0m
+[planner_server-8] [INFO] [1795811857.150340924] [planner_server]: Configuring
+[planner_server-8] [INFO] [1795811857.150365423] [global_costmap.global_costmap]: Configuring
+[planner_server-8] [INFO] [1795811857.175401209] [global_costmap.global_costmap]: Using plugin "static_layer"
+[planner_server-8] [INFO] [1795811857.178914916] [global_costmap.global_costmap]: Subscribing to the map topic (/map) with transient local durability
+[planner_server-8] [INFO] [1795811857.181439558] [global_costmap.global_costmap]: Initialized plugin "static_layer"
+[planner_server-8] [INFO] [1795811857.181508323] [global_costmap.global_costmap]: Using plugin "obstacle_layer"
+[planner_server-8] [INFO] [1795811857.183221709] [global_costmap.global_costmap]: Subscribed to Topics: scan
+[planner_server-8] [INFO] [1795811857.188495080] [global_costmap.global_costmap]: Initialized plugin "obstacle_layer"
+[planner_server-8] [INFO] [1795811857.188544088] [global_costmap.global_costmap]: Using plugin "inflation_layer"
+[planner_server-8] [INFO] [1795811857.191020970] [global_costmap.global_costmap]: Initialized plugin "inflation_layer"
+[planner_server-8] [INFO] [1795811857.248961088] [planner_server]: Created global planner plugin GridBased of type nav2_navfn_planner::NavfnPlanner
+[planner_server-8] [INFO] [1795811857.249012787] [planner_server]: Configuring plugin GridBased of type NavfnPlanner
+[planner_server-8] [INFO] [1795811857.249853426] [planner_server]: Planner Server has GridBased  planners available.
+[INFO] [create-21]: process has finished cleanly [pid 211]
+[INFO] [spawner-26]: process started with pid [440]
+[lifecycle_manager-16] [INFO] [1795811857.273136445] [lifecycle_manager_navigation]: [34m[1mConfiguring route_server[0m[0m
+[route_server-9] [INFO] [1795811857.273615939] [route_server]: Configuring
+[detector_node-25] [INFO] [1795811857.305372516] [detector_node]: detector det_v3_s.onnx on CPUExecutionProvider, input (256, 320)
+[detector_node-25] [INFO] [1795811857.312506050] [detector_node]: position method object3d (floor prior z -0.11, fit True, shape fit True)
+[route_server-9] [INFO] [1795811857.325762637] [route_server]: Created GraphFileLoader GeoJsonGraphFileLoader of type nav2_route::GeoJsonGraphFileLoader
+[route_server-9] [INFO] [1795811857.325841672] [route_server]: Configuring geojson graph file loader
+[route_server-9] [INFO] [1795811857.325851437] [route_server]: No graph file provided to load yet.
+[route_server-9] [INFO] [1795811857.333893766] [route_server]: Created edge cost function plugin DistanceScorer of type nav2_route::DistanceScorer
+[route_server-9] [INFO] [1795811857.333970740] [route_server]: Configuring distance scorer.
+[route_server-9] [INFO] [1795811857.334321940] [route_server]: Created edge cost function plugin CostmapScorer of type nav2_route::CostmapScorer
+[route_server-9] [INFO] [1795811857.334343350] [route_server]: Configuring costmap scorer.
+[route_server-9] [INFO] [1795811857.338882290] [route_server]: Created route operation AdjustSpeedLimit of type nav2_route::AdjustSpeedLimit
+[route_server-9] [INFO] [1795811857.338933333] [route_server]: Configuring Adjust speed limit operation.
+[route_server-9] [INFO] [1795811857.341670477] [route_server]: Created route operation ReroutingService of type nav2_route::ReroutingService
+[route_server-9] [INFO] [1795811857.341722635] [route_server]: Configuring Rerouting service operation.
+[route_server-9] [INFO] [1795811857.344657999] [route_server]: Created route operation CollisionMonitor of type nav2_route::CollisionMonitor
+[route_server-9] [INFO] [1795811857.345139396] [route_server]: Using costmap topic: local_costmap/costmap_raw instead of server costmap topic: global_costmap/costmap_raw for CollisionMonitor.
+[lifecycle_manager-16] [INFO] [1795811857.351322105] [lifecycle_manager_navigation]: [34m[1mConfiguring behavior_server[0m[0m
+[behavior_server-10] [INFO] [1795811857.351890929] [behavior_server]: Configuring
+[behavior_server-10] [INFO] [1795811857.358286404] [behavior_server]: Creating behavior plugin spin of type nav2_behaviors::Spin
+[behavior_server-10] [INFO] [1795811857.359974551] [behavior_server]: Creating behavior plugin backup of type nav2_behaviors::BackUp
+[behavior_server-10] [INFO] [1795811857.361016807] [behavior_server]: Creating behavior plugin drive_on_heading of type nav2_behaviors::DriveOnHeading
+[behavior_server-10] [INFO] [1795811857.361928078] [behavior_server]: Creating behavior plugin assisted_teleop of type nav2_behaviors::AssistedTeleop
+[behavior_server-10] [INFO] [1795811857.364190757] [behavior_server]: Creating behavior plugin wait of type nav2_behaviors::Wait
+[behavior_server-10] [INFO] [1795811857.373618120] [behavior_server]: Configuring spin
+[behavior_server-10] [INFO] [1795811857.387231606] [behavior_server]: Configuring backup
+[behavior_server-10] [INFO] [1795811857.397694233] [behavior_server]: Configuring drive_on_heading
+[behavior_server-10] [INFO] [1795811857.406013833] [behavior_server]: Configuring assisted_teleop
+[behavior_server-10] [INFO] [1795811857.417977026] [behavior_server]: Configuring wait
+[lifecycle_manager-16] [INFO] [1795811857.427981715] [lifecycle_manager_navigation]: [34m[1mConfiguring velocity_smoother[0m[0m
+[velocity_smoother-13] [INFO] [1795811857.428425360] [velocity_smoother]: Configuring velocity smoother
+[lifecycle_manager-16] [INFO] [1795811857.435779938] [lifecycle_manager_navigation]: [34m[1mConfiguring collision_monitor[0m[0m
+[collision_monitor-14] [INFO] [1795811857.436180748] [collision_monitor]: Configuring
+[collision_monitor-14] [INFO] [1795811857.444633366] [collision_monitor]: [scan]: Creating Scan
+[collision_monitor-14] [INFO] [1795811857.450715863] [collision_monitor]: [FootprintApproach]: Creating Polygon
+[collision_monitor-14] [INFO] [1795811857.451453852] [collision_monitor]: [FootprintApproach]: Polygon points are not defined. Using dynamic subscription instead.
+[collision_monitor-14] [INFO] [1795811857.453915047] [collision_monitor]: [FootprintApproach]: Making footprint subscriber on /local_costmap/published_footprint topic
+[lifecycle_manager-16] [INFO] [1795811857.474073285] [lifecycle_manager_navigation]: [34m[1mConfiguring bt_navigator[0m[0m
+[bt_navigator-11] [INFO] [1795811857.474444346] [bt_navigator]: Configuring
+[bt_navigator-11] [INFO] [1795811857.484149288] [bt_navigator]: Creating navigator id navigate_to_pose of type nav2_bt_navigator::NavigateToPoseNavigator
+[parameter_bridge-20] [INFO] [1795811857.528466268] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/clock (gz.msgs.Clock) -> /clock (rosgraph_msgs/msg/Clock)] (Lazy 0)
+[parameter_bridge-20] [INFO] [1795811857.532025907] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/imu (gz.msgs.IMU) -> /imu (sensor_msgs/msg/Imu)] (Lazy 0)
+[parameter_bridge-20] [INFO] [1795811857.538425916] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/model/gurdy/odometry (gz.msgs.Odometry) -> /odom/ground_truth (nav_msgs/msg/Odometry)] (Lazy 0)
+[parameter_bridge-20] [INFO] [1795811857.542756696] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera/image (gz.msgs.Image) -> /camera/image (sensor_msgs/msg/Image)] (Lazy 1)
+[parameter_bridge-20] [INFO] [1795811857.544954257] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera/depth_image (gz.msgs.Image) -> /camera/depth_image (sensor_msgs/msg/Image)] (Lazy 1)
+[parameter_bridge-20] [INFO] [1795811857.548101248] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera/camera_info (gz.msgs.CameraInfo) -> /camera/camera_info (sensor_msgs/msg/CameraInfo)] (Lazy 1)
+[parameter_bridge-20] [INFO] [1795811857.552176990] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera/points (gz.msgs.PointCloudPacked) -> /camera/points (sensor_msgs/msg/PointCloud2)] (Lazy 1)
+[parameter_bridge-20] [INFO] [1795811857.555373230] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/scan (gz.msgs.LaserScan) -> /scan_raw (sensor_msgs/msg/LaserScan)] (Lazy 1)
+[bt_navigator-11] [INFO] [1795811857.583541615] [bt_navigator]: Creating navigator id navigate_through_poses of type nav2_bt_navigator::NavigateThroughPosesNavigator
+[lifecycle_manager-16] [INFO] [1795811857.621201071] [lifecycle_manager_navigation]: [34m[1mConfiguring waypoint_follower[0m[0m
+[waypoint_follower-12] [INFO] [1795811857.621624910] [waypoint_follower]: Configuring
+[waypoint_follower-12] [INFO] [1795811857.655735582] [waypoint_follower]: Created waypoint_task_executor : wait_at_waypoint of type nav2_waypoint_follower::WaitAtWaypoint
+[lifecycle_manager-16] [INFO] [1795811857.656922899] [lifecycle_manager_navigation]: [34m[1mConfiguring docking_server[0m[0m
+[opennav_docking-15] [INFO] [1795811857.657213781] [docking_server]: Configuring docking_server
+[opennav_docking-15] [INFO] [1795811857.657242195] [docking_server]: Controller frequency set to 50.0000Hz
+[opennav_docking-15] [INFO] [1795811857.695941065] [docking_server]: Created charging dock plugin simple_charging_dock of type opennav_docking::SimpleChargingDock
+[opennav_docking-15] [WARN] [1795811857.702829747] [docking_server]: Dock database filepath nor dock parameters set. Docking actions can only be executed specifying the dock pose via the action request. Or update the dock database via the reload_database service.
+[opennav_docking-15] [INFO] [1795811857.702897080] [docking_server]: Docking Server has 1 dock types and 0 dock instances available.
+[lifecycle_manager-16] [INFO] [1795811857.705799932] [lifecycle_manager_navigation]: [34m[1mActivating controller_server[0m[0m
+[controller_server-6] [INFO] [1795811857.706076721] [controller_server]: Activating
+[controller_server-6] [INFO] [1795811857.706127197] [local_costmap.local_costmap]: Activating
+[controller_server-6] [INFO] [1795811857.706132948] [local_costmap.local_costmap]: Checking transform
+[controller_server-6] [INFO] [1795811857.706161072] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[spawner-26] [INFO] [1795811857.727206056] [spawner_joint_state_broadcaster]: waiting for service /controller_manager/list_controllers to become available...
+[controller_server-6] [INFO] [1795811858.206435514] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[gazebo-18] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="gurdy"]/link[@name="base_link"]/sensor[@name="depth_camera"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[gazebo-18] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="gurdy"]/link[@name="base_link"]/sensor[@name="imu"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[gazebo-18] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="gurdy"]/link[@name="base_link"]/sensor[@name="lidar"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[gazebo-18] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="gurdy"]/link[@name="arm_palm_link"]/sensor[@name="wrist_camera"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[controller_server-6] [INFO] [1795811858.706247521] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[gazebo-18] [INFO] [1795811858.739028062] [gz_ros_control]: Loading controller_manager
+[gazebo-18] [INFO] [1795811858.760513861] [controller_manager]: Using ROS clock for triggering controller manager cycles.
+[gazebo-18] [WARN] [1795811858.760574589] [controller_manager]: The resource manager is not yet initialized, will wait for the robot description to initialize it..
+[gazebo-18] [INFO] [1795811858.768434188] [controller_manager]: Subscribing to '/robot_description' topic for robot description.
+[gazebo-18] [WARN] [1795811858.768518713] [gz_ros_control]: Waiting RM to load and initialize hardware...
+[controller_server-6] [INFO] [1795811859.206244376] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[gazebo-18] [INFO] [1795811859.619421710] [controller_manager]: Received robot description from topic.
+[gazebo-18] [INFO] [1795811859.619504501] [controller_manager]: Enforcing command limits is disabled. Command limits from URDF will be ignored.
+[gazebo-18] [INFO] [1795811859.624152842] [gz_ros_control]: The position_proportional_gain has been set to: 0.1
+[gazebo-18] [INFO] [1795811859.624216585] [gz_ros_control]: Loading joint: lf_hip_yaw
+[gazebo-18] [INFO] [1795811859.624227255] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.624231356] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.624237278] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-18] [INFO] [1795811859.624241995] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.624247378] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624250173] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.624252535] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624267999] [gz_ros_control]: Loading joint: lf_hip_pitch
+[gazebo-18] [INFO] [1795811859.624270608] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.624272671] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.624274804] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-18] [INFO] [1795811859.624277475] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.624279934] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624282051] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.624283983] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624290654] [gz_ros_control]: Loading joint: lf_knee
+[gazebo-18] [INFO] [1795811859.624293010] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.624295357] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.624297649] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-18] [INFO] [1795811859.624300274] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.624302482] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624305345] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.624307356] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624313236] [gz_ros_control]: Loading joint: lm_hip_yaw
+[gazebo-18] [INFO] [1795811859.624315542] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.624317607] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.624319648] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-18] [INFO] [1795811859.624321966] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.624324011] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624327806] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.624329946] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624334968] [gz_ros_control]: Loading joint: lm_hip_pitch
+[gazebo-18] [INFO] [1795811859.624337129] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.624339280] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.624341358] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-18] [INFO] [1795811859.624343719] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.624345816] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624347813] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.624349714] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624355506] [gz_ros_control]: Loading joint: lm_knee
+[gazebo-18] [INFO] [1795811859.624357727] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.624359737] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.624361752] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-18] [INFO] [1795811859.624364015] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.624367296] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624369351] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.624371292] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624377057] [gz_ros_control]: Loading joint: lr_hip_yaw
+[gazebo-18] [INFO] [1795811859.624379294] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.624381240] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.624383164] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-18] [INFO] [1795811859.624406447] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.624408907] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624410955] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.624412891] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624418163] [gz_ros_control]: Loading joint: lr_hip_pitch
+[gazebo-18] [INFO] [1795811859.624420432] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.624422464] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.624424430] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-18] [INFO] [1795811859.624426728] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.624428879] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624430955] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.624432948] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624438099] [gz_ros_control]: Loading joint: lr_knee
+[gazebo-18] [INFO] [1795811859.624441733] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.624443844] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.624445868] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-18] [INFO] [1795811859.624448135] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.624450220] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624452255] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.624454229] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624459953] [gz_ros_control]: Loading joint: rf_hip_yaw
+[gazebo-18] [INFO] [1795811859.624462162] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.624464122] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.624466117] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-18] [INFO] [1795811859.624468337] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.624470320] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624472326] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.624474241] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624479078] [gz_ros_control]: Loading joint: rf_hip_pitch
+[gazebo-18] [INFO] [1795811859.624481296] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.624483334] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.624486060] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-18] [INFO] [1795811859.624488418] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.624490425] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624494634] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.624496614] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624501615] [gz_ros_control]: Loading joint: rf_knee
+[gazebo-18] [INFO] [1795811859.624503771] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.624505715] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.624507695] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-18] [INFO] [1795811859.624510012] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.624512099] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624514126] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.624516149] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624520951] [gz_ros_control]: Loading joint: rm_hip_yaw
+[gazebo-18] [INFO] [1795811859.624523093] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.624525740] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.624529118] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-18] [INFO] [1795811859.624531399] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.624533355] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624535351] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.624537283] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624542634] [gz_ros_control]: Loading joint: rm_hip_pitch
+[gazebo-18] [INFO] [1795811859.624546015] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.624548099] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.624550026] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-18] [INFO] [1795811859.624552320] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.624554324] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624556305] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.624558320] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624563780] [gz_ros_control]: Loading joint: rm_knee
+[gazebo-18] [INFO] [1795811859.624565989] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.624568032] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.624570020] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-18] [INFO] [1795811859.624576405] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.624578694] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624580762] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.624582707] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624588859] [gz_ros_control]: Loading joint: rr_hip_yaw
+[gazebo-18] [INFO] [1795811859.624591104] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.624593121] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.624595070] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-18] [INFO] [1795811859.624597357] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.624599361] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624601379] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.624603319] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624608118] [gz_ros_control]: Loading joint: rr_hip_pitch
+[gazebo-18] [INFO] [1795811859.624610291] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.624612394] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.624614398] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-18] [INFO] [1795811859.624616908] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.624618928] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624622060] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.624623994] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624630151] [gz_ros_control]: Loading joint: rr_knee
+[gazebo-18] [INFO] [1795811859.624632388] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.624634401] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.624636424] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-18] [INFO] [1795811859.624638827] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.624640961] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624643030] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.624646331] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.624716685] [gz_ros_control]: Loading sensor: imu
+[gazebo-18] [INFO] [1795811859.624720113] [gz_ros_control]: 	State:
+[gazebo-18] [WARN] [1795811859.624722798] [gz_ros_control]: IMU sensor 'imu' not found in hardware_info, skipping.
+[gazebo-18] [INFO] [1795811859.624818074] [controller_manager]: Initialize hardware 'GazeboSimSystem' 
+[gazebo-18] [WARN] [1795811859.624834478] [controller_manager.hardware_component.system.GazeboSimSystem]: Executor is not available during hardware component initialization for 'GazeboSimSystem'. Skipping node creation!
+[gazebo-18] [INFO] [1795811859.624905183] [controller_manager]: Successful initialization of hardware 'GazeboSimSystem'
+[gazebo-18] [INFO] [1795811859.625123370] [gz_ros_control]: The position_proportional_gain has been set to: 0.1
+[gazebo-18] [INFO] [1795811859.625144408] [gz_ros_control]: Loading joint: arm_yaw
+[gazebo-18] [INFO] [1795811859.625147717] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.625150264] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.625153340] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-18] [INFO] [1795811859.625156139] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.625159200] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.625161613] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.625163776] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.625171131] [gz_ros_control]: Loading joint: arm_shoulder
+[gazebo-18] [INFO] [1795811859.625173540] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.625175537] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.625177595] [gz_ros_control]: 			 found initial value: 2.475000
+[gazebo-18] [INFO] [1795811859.625180015] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.625182709] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.625184799] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.625186875] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.625192781] [gz_ros_control]: Loading joint: arm_elbow
+[gazebo-18] [INFO] [1795811859.625195031] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.625197214] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.625199226] [gz_ros_control]: 			 found initial value: 0.225000
+[gazebo-18] [INFO] [1795811859.625203355] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.625205344] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.625208280] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.625210276] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.625215788] [gz_ros_control]: Loading joint: arm_wrist_pitch
+[gazebo-18] [INFO] [1795811859.625225802] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.625227983] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.625229979] [gz_ros_control]: 			 found initial value: 1.725000
+[gazebo-18] [INFO] [1795811859.625232265] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.625234319] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.625236398] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.625240337] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.625245456] [gz_ros_control]: Loading joint: arm_wrist_roll
+[gazebo-18] [INFO] [1795811859.625247743] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.625249770] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.625251803] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-18] [INFO] [1795811859.625254041] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.625256065] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.625258099] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.625260116] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.625265948] [gz_ros_control]: Loading joint: arm_finger_left_joint
+[gazebo-18] [INFO] [1795811859.625268368] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.625270549] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.625272764] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.625276227] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.625278344] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.625280305] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.625286699] [gz_ros_control]: Loading joint: arm_finger_right_joint
+[gazebo-18] [INFO] [1795811859.625289100] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795811859.625291150] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795811859.625293681] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795811859.625295739] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.625297930] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795811859.625299884] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795811859.625307240] [gz_ros_control]: Loading sensor: imu
+[gazebo-18] [INFO] [1795811859.625309769] [gz_ros_control]: 	State:
+[gazebo-18] [WARN] [1795811859.625312035] [gz_ros_control]: IMU sensor 'imu' not found in hardware_info, skipping.
+[gazebo-18] [INFO] [1795811859.625328761] [controller_manager]: Initialize hardware 'GurdyArmSystem' 
+[gazebo-18] [WARN] [1795811859.625334692] [controller_manager.hardware_component.system.GurdyArmSystem]: Executor is not available during hardware component initialization for 'GurdyArmSystem'. Skipping node creation!
+[gazebo-18] [INFO] [1795811859.625377907] [controller_manager]: Successful initialization of hardware 'GurdyArmSystem'
+[gazebo-18] [INFO] [1795811859.625509723] [controller_manager]: Activating component 'GurdyArmSystem'.
+[gazebo-18] [INFO] [1795811859.625517982] [resource_manager]: 'configure' hardware 'GurdyArmSystem' 
+[gazebo-18] [INFO] [1795811859.625521615] [gz_ros_control]: System Successfully configured!
+[gazebo-18] [INFO] [1795811859.625524733] [resource_manager]: Successful 'configure' of hardware 'GurdyArmSystem'
+[gazebo-18] [INFO] [1795811859.625530985] [resource_manager]: 'activate' hardware 'GurdyArmSystem' 
+[gazebo-18] [INFO] [1795811859.625542203] [resource_manager]: Successful 'activate' of hardware 'GurdyArmSystem'
+[gazebo-18] [INFO] [1795811859.625596626] [controller_manager]: Activating component 'GazeboSimSystem'.
+[gazebo-18] [INFO] [1795811859.625599789] [resource_manager]: 'configure' hardware 'GazeboSimSystem' 
+[gazebo-18] [INFO] [1795811859.625601333] [gz_ros_control]: System Successfully configured!
+[gazebo-18] [INFO] [1795811859.625603767] [resource_manager]: Successful 'configure' of hardware 'GazeboSimSystem'
+[gazebo-18] [INFO] [1795811859.625611894] [resource_manager]: 'activate' hardware 'GazeboSimSystem' 
+[gazebo-18] [INFO] [1795811859.625614151] [resource_manager]: Successful 'activate' of hardware 'GazeboSimSystem'
+[gazebo-18] [WARN] [1795811859.625631703] [controller_manager]: Component 'GurdyArmSystem' does not have read or write statistics initialized, skipping registration.
+[gazebo-18] [WARN] [1795811859.625635145] [controller_manager]: Component 'GazeboSimSystem' does not have read or write statistics initialized, skipping registration.
+[gazebo-18] [INFO] [1795811859.625639975] [controller_manager]: Resource Manager has been successfully initialized. Starting Controller Manager services...
+[controller_server-6] [INFO] [1795811859.706218462] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[gazebo-18] [WARN] [1795811859.833868588] [controller_manager.rclcpp]: failed to send response to /controller_manager/list_controllers (timeout): client will not receive response, at ./src/rmw_response.cpp:153, at ./src/rcl/service.c:400
+[gazebo-18] [INFO] [1795811859.918927911] [controller_manager]: Loading controller : 'joint_state_broadcaster' of type 'joint_state_broadcaster/JointStateBroadcaster'
+[gazebo-18] [INFO] [1795811859.918986836] [controller_manager]: Loading controller 'joint_state_broadcaster'
+[gazebo-18] [INFO] [1795811859.928384541] [controller_manager]: Controller 'joint_state_broadcaster' node arguments: --ros-args --params-file /tmp/gurdy_controllers_w40kk5ff.yaml -p use_sim_time:=true --param use_sim_time:=true 
+[spawner-26] [INFO] [1795811859.995887554] [spawner_joint_state_broadcaster]: Loaded joint_state_broadcaster
+[gazebo-18] [INFO] [1795811859.998926155] [controller_manager]: Configuring controller: 'joint_state_broadcaster'
+[gazebo-18] [INFO] [1795811859.999179855] [joint_state_broadcaster]: 'joints' or 'interfaces' parameter is empty. All available state interfaces will be published
+[gazebo-18] [INFO] [1795811860.012673096] [controller_manager]: Activating controllers: [ joint_state_broadcaster ]
+[controller_server-6] [INFO] [1795811860.206226742] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[controller_server-6] [INFO] [1795811860.706307496] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[gazebo-18] [WARN] [1795811860.792488887] [gz_ros_control]:  Desired controller update period (0.002 s) is slower than the gazebo simulation period (0.001 s).
+[gazebo-18] [INFO] [1795811860.793768130] [controller_manager]: Successfully switched controllers!
+[controller_server-6] [INFO] [1795811861.206253328] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[controller_server-6] [INFO] [1795811861.706226661] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[controller_server-6] [INFO] [1795811862.206270354] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [INFO] [1795811862.329725630] [detector_node]: frames 0, map updates 0 (0 truncated), depth rejects 0, tf failures 0, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[controller_server-6] [INFO] [1795811862.706244607] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[spawner-26] [INFO] [1795811862.900004715] [spawner_joint_state_broadcaster]: Configured and activated joint_state_broadcaster
+[policy_node-23] [INFO] [1795811862.900034703] [policy_node]: status: stand:cmd_vel timeout
+[gazebo-18] [1;33m[Wrn] [OBJLoader.cc:202] [0m[1;33mMissing material for shape[[0m[1;33m] [0m[1;33min OBJ file[[0m[1;33m/home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/meshes/l4_cone_a_p0.obj[0m[1;33m][0m[1;33m[0m
+[gazebo-18] [1;33m[Wrn] [OBJLoader.cc:202] [0m[1;33mMissing material for shape[[0m[1;33m] [0m[1;33min OBJ file[[0m[1;33m/home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/meshes/l4_cone_a_p1.obj[0m[1;33m][0m[1;33m[0m
+[gazebo-18] [1;33m[Wrn] [OBJLoader.cc:202] [0m[1;33mMissing material for shape[[0m[1;33m] [0m[1;33min OBJ file[[0m[1;33m/home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/meshes/l4_cone_d_p0.obj[0m[1;33m][0m[1;33m[0m
+[gazebo-18] [1;33m[Wrn] [OBJLoader.cc:202] [0m[1;33mMissing material for shape[[0m[1;33m] [0m[1;33min OBJ file[[0m[1;33m/home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/meshes/l4_cone_d_p1.obj[0m[1;33m][0m[1;33m[0m
+[gazebo-18] [1;33m[Wrn] [OBJLoader.cc:202] [0m[1;33mMissing material for shape[[0m[1;33m] [0m[1;33min OBJ file[[0m[1;33m/home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/meshes/f_orange_cone_p1.obj[0m[1;33m][0m[1;33m[0m
+[gazebo-18] [1;33m[Wrn] [OBJLoader.cc:202] [0m[1;33mMissing material for shape[[0m[1;33m] [0m[1;33min OBJ file[[0m[1;33m/home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/meshes/f_green_cone_p1.obj[0m[1;33m][0m[1;33m[0m
+[INFO] [spawner-26]: process has finished cleanly [pid 440]
+[INFO] [spawner-27]: process started with pid [569]
+[controller_server-6] [INFO] [1795811863.206289416] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [WARN] [1795811863.350152125] [detector_node]: TF map <- camera_optical_frame unavailable: "map" passed to lookupTransform argument target_frame does not exist. 
+[spawner-27] [INFO] [1795811863.426316078] [spawner_joint_pd_controller]: waiting for service /controller_manager/list_controllers to become available...
+[controller_server-6] [INFO] [1795811863.706353364] [local_costmap.local_costmap]: start
+[gazebo-18] [INFO] [1795811863.761145060] [controller_manager]: Loading controller : 'joint_pd_controller' of type 'gurdy_control/JointPDController'
+[gazebo-18] [INFO] [1795811863.761194230] [controller_manager]: Loading controller 'joint_pd_controller'
+[gazebo-18] [INFO] [1795811863.765587442] [controller_manager]: Controller 'joint_pd_controller' node arguments: --ros-args --params-file /tmp/gurdy_controllers_w40kk5ff.yaml -p use_sim_time:=true --param use_sim_time:=true 
+[spawner-27] [INFO] [1795811863.804007187] [spawner_joint_pd_controller]: Loaded joint_pd_controller
+[gazebo-18] [INFO] [1795811863.806570291] [controller_manager]: Configuring controller: 'joint_pd_controller'
+[gazebo-18] [INFO] [1795811863.810752700] [joint_pd_controller]: configured 18 joints, kp=20.000 kd=0.050 effort_limit=2.500
+[gazebo-18] [INFO] [1795811863.815603498] [controller_manager]: Activating controllers: [ joint_pd_controller ]
+[gazebo-18] [INFO] [1795811863.819079750] [controller_manager]: Successfully switched controllers!
+[spawner-27] [INFO] [1795811863.823345363] [spawner_joint_pd_controller]: Configured and activated joint_pd_controller
+[controller_server-6] [WARN] [1795811863.908916354] [controller_server]: Parameter controller_server.verbose not found
+[controller_server-6] [INFO] [1795811863.909858565] [controller_server]: Optimizer reset
+[controller_server-6] [INFO] [1795811863.910179016] [MPPIController]: Activated MPPI Controller: FollowPath
+[controller_server-6] [INFO] [1795811863.910212396] [controller_server]: Creating bond (controller_server) to lifecycle manager.
+[INFO] [spawner-27]: process has finished cleanly [pid 569]
+[INFO] [spawner-28]: process started with pid [585]
+[lifecycle_manager-16] [INFO] [1795811864.021252922] [lifecycle_manager_navigation]: Server controller_server connected with bond.
+[lifecycle_manager-16] [INFO] [1795811864.021329097] [lifecycle_manager_navigation]: [34m[1mActivating smoother_server[0m[0m
+[smoother_server-7] [INFO] [1795811864.021842761] [smoother_server]: Activating
+[smoother_server-7] [INFO] [1795811864.021887714] [smoother_server]: Creating bond (smoother_server) to lifecycle manager.
+[lifecycle_manager-16] [INFO] [1795811864.130737444] [lifecycle_manager_navigation]: Server smoother_server connected with bond.
+[lifecycle_manager-16] [INFO] [1795811864.130790085] [lifecycle_manager_navigation]: [34m[1mActivating planner_server[0m[0m
+[planner_server-8] [INFO] [1795811864.131178375] [planner_server]: Activating
+[planner_server-8] [INFO] [1795811864.131210546] [global_costmap.global_costmap]: Activating
+[planner_server-8] [INFO] [1795811864.131217821] [global_costmap.global_costmap]: Checking transform
+[planner_server-8] [INFO] [1795811864.131256163] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[spawner-28] [INFO] [1795811864.411321805] [spawner_arm_controller]: waiting for service /controller_manager/list_controllers to become available...
+[planner_server-8] [INFO] [1795811864.631385699] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[gazebo-18] [INFO] [1795811864.664392998] [controller_manager]: Loading controller : 'arm_controller' of type 'joint_trajectory_controller/JointTrajectoryController'
+[gazebo-18] [INFO] [1795811864.664493275] [controller_manager]: Loading controller 'arm_controller'
+[gazebo-18] [INFO] [1795811864.668917126] [controller_manager]: Controller 'arm_controller' node arguments: --ros-args --params-file /tmp/gurdy_controllers_w40kk5ff.yaml -p use_sim_time:=true --param use_sim_time:=true 
+[spawner-28] [INFO] [1795811864.723456416] [spawner_arm_controller]: Loaded arm_controller
+[gazebo-18] [INFO] [1795811864.724861711] [controller_manager]: Configuring controller: 'arm_controller'
+[gazebo-18] [INFO] [1795811864.725100965] [arm_controller]: No specific joint names are used for command interfaces. Using 'joints' parameter.
+[gazebo-18] [INFO] [1795811864.725210938] [arm_controller]: Command interfaces are [effort] and state interfaces are [position velocity].
+[gazebo-18] [INFO] [1795811864.725249852] [arm_controller]: Using 'splines' interpolation method.
+[gazebo-18] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-18] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-18] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-18] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-18] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-18] [INFO] [1795811864.731491341] [arm_controller]: Action status changes will be monitored at 20.00 Hz.
+[gazebo-18] [INFO] [1795811864.748518978] [arm_controller]: No scaling interface set. This controller will not read speed scaling from the hardware.
+[gazebo-18] [INFO] [1795811864.751103343] [controller_manager]: Activating controllers: [ arm_controller ]
+[gazebo-18] [INFO] [1795811864.752135744] [controller_manager]: Successfully switched controllers!
+[spawner-28] [INFO] [1795811864.756267732] [spawner_arm_controller]: Configured and activated arm_controller
+[gazebo-18] [INFO] [1795811864.758570319] [controller_manager]: Loading controller : 'gripper_controller' of type 'effort_controllers/JointGroupEffortController'
+[gazebo-18] [INFO] [1795811864.758636759] [controller_manager]: Loading controller 'gripper_controller'
+[gazebo-18] [INFO] [1795811864.762015862] [controller_manager]: Controller 'gripper_controller' node arguments: --ros-args --params-file /tmp/gurdy_controllers_w40kk5ff.yaml -p use_sim_time:=true --param use_sim_time:=true 
+[spawner-28] [INFO] [1795811864.807972628] [spawner_arm_controller]: Loaded gripper_controller
+[gazebo-18] [INFO] [1795811864.808436984] [controller_manager]: Configuring controller: 'gripper_controller'
+[gazebo-18] [INFO] [1795811864.809777565] [gripper_controller]: configure successful
+[gazebo-18] [INFO] [1795811864.812295126] [controller_manager]: Activating controllers: [ gripper_controller ]
+[gazebo-18] [INFO] [1795811864.814490450] [gripper_controller]: activate successful
+[gazebo-18] [INFO] [1795811864.814759886] [controller_manager]: Successfully switched controllers!
+[spawner-28] [INFO] [1795811864.820096385] [spawner_arm_controller]: Configured and activated gripper_controller
+[INFO] [spawner-28]: process has finished cleanly [pid 585]
+[INFO] [ros2-29]: process started with pid [602]
+[planner_server-8] [INFO] [1795811865.131343492] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811865.631367307] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[ros2-29] Waiting for an action server to become available...
+[ros2-29] Sending goal:
+[ros2-29]      trajectory:
+[ros2-29]   header:
+[ros2-29]     stamp:
+[ros2-29]       sec: 0
+[ros2-29]       nanosec: 0
+[ros2-29]     frame_id: ''
+[ros2-29]   joint_names:
+[ros2-29]   - arm_yaw
+[ros2-29]   - arm_shoulder
+[ros2-29]   - arm_elbow
+[ros2-29]   - arm_wrist_pitch
+[ros2-29]   - arm_wrist_roll
+[ros2-29]   points:
+[ros2-29]   - positions:
+[ros2-29]     - 0.0
+[ros2-29]     - 2.475
+[ros2-29]     - 0.225
+[ros2-29]     - 1.725
+[ros2-29]     - 0.0
+[ros2-29]     velocities: []
+[ros2-29]     accelerations: []
+[ros2-29]     effort: []
+[ros2-29]     time_from_start:
+[ros2-29]       sec: 2
+[ros2-29]       nanosec: 0
+[ros2-29] multi_dof_trajectory:
+[ros2-29]   header:
+[ros2-29]     stamp:
+[ros2-29]       sec: 0
+[ros2-29]       nanosec: 0
+[ros2-29]     frame_id: ''
+[ros2-29]   joint_names: []
+[ros2-29]   points: []
+[ros2-29] path_tolerance: []
+[ros2-29] component_path_tolerance: []
+[ros2-29] goal_tolerance: []
+[ros2-29] component_goal_tolerance: []
+[ros2-29] goal_time_tolerance:
+[ros2-29]   sec: 0
+[ros2-29]   nanosec: 0
+[ros2-29] 
+[gazebo-18] [INFO] [1795811865.655589856] [arm_controller]: Received new action goal
+[gazebo-18] [INFO] [1795811865.655644831] [arm_controller]: Accepted new action goal
+[ros2-29] Goal accepted with ID: 681a6130e6cb4c7088a31c50898d0cc5
+[ros2-29] 
+[planner_server-8] [INFO] [1795811866.131371428] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811866.631332041] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811867.131341724] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [INFO] [1795811867.475994115] [detector_node]: frames 12, map updates 0 (0 truncated), depth rejects 0, tf failures 12, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[planner_server-8] [INFO] [1795811867.631357006] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811868.131357050] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[gazebo-18] [INFO] [1795811868.184888180] [arm_controller]: Goal reached, success!
+[ros2-29] Result:
+[ros2-29]     error_code: 0
+[ros2-29] error_string: Goal successfully reached!
+[ros2-29] 
+[ros2-29] Goal finished with status: SUCCEEDED
+[INFO] [ros2-29]: process has finished cleanly [pid 602]
+[planner_server-8] [INFO] [1795811868.631337106] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811869.131324556] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811869.631376847] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811870.135482035] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [WARN] [1795811870.245091886] [detector_node]: TF map <- camera_optical_frame unavailable: "map" passed to lookupTransform argument target_frame does not exist. 
+[planner_server-8] [INFO] [1795811870.631346496] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811871.131366124] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811871.631368786] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811872.131329749] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [INFO] [1795811872.425291016] [detector_node]: frames 26, map updates 0 (0 truncated), depth rejects 0, tf failures 26, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[planner_server-8] [INFO] [1795811872.631321255] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811873.131320659] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811873.631367866] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811874.131314198] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811874.631334501] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811875.131308453] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811875.631328108] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811876.131425767] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811876.631379129] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811877.131329421] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [INFO] [1795811877.341976475] [detector_node]: frames 41, map updates 0 (0 truncated), depth rejects 0, tf failures 41, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[planner_server-8] [INFO] [1795811877.631325573] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811878.131339598] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811878.631325782] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811879.131331667] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811879.631326263] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811880.131350245] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811880.631347125] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811881.131321359] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811881.631354639] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811882.131342530] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [INFO] [1795811882.329773739] [detector_node]: frames 54, map updates 0 (0 truncated), depth rejects 0, tf failures 54, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[planner_server-8] [INFO] [1795811882.631364677] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811883.131377143] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811883.631373438] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811884.131357596] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811884.631328044] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811885.131314015] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811885.631355065] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811886.131338562] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811886.631320130] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811887.132184793] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [INFO] [1795811887.489137532] [detector_node]: frames 69, map updates 0 (0 truncated), depth rejects 0, tf failures 69, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[planner_server-8] [INFO] [1795811887.631318528] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811888.131320455] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811888.631343351] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811889.131320403] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811889.631330411] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811890.131394356] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811890.631440624] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811891.131291437] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811891.631378837] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811892.131335473] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [INFO] [1795811892.329810482] [detector_node]: frames 83, map updates 0 (0 truncated), depth rejects 0, tf failures 83, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[planner_server-8] [INFO] [1795811892.631313958] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811893.131397553] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811893.631341301] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811894.131325706] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811894.631321650] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811895.131285867] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811895.631318539] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811896.131309546] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811896.631322813] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811897.131375368] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [INFO] [1795811897.329976347] [detector_node]: frames 98, map updates 0 (0 truncated), depth rejects 0, tf failures 98, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[planner_server-8] [INFO] [1795811897.631322671] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811898.131328643] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811898.631322062] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811899.131325333] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811899.631327583] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811900.131342044] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811900.631467411] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811901.131316385] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811901.631327451] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811902.131350821] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [INFO] [1795811902.359258551] [detector_node]: frames 113, map updates 0 (0 truncated), depth rejects 0, tf failures 113, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[planner_server-8] [INFO] [1795811902.631392825] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811903.131435751] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811903.631366900] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811904.131360081] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811904.631330050] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811905.131323664] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811905.631325194] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811906.131323251] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811906.631503480] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811907.131320153] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [INFO] [1795811907.492159931] [detector_node]: frames 128, map updates 0 (0 truncated), depth rejects 0, tf failures 128, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[planner_server-8] [INFO] [1795811907.631307950] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811908.131347909] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811908.632199560] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811909.131338220] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811909.631346916] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811910.131341576] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811910.631318158] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811911.131351439] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811911.631338130] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811912.131317144] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [INFO] [1795811912.563496885] [detector_node]: frames 143, map updates 0 (0 truncated), depth rejects 0, tf failures 143, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[planner_server-8] [INFO] [1795811912.631341190] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811913.131361023] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811913.631325244] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811914.131320309] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811914.631312857] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811915.131319327] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811915.631370960] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811916.131327658] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811916.631341391] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811917.131330200] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [INFO] [1795811917.329675445] [detector_node]: frames 157, map updates 0 (0 truncated), depth rejects 0, tf failures 157, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[planner_server-8] [INFO] [1795811917.631314183] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811918.131313312] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811918.631481603] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811919.131330130] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811919.631356574] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811920.131345753] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811920.631340956] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811921.131323091] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811921.631313528] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811922.131400287] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [INFO] [1795811922.329782766] [detector_node]: frames 172, map updates 0 (0 truncated), depth rejects 0, tf failures 172, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[planner_server-8] [INFO] [1795811922.631347729] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811923.131316533] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811923.631314040] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811924.131349126] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811924.631313774] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811925.131316835] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811925.631319851] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811926.131365828] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811926.631320893] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811927.131337246] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [INFO] [1795811927.329803356] [detector_node]: frames 187, map updates 0 (0 truncated), depth rejects 0, tf failures 187, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[planner_server-8] [INFO] [1795811927.631357009] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811928.131329726] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811928.631391979] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811929.131528766] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811929.631322395] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811930.131318980] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811930.631331396] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811931.131317757] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811931.631329281] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [WARN] [1795811931.741559437] [detector_node]: TF map <- camera_optical_frame unavailable: "map" passed to lookupTransform argument target_frame does not exist. 
+[planner_server-8] [INFO] [1795811932.131343836] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [INFO] [1795811932.410150549] [detector_node]: frames 202, map updates 0 (0 truncated), depth rejects 0, tf failures 202, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[planner_server-8] [INFO] [1795811932.631319503] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811933.131320349] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811933.631342986] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811934.131515120] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811934.631321378] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811935.131363341] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811935.631354758] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811936.131316556] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811936.631372656] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811937.131380762] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [INFO] [1795811937.516559884] [detector_node]: frames 217, map updates 0 (0 truncated), depth rejects 0, tf failures 217, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[planner_server-8] [INFO] [1795811937.631345373] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811938.131498301] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811938.631370850] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811939.131331815] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811939.631339179] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811940.131385646] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811940.631367998] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811941.131326517] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811941.631324530] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [INFO] [1795811942.131323190] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Invalid frame ID "map" passed to canTransform argument target_frame - frame does not exist
+[planner_server-8] [ERROR] [1795811942.131381723] [global_costmap.global_costmap]: Failed to activate global_costmap because transform from base_link to map did not become available before timeout
+[lifecycle_manager-16] [ERROR] [1795811942.132231231] [lifecycle_manager_navigation]: Failed to change state for node: planner_server
+[lifecycle_manager-16] [ERROR] [1795811942.133071397] [lifecycle_manager_navigation]: Failed to bring up all requested nodes. Aborting bringup.
+[detector_node-25] [INFO] [1795811942.329802272] [detector_node]: frames 231, map updates 0 (0 truncated), depth rejects 0, tf failures 231, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[gazebo-18] NodeShared::Publish() Error: Interrupted system call
+[detector_node-25] [INFO] [1795811947.460610384] [detector_node]: frames 246, map updates 0 (0 truncated), depth rejects 0, tf failures 246, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[detector_node-25] [INFO] [1795811952.525475802] [detector_node]: frames 261, map updates 0 (0 truncated), depth rejects 0, tf failures 261, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[detector_node-25] [INFO] [1795811957.520838406] [detector_node]: frames 276, map updates 0 (0 truncated), depth rejects 0, tf failures 276, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)

@@ -1,0 +1,401 @@
+[INFO] [launch]: All log files can be found below /home/ubuntu/.ros/log/2026-11-27-21-06-13-624466-1d544b216254-33
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [gazebo-1]: process started with pid [70]
+[INFO] [robot_state_publisher-2]: process started with pid [71]
+[INFO] [parameter_bridge-3]: process started with pid [73]
+[INFO] [create-4]: process started with pid [74]
+[INFO] [parameter_bridge-5]: process started with pid [75]
+[INFO] [policy_node-6]: process started with pid [76]
+[create-4] [INFO] [1795813574.048350555] [ros_gz_sim]: Requesting list of world names.
+[robot_state_publisher-2] [INFO] [1795813574.051751705] [robot_state_publisher]: Robot initialized
+[parameter_bridge-5] [INFO] [1795813574.068532063] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/wrist_camera/image (gz.msgs.Image) -> /wrist_camera/image (sensor_msgs/msg/Image)] (Lazy 0)
+[parameter_bridge-5] [INFO] [1795813574.071763630] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/wrist_camera/depth_image (gz.msgs.Image) -> /wrist_camera/depth_image (sensor_msgs/msg/Image)] (Lazy 0)
+[parameter_bridge-5] [INFO] [1795813574.072362601] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/wrist_camera/camera_info (gz.msgs.CameraInfo) -> /wrist_camera/camera_info (sensor_msgs/msg/CameraInfo)] (Lazy 0)
+[parameter_bridge-5] [INFO] [1795813574.073105735] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/wrist_camera/trigger (std_msgs/msg/Bool) -> /wrist_camera/trigger (gz.msgs.Boolean)] (Lazy 0)
+[policy_node-6] [INFO] [1795813574.409667956] [policy_node]: policy node: mode=policy model=terrain_dr2_15M.onnx (checkpoint rl/runs/terrain_dr2/checkpoints/ppo_latest.zip) 50 Hz
+[create-4] [INFO] [1795813574.468390340] [ros_gz_sim]: Waiting messages on topic [robot_description].
+[create-4] [INFO] [1795813574.482360767] [ros_gz_sim]: Entity creation successful.
+[INFO] [create-4]: process has finished cleanly [pid 74]
+[INFO] [spawner-7]: process started with pid [169]
+[spawner-7] [INFO] [1795813574.900757451] [spawner_joint_state_broadcaster]: waiting for service /controller_manager/list_controllers to become available...
+[parameter_bridge-3] [INFO] [1795813575.068723529] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/clock (gz.msgs.Clock) -> /clock (rosgraph_msgs/msg/Clock)] (Lazy 0)
+[parameter_bridge-3] [INFO] [1795813575.070821106] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/imu (gz.msgs.IMU) -> /imu (sensor_msgs/msg/Imu)] (Lazy 0)
+[parameter_bridge-3] [INFO] [1795813575.073698427] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/model/gurdy/odometry (gz.msgs.Odometry) -> /odom/ground_truth (nav_msgs/msg/Odometry)] (Lazy 0)
+[parameter_bridge-3] [INFO] [1795813575.075370036] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera/image (gz.msgs.Image) -> /camera/image (sensor_msgs/msg/Image)] (Lazy 1)
+[parameter_bridge-3] [INFO] [1795813575.076105244] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera/depth_image (gz.msgs.Image) -> /camera/depth_image (sensor_msgs/msg/Image)] (Lazy 1)
+[parameter_bridge-3] [INFO] [1795813575.076722891] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera/camera_info (gz.msgs.CameraInfo) -> /camera/camera_info (sensor_msgs/msg/CameraInfo)] (Lazy 1)
+[parameter_bridge-3] [INFO] [1795813575.077445662] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera/points (gz.msgs.PointCloudPacked) -> /camera/points (sensor_msgs/msg/PointCloud2)] (Lazy 1)
+[parameter_bridge-3] [INFO] [1795813575.078289107] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/scan (gz.msgs.LaserScan) -> /scan_raw (sensor_msgs/msg/LaserScan)] (Lazy 1)
+[gazebo-1] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="gurdy"]/link[@name="base_link"]/sensor[@name="depth_camera"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[gazebo-1] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="gurdy"]/link[@name="base_link"]/sensor[@name="imu"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[gazebo-1] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="gurdy"]/link[@name="arm_palm_link"]/sensor[@name="wrist_camera"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[gazebo-1] [INFO] [1795813576.274760190] [gz_ros_control]: Loading controller_manager
+[gazebo-1] [INFO] [1795813576.286582859] [controller_manager]: Using ROS clock for triggering controller manager cycles.
+[gazebo-1] [WARN] [1795813576.286631479] [controller_manager]: The resource manager is not yet initialized, will wait for the robot description to initialize it..
+[gazebo-1] [INFO] [1795813576.292288089] [controller_manager]: Subscribing to '/robot_description' topic for robot description.
+[gazebo-1] [WARN] [1795813576.292363072] [gz_ros_control]: Waiting RM to load and initialize hardware...
+[gazebo-1] [WARN] [1795813577.292543170] [controller_manager]: Waiting for data on 'robot_description' topic to finish initialization
+[gazebo-1] [INFO] [1795813577.793385014] [controller_manager]: Received robot description from topic.
+[gazebo-1] [INFO] [1795813577.793575155] [controller_manager]: Enforcing command limits is disabled. Command limits from URDF will be ignored.
+[gazebo-1] [INFO] [1795813577.800616416] [gz_ros_control]: The position_proportional_gain has been set to: 0.1
+[gazebo-1] [INFO] [1795813577.800694055] [gz_ros_control]: Loading joint: lf_hip_yaw
+[gazebo-1] [INFO] [1795813577.800700322] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.800704514] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.800710379] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-1] [INFO] [1795813577.800715315] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.800725319] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800727886] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.800729926] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800739235] [gz_ros_control]: Loading joint: lf_hip_pitch
+[gazebo-1] [INFO] [1795813577.800741470] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.800743329] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.800745171] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-1] [INFO] [1795813577.800747615] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.800749901] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800751800] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.800753431] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800759346] [gz_ros_control]: Loading joint: lf_knee
+[gazebo-1] [INFO] [1795813577.800761436] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.800763298] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.800766819] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-1] [INFO] [1795813577.800769244] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.800771205] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800773874] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.800775548] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800781796] [gz_ros_control]: Loading joint: lm_hip_yaw
+[gazebo-1] [INFO] [1795813577.800783981] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.800785735] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.800787438] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-1] [INFO] [1795813577.800789507] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.800791259] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800793190] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.800797290] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800802424] [gz_ros_control]: Loading joint: lm_hip_pitch
+[gazebo-1] [INFO] [1795813577.800804483] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.800806231] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.800807966] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-1] [INFO] [1795813577.800810100] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.800811884] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800813615] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.800815358] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800820490] [gz_ros_control]: Loading joint: lm_knee
+[gazebo-1] [INFO] [1795813577.800822416] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.800824193] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.800826019] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-1] [INFO] [1795813577.800828079] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.800831055] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800832835] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.800834540] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800839632] [gz_ros_control]: Loading joint: lr_hip_yaw
+[gazebo-1] [INFO] [1795813577.800860432] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.800862700] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.800864487] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-1] [INFO] [1795813577.800866692] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.800868468] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800871606] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.800873539] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800891046] [gz_ros_control]: Loading joint: lr_hip_pitch
+[gazebo-1] [INFO] [1795813577.800896847] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.800899700] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.800901968] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-1] [INFO] [1795813577.800904885] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.800906862] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800908848] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.800910705] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800917024] [gz_ros_control]: Loading joint: lr_knee
+[gazebo-1] [INFO] [1795813577.800919522] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.800921535] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.800923467] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-1] [INFO] [1795813577.800925752] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.800927595] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800929349] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.800931066] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800937057] [gz_ros_control]: Loading joint: rf_hip_yaw
+[gazebo-1] [INFO] [1795813577.800939243] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.800941020] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.800942717] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-1] [INFO] [1795813577.800944819] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.800946700] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800948575] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.800950232] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800955459] [gz_ros_control]: Loading joint: rf_hip_pitch
+[gazebo-1] [INFO] [1795813577.800957632] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.800959485] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.800961300] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-1] [INFO] [1795813577.800963407] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.800965252] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800969250] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.800971022] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800975687] [gz_ros_control]: Loading joint: rf_knee
+[gazebo-1] [INFO] [1795813577.800977691] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.800979465] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.800981147] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-1] [INFO] [1795813577.800983400] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.800986574] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800988450] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.800990190] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.800994891] [gz_ros_control]: Loading joint: rm_hip_yaw
+[gazebo-1] [INFO] [1795813577.800996836] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.800999298] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.801002902] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-1] [INFO] [1795813577.801004963] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.801006729] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801008451] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.801010149] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801015991] [gz_ros_control]: Loading joint: rm_hip_pitch
+[gazebo-1] [INFO] [1795813577.801017914] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.801019713] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.801021427] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-1] [INFO] [1795813577.801023484] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.801025227] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801027034] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.801028694] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801033420] [gz_ros_control]: Loading joint: rm_knee
+[gazebo-1] [INFO] [1795813577.801035292] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.801042231] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.801044050] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-1] [INFO] [1795813577.801046136] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.801047943] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801049716] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.801051418] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801057127] [gz_ros_control]: Loading joint: rr_hip_yaw
+[gazebo-1] [INFO] [1795813577.801059105] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.801060967] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.801062683] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-1] [INFO] [1795813577.801064680] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.801066433] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801068189] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.801069846] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801074675] [gz_ros_control]: Loading joint: rr_hip_pitch
+[gazebo-1] [INFO] [1795813577.801076645] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.801078432] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.801080216] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-1] [INFO] [1795813577.801084627] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.801086475] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801088407] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.801090186] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801096398] [gz_ros_control]: Loading joint: rr_knee
+[gazebo-1] [INFO] [1795813577.801098373] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.801100304] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.801102087] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-1] [INFO] [1795813577.801104166] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.801105937] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801107790] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.801110680] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801159117] [gz_ros_control]: Loading sensor: imu
+[gazebo-1] [INFO] [1795813577.801162043] [gz_ros_control]: 	State:
+[gazebo-1] [WARN] [1795813577.801164556] [gz_ros_control]: IMU sensor 'imu' not found in hardware_info, skipping.
+[gazebo-1] [INFO] [1795813577.801241222] [controller_manager]: Initialize hardware 'GazeboSimSystem' 
+[gazebo-1] [WARN] [1795813577.801255710] [controller_manager.hardware_component.system.GazeboSimSystem]: Executor is not available during hardware component initialization for 'GazeboSimSystem'. Skipping node creation!
+[gazebo-1] [INFO] [1795813577.801322351] [controller_manager]: Successful initialization of hardware 'GazeboSimSystem'
+[gazebo-1] [INFO] [1795813577.801523198] [gz_ros_control]: The position_proportional_gain has been set to: 0.1
+[gazebo-1] [INFO] [1795813577.801534731] [gz_ros_control]: Loading joint: arm_yaw
+[gazebo-1] [INFO] [1795813577.801537580] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.801539759] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.801542420] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-1] [INFO] [1795813577.801544887] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.801547045] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801549239] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.801551021] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801557667] [gz_ros_control]: Loading joint: arm_shoulder
+[gazebo-1] [INFO] [1795813577.801559876] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.801561918] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.801563782] [gz_ros_control]: 			 found initial value: 2.475000
+[gazebo-1] [INFO] [1795813577.801565871] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.801568259] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801570088] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.801571852] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801577679] [gz_ros_control]: Loading joint: arm_elbow
+[gazebo-1] [INFO] [1795813577.801579660] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.801581446] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.801583384] [gz_ros_control]: 			 found initial value: 0.225000
+[gazebo-1] [INFO] [1795813577.801587298] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.801589148] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801591725] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.801593501] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801605713] [gz_ros_control]: Loading joint: arm_wrist_pitch
+[gazebo-1] [INFO] [1795813577.801608031] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.801609929] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.801611684] [gz_ros_control]: 			 found initial value: 1.725000
+[gazebo-1] [INFO] [1795813577.801613788] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.801615672] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801617439] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.801619227] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801624162] [gz_ros_control]: Loading joint: arm_wrist_roll
+[gazebo-1] [INFO] [1795813577.801626190] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.801627935] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.801629683] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-1] [INFO] [1795813577.801631699] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.801633467] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801635205] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.801636957] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801642753] [gz_ros_control]: Loading joint: arm_finger_left_joint
+[gazebo-1] [INFO] [1795813577.801646803] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.801648821] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.801651273] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.801654248] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801656179] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.801657881] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801664028] [gz_ros_control]: Loading joint: arm_finger_right_joint
+[gazebo-1] [INFO] [1795813577.801666270] [gz_ros_control]: 	State:
+[gazebo-1] [INFO] [1795813577.801668185] [gz_ros_control]: 		 position
+[gazebo-1] [INFO] [1795813577.801670395] [gz_ros_control]: 		 velocity
+[gazebo-1] [INFO] [1795813577.801672287] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801674050] [gz_ros_control]: 	Command:
+[gazebo-1] [INFO] [1795813577.801675908] [gz_ros_control]: 		 effort
+[gazebo-1] [INFO] [1795813577.801683204] [gz_ros_control]: Loading sensor: imu
+[gazebo-1] [INFO] [1795813577.801685645] [gz_ros_control]: 	State:
+[gazebo-1] [WARN] [1795813577.801687945] [gz_ros_control]: IMU sensor 'imu' not found in hardware_info, skipping.
+[gazebo-1] [INFO] [1795813577.801703722] [controller_manager]: Initialize hardware 'GurdyArmSystem' 
+[gazebo-1] [WARN] [1795813577.801721976] [controller_manager.hardware_component.system.GurdyArmSystem]: Executor is not available during hardware component initialization for 'GurdyArmSystem'. Skipping node creation!
+[gazebo-1] [INFO] [1795813577.801761563] [controller_manager]: Successful initialization of hardware 'GurdyArmSystem'
+[gazebo-1] [INFO] [1795813577.801922882] [controller_manager]: Activating component 'GurdyArmSystem'.
+[gazebo-1] [INFO] [1795813577.801931494] [resource_manager]: 'configure' hardware 'GurdyArmSystem' 
+[gazebo-1] [INFO] [1795813577.801960481] [gz_ros_control]: System Successfully configured!
+[gazebo-1] [INFO] [1795813577.801968701] [resource_manager]: Successful 'configure' of hardware 'GurdyArmSystem'
+[gazebo-1] [INFO] [1795813577.801975749] [resource_manager]: 'activate' hardware 'GurdyArmSystem' 
+[gazebo-1] [INFO] [1795813577.801987881] [resource_manager]: Successful 'activate' of hardware 'GurdyArmSystem'
+[gazebo-1] [INFO] [1795813577.802042946] [controller_manager]: Activating component 'GazeboSimSystem'.
+[gazebo-1] [INFO] [1795813577.802046671] [resource_manager]: 'configure' hardware 'GazeboSimSystem' 
+[gazebo-1] [INFO] [1795813577.802048065] [gz_ros_control]: System Successfully configured!
+[gazebo-1] [INFO] [1795813577.802050592] [resource_manager]: Successful 'configure' of hardware 'GazeboSimSystem'
+[gazebo-1] [INFO] [1795813577.802059161] [resource_manager]: 'activate' hardware 'GazeboSimSystem' 
+[gazebo-1] [INFO] [1795813577.802061210] [resource_manager]: Successful 'activate' of hardware 'GazeboSimSystem'
+[gazebo-1] [WARN] [1795813577.802076273] [controller_manager]: Component 'GurdyArmSystem' does not have read or write statistics initialized, skipping registration.
+[gazebo-1] [WARN] [1795813577.802079376] [controller_manager]: Component 'GazeboSimSystem' does not have read or write statistics initialized, skipping registration.
+[gazebo-1] [INFO] [1795813577.802084327] [controller_manager]: Resource Manager has been successfully initialized. Starting Controller Manager services...
+[gazebo-1] [INFO] [1795813577.906223174] [controller_manager]: Loading controller : 'joint_state_broadcaster' of type 'joint_state_broadcaster/JointStateBroadcaster'
+[gazebo-1] [INFO] [1795813577.906281566] [controller_manager]: Loading controller 'joint_state_broadcaster'
+[gazebo-1] [INFO] [1795813577.909913645] [controller_manager]: Controller 'joint_state_broadcaster' node arguments: --ros-args --params-file /tmp/gurdy_controllers_u0lj3w09.yaml -p use_sim_time:=true --param use_sim_time:=true 
+[spawner-7] [INFO] [1795813577.923497795] [spawner_joint_state_broadcaster]: Loaded joint_state_broadcaster
+[gazebo-1] [INFO] [1795813577.924599761] [controller_manager]: Configuring controller: 'joint_state_broadcaster'
+[gazebo-1] [INFO] [1795813577.924768803] [joint_state_broadcaster]: 'joints' or 'interfaces' parameter is empty. All available state interfaces will be published
+[gazebo-1] [INFO] [1795813577.934939113] [controller_manager]: Activating controllers: [ joint_state_broadcaster ]
+[gazebo-1] [WARN] [1795813578.314123456] [gz_ros_control]:  Desired controller update period (0.002 s) is slower than the gazebo simulation period (0.001 s).
+[gazebo-1] [INFO] [1795813578.315233205] [controller_manager]: Successfully switched controllers!
+[spawner-7] [INFO] [1795813580.587541905] [spawner_joint_state_broadcaster]: Configured and activated joint_state_broadcaster
+[policy_node-6] [INFO] [1795813580.587682694] [policy_node]: status: stand:cmd_vel timeout
+[INFO] [spawner-7]: process has finished cleanly [pid 169]
+[INFO] [spawner-8]: process started with pid [285]
+[spawner-8] [INFO] [1795813581.088205762] [spawner_joint_pd_controller]: waiting for service /controller_manager/list_controllers to become available...
+[gazebo-1] [INFO] [1795813583.405708210] [controller_manager]: Loading controller : 'joint_pd_controller' of type 'gurdy_control/JointPDController'
+[gazebo-1] [INFO] [1795813583.405759829] [controller_manager]: Loading controller 'joint_pd_controller'
+[gazebo-1] [INFO] [1795813583.408600236] [controller_manager]: Controller 'joint_pd_controller' node arguments: --ros-args --params-file /tmp/gurdy_controllers_u0lj3w09.yaml -p use_sim_time:=true --param use_sim_time:=true 
+[spawner-8] [INFO] [1795813583.423383817] [spawner_joint_pd_controller]: Loaded joint_pd_controller
+[gazebo-1] [INFO] [1795813583.424410786] [controller_manager]: Configuring controller: 'joint_pd_controller'
+[gazebo-1] [INFO] [1795813583.427340976] [joint_pd_controller]: configured 18 joints, kp=20.000 kd=0.050 effort_limit=2.500
+[gazebo-1] [INFO] [1795813583.429995021] [controller_manager]: Activating controllers: [ joint_pd_controller ]
+[gazebo-1] [INFO] [1795813583.430530900] [controller_manager]: Successfully switched controllers!
+[spawner-8] [INFO] [1795813583.433925524] [spawner_joint_pd_controller]: Configured and activated joint_pd_controller
+[INFO] [spawner-8]: process has finished cleanly [pid 285]
+[INFO] [spawner-9]: process started with pid [301]
+[spawner-9] [INFO] [1795813583.921819815] [spawner_arm_controller]: waiting for service /controller_manager/list_controllers to become available...
+[policy_node-6] [INFO] [1795813586.217487040] [policy_node]: late /joint_states: caught up
+[gazebo-1] [INFO] [1795813586.425495365] [controller_manager]: Loading controller : 'arm_controller' of type 'joint_trajectory_controller/JointTrajectoryController'
+[gazebo-1] [INFO] [1795813586.425542080] [controller_manager]: Loading controller 'arm_controller'
+[gazebo-1] [INFO] [1795813586.429154432] [controller_manager]: Controller 'arm_controller' node arguments: --ros-args --params-file /tmp/gurdy_controllers_u0lj3w09.yaml -p use_sim_time:=true --param use_sim_time:=true 
+[spawner-9] [INFO] [1795813586.455375854] [spawner_arm_controller]: Loaded arm_controller
+[gazebo-1] [INFO] [1795813586.456329276] [controller_manager]: Configuring controller: 'arm_controller'
+[gazebo-1] [INFO] [1795813586.456503119] [arm_controller]: No specific joint names are used for command interfaces. Using 'joints' parameter.
+[gazebo-1] [INFO] [1795813586.456587471] [arm_controller]: Command interfaces are [effort] and state interfaces are [position velocity].
+[gazebo-1] [INFO] [1795813586.456613128] [arm_controller]: Using 'splines' interpolation method.
+[gazebo-1] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-1] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-1] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-1] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-1] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-1] [INFO] [1795813586.459818015] [arm_controller]: Action status changes will be monitored at 20.00 Hz.
+[gazebo-1] [INFO] [1795813586.466736272] [arm_controller]: No scaling interface set. This controller will not read speed scaling from the hardware.
+[gazebo-1] [INFO] [1795813586.470105248] [controller_manager]: Activating controllers: [ arm_controller ]
+[gazebo-1] [INFO] [1795813586.470552778] [controller_manager]: Successfully switched controllers!
+[spawner-9] [INFO] [1795813586.473178396] [spawner_arm_controller]: Configured and activated arm_controller
+[gazebo-1] [INFO] [1795813586.473995429] [controller_manager]: Loading controller : 'gripper_controller' of type 'effort_controllers/JointGroupEffortController'
+[gazebo-1] [INFO] [1795813586.474029857] [controller_manager]: Loading controller 'gripper_controller'
+[gazebo-1] [INFO] [1795813586.476286209] [controller_manager]: Controller 'gripper_controller' node arguments: --ros-args --params-file /tmp/gurdy_controllers_u0lj3w09.yaml -p use_sim_time:=true --param use_sim_time:=true 
+[spawner-9] [INFO] [1795813586.493197358] [spawner_arm_controller]: Loaded gripper_controller
+[gazebo-1] [INFO] [1795813586.493680941] [controller_manager]: Configuring controller: 'gripper_controller'
+[gazebo-1] [INFO] [1795813586.494777465] [gripper_controller]: configure successful
+[gazebo-1] [INFO] [1795813586.497282374] [controller_manager]: Activating controllers: [ gripper_controller ]
+[gazebo-1] [INFO] [1795813586.498295928] [gripper_controller]: activate successful
+[gazebo-1] [INFO] [1795813586.498393905] [controller_manager]: Successfully switched controllers!
+[spawner-9] [INFO] [1795813586.501249817] [spawner_arm_controller]: Configured and activated gripper_controller
+[INFO] [spawner-9]: process has finished cleanly [pid 301]
+[INFO] [ros2-10]: process started with pid [318]
+[ros2-10] Waiting for an action server to become available...
+[ros2-10] Sending goal:
+[ros2-10]      trajectory:
+[ros2-10]   header:
+[ros2-10]     stamp:
+[ros2-10]       sec: 0
+[ros2-10]       nanosec: 0
+[ros2-10]     frame_id: ''
+[ros2-10]   joint_names:
+[ros2-10]   - arm_yaw
+[ros2-10]   - arm_shoulder
+[ros2-10]   - arm_elbow
+[ros2-10]   - arm_wrist_pitch
+[ros2-10]   - arm_wrist_roll
+[ros2-10]   points:
+[ros2-10]   - positions:
+[ros2-10]     - 0.0
+[ros2-10]     - 2.475
+[ros2-10]     - 0.225
+[ros2-10]     - 1.725
+[ros2-10]     - 0.0
+[ros2-10]     velocities: []
+[ros2-10]     accelerations: []
+[ros2-10]     effort: []
+[ros2-10]     time_from_start:
+[ros2-10]       sec: 2
+[ros2-10]       nanosec: 0
+[ros2-10] multi_dof_trajectory:
+[ros2-10]   header:
+[ros2-10]     stamp:
+[ros2-10]       sec: 0
+[ros2-10]       nanosec: 0
+[ros2-10]     frame_id: ''
+[ros2-10]   joint_names: []
+[ros2-10]   points: []
+[ros2-10] path_tolerance: []
+[ros2-10] component_path_tolerance: []
+[ros2-10] goal_tolerance: []
+[ros2-10] component_goal_tolerance: []
+[ros2-10] goal_time_tolerance:
+[ros2-10]   sec: 0
+[ros2-10]   nanosec: 0
+[ros2-10] 
+[gazebo-1] [INFO] [1795813587.700532970] [arm_controller]: Received new action goal
+[gazebo-1] [INFO] [1795813587.700588973] [arm_controller]: Accepted new action goal
+[ros2-10] Goal accepted with ID: 5adfb3cc94444faea3ab34eee61b65cf
+[ros2-10] 
+[gazebo-1] [INFO] [1795813589.747120266] [arm_controller]: Goal reached, success!
+[ros2-10] Result:
+[ros2-10]     error_code: 0
+[ros2-10] error_string: Goal successfully reached!
+[ros2-10] 
+[ros2-10] Goal finished with status: SUCCEEDED
+[INFO] [ros2-10]: process has finished cleanly [pid 318]
+[policy_node-6] [INFO] [1795813591.198408903] [policy_node]: status: policy
+[policy_node-6] [INFO] [1795813601.171964641] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.21 ms, max 0.53 ms over 500 ticks
+[policy_node-6] [INFO] [1795813611.179003289] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.21 ms, max 0.39 ms over 500 ticks
+[policy_node-6] [INFO] [1795813621.177112427] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.22 ms, max 0.40 ms over 500 ticks
+[policy_node-6] [INFO] [1795813631.178527944] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.22 ms, max 0.40 ms over 500 ticks
+[policy_node-6] [INFO] [1795813641.180219887] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.22 ms, max 0.51 ms over 500 ticks
+[policy_node-6] [INFO] [1795813651.178516753] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.22 ms, max 0.38 ms over 500 ticks
+[policy_node-6] [INFO] [1795813661.178048760] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.21 ms, max 0.36 ms over 500 ticks
+[policy_node-6] [INFO] [1795813671.179308995] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.21 ms, max 0.39 ms over 500 ticks
+[policy_node-6] [INFO] [1795813681.177265979] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.22 ms, max 0.38 ms over 500 ticks
+[policy_node-6] [INFO] [1795813681.316935366] [policy_node]: status: stand:stop command
+[policy_node-6] [INFO] [1795813681.717193777] [policy_node]: status: stand:cmd_vel timeout
+[policy_node-6] [INFO] [1795813684.220541826] [policy_node]: status: policy
+[policy_node-6] [INFO] [1795813694.095270524] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.22 ms, max 0.40 ms over 500 ticks
+[policy_node-6] [INFO] [1795813704.086118179] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.22 ms, max 0.49 ms over 500 ticks
+[policy_node-6] [INFO] [1795813714.096980534] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.22 ms, max 0.37 ms over 500 ticks
+[policy_node-6] [INFO] [1795813724.097199870] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.22 ms, max 0.98 ms over 500 ticks
+[policy_node-6] [INFO] [1795813734.097682127] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.21 ms, max 0.45 ms over 500 ticks
+[policy_node-6] [INFO] [1795813744.103649341] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.21 ms, max 0.40 ms over 500 ticks
+[policy_node-6] [INFO] [1795813754.103646015] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.21 ms, max 0.39 ms over 500 ticks
+[policy_node-6] [INFO] [1795813764.110088171] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.21 ms, max 0.40 ms over 500 ticks
+[policy_node-6] [INFO] [1795813774.110017728] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.21 ms, max 0.37 ms over 500 ticks
+[policy_node-6] [INFO] [1795813774.349706557] [policy_node]: status: stand:stop command
+[policy_node-6] [INFO] [1795813774.761794771] [policy_node]: status: stand:cmd_vel timeout

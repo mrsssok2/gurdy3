@@ -1,0 +1,175 @@
+18:05:46 overnight_1127 start (smoke=0, dry=0, deadline 10 h, out docs/results/data/overnight_1127)
+18:05:46 estimate a) fetch: 15 tries x ~6 min (C1 retest: start ~1 min + 253 s try + stop) = ~90 min, worst 375 min
+18:05:46 estimate b) variants A + B: 2 stacks x ~3 min + 6 tries x ~6 min = ~45 min, worst 150 min
+18:05:46 estimate c) walking: 30 runs x ~5 min (start ~1.5 min + 2 x 90 s sim at RTF ~0.8) = ~150 min, worst 330 min
+18:05:46 estimate d) YOLO v3.1: render ~100 min (measured v3) + train min(2.1 h, time left; >= 1 h) + eval ~10 min = ~4 h
+18:05:46 estimate total ~525 min; hard limit 10 h (units that could overrun are skipped)
+18:05:46 a) small_box_1: pick up the red cube at (-0.8, 0.7), 1.06 m
+18:06:46 stack ready (--fetch-gt log --fetch-log /tmp/chat/attempts.jsonl)
+18:22:08   -> 894s: I don't know any red cube, and I won't guess another object.
+18:23:13 saved docs/results/data/overnight_1127/fetch/small_box_1 (redact_logs: 1 replacement(s))
+18:23:14 a) small_box_2: pick up the red cube at (1.4, -1.3), 1.91 m
+18:24:14 stack ready (--fetch-gt log --fetch-log /tmp/chat/attempts.jsonl)
+18:33:23   -> 525s: I couldn't get a grip on the red cube after 3 attempts. It is still where it was.
+18:34:27 saved docs/results/data/overnight_1127/fetch/small_box_2 (redact_logs: 1 replacement(s))
+18:34:28 a) small_box_3: pick up the red cube at (-1.8, 1.3), 2.22 m
+18:35:18 stack ready (--fetch-gt log --fetch-log /tmp/chat/attempts.jsonl)
+18:49:09   -> 810s: I don't know any red cube, and I won't guess another object.
+18:50:13 saved docs/results/data/overnight_1127/fetch/small_box_3 (redact_logs: 1 replacement(s))
+18:50:13 a) mini_toolbox_1: pick up the yellow mini toolbox at (0.5, 0.9), 1.03 m
+18:51:04 stack ready (--fetch-gt log --fetch-log /tmp/chat/attempts.jsonl)
+19:04:20   -> 778s: I don't know any yellow mini toolbox, and I won't guess another object.
+19:05:24 saved docs/results/data/overnight_1127/fetch/mini_toolbox_1 (redact_logs: 1 replacement(s))
+19:05:24 a) mini_toolbox_2: pick up the yellow mini toolbox at (1.8, 0.1), 1.8 m
+19:06:14 stack ready (--fetch-gt log --fetch-log /tmp/chat/attempts.jsonl)
+19:08:51   -> 138s: I found the yellow mini toolbox but I couldn't line my gripper up with it (residual 99 cm after 3 tries). Can you move it into the open?
+19:09:54 saved docs/results/data/overnight_1127/fetch/mini_toolbox_2 (redact_logs: 1 replacement(s))
+19:09:54 a) mini_toolbox_3: pick up the yellow mini toolbox at (0.1, 2.3), 2.3 m
+19:10:34 stack ready (--fetch-gt log --fetch-log /tmp/chat/attempts.jsonl)
+19:23:37   -> 763s: I don't know any yellow mini toolbox, and I won't guess another object.
+19:24:41 saved docs/results/data/overnight_1127/fetch/mini_toolbox_3 (redact_logs: 1 replacement(s))
+19:24:41 a) can_1: pick up the blue can at (1.2, -0.1), 1.2 m
+19:27:21 stack ready (--fetch-gt log --fetch-log /tmp/chat/attempts.jsonl)
+19:30:51   -> 189s: I picked up the blue can in room A and I'm holding it with the arm folded.
+19:31:56 saved docs/results/data/overnight_1127/fetch/can_1 (redact_logs: 1 replacement(s))
+19:31:56 a) can_2: pick up the blue can at (-1.7, 0.1), 1.7 m
+19:32:46 stack ready (--fetch-gt log --fetch-log /tmp/chat/attempts.jsonl)
+19:37:20   -> 257s: I couldn't get a grip on the blue can after 3 attempts. It is still where it was.
+19:38:23 saved docs/results/data/overnight_1127/fetch/can_2 (redact_logs: 1 replacement(s))
+19:38:23 a) can_3: pick up the blue can at (2.3, 0.7), 2.4 m
+19:39:03 stack ready (--fetch-gt log --fetch-log /tmp/chat/attempts.jsonl)
+19:46:43   -> 445s: I picked up the blue can in room B and I'm holding it with the arm folded.
+19:47:46 saved docs/results/data/overnight_1127/fetch/can_3 (redact_logs: 1 replacement(s))
+19:47:46 a) mini_cone_1: pick up the orange mini cone at (0.6, -1.0), 1.17 m
+19:48:26 stack ready (--fetch-gt log --fetch-log /tmp/chat/attempts.jsonl)
+19:57:15   -> 514s: I don't know any orange mini cone, and I won't guess another object.
+19:58:18 saved docs/results/data/overnight_1127/fetch/mini_cone_1 (redact_logs: 1 replacement(s))
+19:58:18 a) mini_cone_2: pick up the orange mini cone at (-0.4, -1.6), 1.65 m
+19:58:58 stack ready (--fetch-gt log --fetch-log /tmp/chat/attempts.jsonl)
+20:07:51   -> 517s: I don't know any orange mini cone, and I won't guess another object.
+20:08:53 saved docs/results/data/overnight_1127/fetch/mini_cone_2 (redact_logs: 1 replacement(s))
+20:08:53 a) mini_cone_3: pick up the orange mini cone at (0.8, 2.2), 2.34 m
+20:09:33 stack ready (--fetch-gt log --fetch-log /tmp/chat/attempts.jsonl)
+20:18:21   -> 511s: I don't know any orange mini cone, and I won't guess another object.
+20:19:23 saved docs/results/data/overnight_1127/fetch/mini_cone_3 (redact_logs: 1 replacement(s))
+20:19:23 a) mini_extinguisher_1: pick up the red mini extinguisher at (1.2, 0.5), 1.3 m
+20:20:03 stack ready (--fetch-gt log --fetch-log /tmp/chat/attempts.jsonl)
+20:23:03   -> 164s: I couldn't get a grip on the red mini extinguisher after 3 attempts. It is still where it was.
+20:24:06 saved docs/results/data/overnight_1127/fetch/mini_extinguisher_1 (redact_logs: 1 replacement(s))
+20:24:06 a) mini_extinguisher_2: pick up the red mini extinguisher at (0.4, -1.6), 1.65 m
+20:25:16 stack ready (--fetch-gt log --fetch-log /tmp/chat/attempts.jsonl)
+20:28:36   -> 185s: I found the red mini extinguisher but I couldn't line my gripper up with it (residual 99 cm after 3 tries). Can you move it into the open?
+20:29:39 saved docs/results/data/overnight_1127/fetch/mini_extinguisher_2 (redact_logs: 1 replacement(s))
+20:29:39 a) mini_extinguisher_3: pick up the red mini extinguisher at (2.4, 0.1), 2.4 m
+20:30:19 stack ready (--fetch-gt log --fetch-log /tmp/chat/attempts.jsonl)
+20:36:31   -> 357s: I couldn't get a grip on the red mini extinguisher after 3 attempts. It is still where it was.
+20:37:34 saved docs/results/data/overnight_1127/fetch/mini_extinguisher_3 (redact_logs: 1 replacement(s))
+20:40:14 stack ready (--fetch-approach teleport --fetch-gt log --fetch-log /tmp/chat/attempts.jsonl)
+20:40:40 b) A try 1
+20:42:40   -> 104s: I picked up the blue can in room A and I'm holding it with the arm folded.
+20:46:36 b) A try 2
+20:47:09   -> 17s: Something went wrong with that fetch request.
+20:47:09 b) A try 3
+20:47:25   -> 0s: I don't know any blue can, and I won't guess another object.
+20:48:28 saved docs/results/data/overnight_1127/ab/A (redact_logs: 1 replacement(s))
+20:49:08 stack ready (--fetch-gt use --fetch-log /tmp/chat/attempts.jsonl)
+20:49:34 b) B try 1
+20:51:31   -> 102s: I couldn't get a grip on the blue can after 3 attempts. It is still where it was.
+20:51:31 b) B try 2
+20:53:34   -> 107s: I picked up the blue can in room A and I'm holding it with the arm folded.
+21:00:12 b) B try 3
+21:01:44   -> 76s: I found the blue can but I couldn't line my gripper up with it (residual 99 cm after 3 tries). Can you move it into the open?
+21:02:47 saved docs/results/data/overnight_1127/ab/B (redact_logs: 1 replacement(s))
+21:02:47 c) 05_walk_no_arm run 1
+PASS 05_walk_no_arm 2026-11-27 21:06:12 forward 11 % err, turn 3 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+21:06:12 saved docs/results/data/overnight_1127/walk/05_walk_no_arm_r1 (redact_logs: 0 replacement(s))
+21:06:12 c) 06_walk_arm_folded run 1
+PASS 06_walk_arm_folded 2026-11-27 21:09:37 forward 14 % err, turn 3 % err, no fall, arm max deviation from folded 0.043 rad (compare with the arm:=false run: acceptance <= +5 points)
+21:09:37 saved docs/results/data/overnight_1127/walk/06_walk_arm_folded_r1 (redact_logs: 0 replacement(s))
+21:09:37 c) 07_walk_arm_object run 1
+PASS 07_walk_arm_object 2026-11-27 21:13:04 forward 4 % err, turn 3 % err, no fall, arm max deviation from folded 0.073 rad (compare with the arm:=false run: acceptance <= +5 points)
+21:13:04 saved docs/results/data/overnight_1127/walk/07_walk_arm_object_r1 (redact_logs: 0 replacement(s))
+21:13:04 c) 05_walk_no_arm run 2
+PASS 05_walk_no_arm 2026-11-27 21:16:32 forward 7 % err, turn 3 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+21:16:32 saved docs/results/data/overnight_1127/walk/05_walk_no_arm_r2 (redact_logs: 0 replacement(s))
+21:16:32 c) 06_walk_arm_folded run 2
+PASS 06_walk_arm_folded 2026-11-27 21:20:00 forward 14 % err, turn 2 % err, no fall, arm max deviation from folded 0.049 rad (compare with the arm:=false run: acceptance <= +5 points)
+21:20:00 saved docs/results/data/overnight_1127/walk/06_walk_arm_folded_r2 (redact_logs: 0 replacement(s))
+21:20:00 c) 07_walk_arm_object run 2
+PASS 07_walk_arm_object 2026-11-27 21:23:28 forward 17 % err, turn 3 % err, no fall, arm max deviation from folded 0.076 rad (compare with the arm:=false run: acceptance <= +5 points)
+21:23:28 saved docs/results/data/overnight_1127/walk/07_walk_arm_object_r2 (redact_logs: 0 replacement(s))
+21:23:28 c) 05_walk_no_arm run 3
+PASS 05_walk_no_arm 2026-11-27 21:26:56 forward 5 % err, turn 2 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+21:26:56 saved docs/results/data/overnight_1127/walk/05_walk_no_arm_r3 (redact_logs: 0 replacement(s))
+21:26:56 c) 06_walk_arm_folded run 3
+PASS 06_walk_arm_folded 2026-11-27 21:30:21 forward 11 % err, turn 1 % err, no fall, arm max deviation from folded 0.044 rad (compare with the arm:=false run: acceptance <= +5 points)
+21:30:21 saved docs/results/data/overnight_1127/walk/06_walk_arm_folded_r3 (redact_logs: 0 replacement(s))
+21:30:21 c) 07_walk_arm_object run 3
+PASS 07_walk_arm_object 2026-11-27 21:33:45 forward 17 % err, turn 2 % err, no fall, arm max deviation from folded 0.066 rad (compare with the arm:=false run: acceptance <= +5 points)
+21:33:45 saved docs/results/data/overnight_1127/walk/07_walk_arm_object_r3 (redact_logs: 0 replacement(s))
+21:33:45 c) 05_walk_no_arm run 4
+PASS 05_walk_no_arm 2026-11-27 21:37:13 forward 13 % err, turn 3 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+21:37:13 saved docs/results/data/overnight_1127/walk/05_walk_no_arm_r4 (redact_logs: 0 replacement(s))
+21:37:13 c) 06_walk_arm_folded run 4
+PASS 06_walk_arm_folded 2026-11-27 21:40:40 forward 11 % err, turn 3 % err, no fall, arm max deviation from folded 0.046 rad (compare with the arm:=false run: acceptance <= +5 points)
+21:40:40 saved docs/results/data/overnight_1127/walk/06_walk_arm_folded_r4 (redact_logs: 0 replacement(s))
+21:40:40 c) 07_walk_arm_object run 4
+PASS 07_walk_arm_object 2026-11-27 21:44:05 forward 12 % err, turn 3 % err, no fall, arm max deviation from folded 0.071 rad (compare with the arm:=false run: acceptance <= +5 points)
+21:44:05 saved docs/results/data/overnight_1127/walk/07_walk_arm_object_r4 (redact_logs: 0 replacement(s))
+21:44:05 c) 05_walk_no_arm run 5
+PASS 05_walk_no_arm 2026-11-27 21:47:31 forward 9 % err, turn 3 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+21:47:31 saved docs/results/data/overnight_1127/walk/05_walk_no_arm_r5 (redact_logs: 0 replacement(s))
+21:47:31 c) 06_walk_arm_folded run 5
+PASS 06_walk_arm_folded 2026-11-27 21:50:58 forward 20 % err, turn 2 % err, no fall, arm max deviation from folded 0.049 rad (compare with the arm:=false run: acceptance <= +5 points)
+21:50:58 saved docs/results/data/overnight_1127/walk/06_walk_arm_folded_r5 (redact_logs: 0 replacement(s))
+21:50:58 c) 07_walk_arm_object run 5
+PASS 07_walk_arm_object 2026-11-27 21:54:27 forward 17 % err, turn 3 % err, no fall, arm max deviation from folded 0.074 rad (compare with the arm:=false run: acceptance <= +5 points)
+21:54:27 saved docs/results/data/overnight_1127/walk/07_walk_arm_object_r5 (redact_logs: 0 replacement(s))
+21:54:27 c) 05_walk_no_arm run 6
+PASS 05_walk_no_arm 2026-11-27 21:57:52 forward 8 % err, turn 3 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+21:57:52 saved docs/results/data/overnight_1127/walk/05_walk_no_arm_r6 (redact_logs: 0 replacement(s))
+21:57:52 c) 06_walk_arm_folded run 6
+PASS 06_walk_arm_folded 2026-11-27 22:01:19 forward 10 % err, turn 2 % err, no fall, arm max deviation from folded 0.048 rad (compare with the arm:=false run: acceptance <= +5 points)
+22:01:19 saved docs/results/data/overnight_1127/walk/06_walk_arm_folded_r6 (redact_logs: 0 replacement(s))
+22:01:19 c) 07_walk_arm_object run 6
+PASS 07_walk_arm_object 2026-11-27 22:04:47 forward 18 % err, turn 3 % err, no fall, arm max deviation from folded 0.079 rad (compare with the arm:=false run: acceptance <= +5 points)
+22:04:47 saved docs/results/data/overnight_1127/walk/07_walk_arm_object_r6 (redact_logs: 0 replacement(s))
+22:04:47 c) 05_walk_no_arm run 7
+PASS 05_walk_no_arm 2026-11-27 22:08:12 forward 11 % err, turn 3 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+22:08:12 saved docs/results/data/overnight_1127/walk/05_walk_no_arm_r7 (redact_logs: 0 replacement(s))
+22:08:12 c) 06_walk_arm_folded run 7
+PASS 06_walk_arm_folded 2026-11-27 22:11:40 forward 7 % err, turn 3 % err, no fall, arm max deviation from folded 0.041 rad (compare with the arm:=false run: acceptance <= +5 points)
+22:11:40 saved docs/results/data/overnight_1127/walk/06_walk_arm_folded_r7 (redact_logs: 0 replacement(s))
+22:11:40 c) 07_walk_arm_object run 7
+PASS 07_walk_arm_object 2026-11-27 22:15:05 forward 17 % err, turn 3 % err, no fall, arm max deviation from folded 0.068 rad (compare with the arm:=false run: acceptance <= +5 points)
+22:15:05 saved docs/results/data/overnight_1127/walk/07_walk_arm_object_r7 (redact_logs: 0 replacement(s))
+22:15:05 c) 05_walk_no_arm run 8
+PASS 05_walk_no_arm 2026-11-27 22:18:33 forward 11 % err, turn 2 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+22:18:33 saved docs/results/data/overnight_1127/walk/05_walk_no_arm_r8 (redact_logs: 0 replacement(s))
+22:18:33 c) 06_walk_arm_folded run 8
+PASS 06_walk_arm_folded 2026-11-27 22:22:02 forward 11 % err, turn 2 % err, no fall, arm max deviation from folded 0.047 rad (compare with the arm:=false run: acceptance <= +5 points)
+22:22:02 saved docs/results/data/overnight_1127/walk/06_walk_arm_folded_r8 (redact_logs: 0 replacement(s))
+22:22:02 c) 07_walk_arm_object run 8
+PASS 07_walk_arm_object 2026-11-27 22:25:29 forward 15 % err, turn 3 % err, no fall, arm max deviation from folded 0.076 rad (compare with the arm:=false run: acceptance <= +5 points)
+22:25:29 saved docs/results/data/overnight_1127/walk/07_walk_arm_object_r8 (redact_logs: 0 replacement(s))
+22:25:29 c) 05_walk_no_arm run 9
+PASS 05_walk_no_arm 2026-11-27 22:28:54 forward 13 % err, turn 2 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+22:28:54 saved docs/results/data/overnight_1127/walk/05_walk_no_arm_r9 (redact_logs: 0 replacement(s))
+22:28:54 c) 06_walk_arm_folded run 9
+PASS 06_walk_arm_folded 2026-11-27 22:32:22 forward 17 % err, turn 3 % err, no fall, arm max deviation from folded 0.048 rad (compare with the arm:=false run: acceptance <= +5 points)
+22:32:22 saved docs/results/data/overnight_1127/walk/06_walk_arm_folded_r9 (redact_logs: 0 replacement(s))
+22:32:22 c) 07_walk_arm_object run 9
+PASS 07_walk_arm_object 2026-11-27 22:35:48 forward 17 % err, turn 3 % err, no fall, arm max deviation from folded 0.074 rad (compare with the arm:=false run: acceptance <= +5 points)
+22:35:48 saved docs/results/data/overnight_1127/walk/07_walk_arm_object_r9 (redact_logs: 0 replacement(s))
+22:35:48 c) 05_walk_no_arm run 10
+PASS 05_walk_no_arm 2026-11-27 22:39:15 forward 13 % err, turn 2 % err, no fall (compare with the arm:=false run: acceptance <= +5 points)
+22:39:15 saved docs/results/data/overnight_1127/walk/05_walk_no_arm_r10 (redact_logs: 0 replacement(s))
+22:39:15 c) 06_walk_arm_folded run 10
+PASS 06_walk_arm_folded 2026-11-27 22:42:41 forward 15 % err, turn 3 % err, no fall, arm max deviation from folded 0.044 rad (compare with the arm:=false run: acceptance <= +5 points)
+22:42:41 saved docs/results/data/overnight_1127/walk/06_walk_arm_folded_r10 (redact_logs: 0 replacement(s))
+22:42:41 c) 07_walk_arm_object run 10
+PASS 07_walk_arm_object 2026-11-27 22:46:08 forward 7 % err, turn 3 % err, no fall, arm max deviation from folded 0.074 rad (compare with the arm:=false run: acceptance <= +5 points)
+22:46:08 saved docs/results/data/overnight_1127/walk/07_walk_arm_object_r10 (redact_logs: 0 replacement(s))
+22:46:08 d) render (train budget 0 h)
+00:43:11 d) render rc=0 after 117 min
+00:43:11 d) train (train budget 2.1 h)

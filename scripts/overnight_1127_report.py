@@ -39,11 +39,16 @@ def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("out_dir")
     ap.add_argument("--out", default="")
+    ap.add_argument("--cut-off", default="", help="the run did not finish: when / why (printed as a banner, unfinished stages "
+                    "of a started block are listed as cut off)")
     a = ap.parse_args()
     D = Path(a.out_dir)
     ev = rows(D / "events.jsonl")
     log = (D / "run.log").read_text().splitlines() if (D / "run.log").exists() else []
     L = [f"# Overnight 2026-11-27 reliability run ({D})", ""]
+    if a.cut_off:
+        L += [f"> **Run cut off by power loss at {a.cut_off}.** Everything below comes from the data saved before the cut; "
+              "nothing was re-run except where a section says so.", ""]
     if log:
         L += [f"Run: {log[0][:8]} - {log[-1][:8]} UTC (run.log). Success is judged from Gazebo ground truth, NOT from the robot's reply.", ""]
     failed_why = []
@@ -121,13 +126,27 @@ def main():
             L.append(f"| {x['stage']} | {x['rc']} | {int(x['wall_s']) / 60:.0f} | {x.get('train_time_h', '0')} |")
             if str(x["rc"]) != "0":
                 failed_why.append(f"yolo {x['stage']}: exit code {x['rc']} (log: yolo/logs/{x['stage']}.log)")
+        if a.cut_off:
+            done = {x["stage"] for x in st}
+            for stg in ("render", "train", "eval", "report"):
+                if stg not in done:
+                    L.append(f"| {stg} | cut off (power loss) | - | - |")
+                    failed_why.append(f"yolo {stg}: cut off by the power loss")
         L.append("")
         rc = Y / "det_v31_s_results.csv"
         if rc.exists():
-            r = [ln.split(",") for ln in rc.read_text().splitlines()[1:] if ln.strip()]
+            r = [ln.split(",") for ln in rc.read_text().replace("\0", "").splitlines()[1:] if ln.strip()]
             if r:
                 best = max(r, key=lambda v: 0.1 * float(v[7]) + 0.9 * float(v[8]))
-                L += [f"det_v31_s trained {len(r)} epochs in {float(r[-1][1]) / 3600:.2f} h (det_v3_s: 104 epochs in 2.09 h, "
+                wall, prev, sessions = 0.0, 0.0, 1          # Ultralytics' time column restarts after a resume: add the sessions
+                for v in r:
+                    t = float(v[1])
+                    if t < prev:
+                        wall, sessions = wall + prev, sessions + 1
+                    prev = t
+                wall += prev
+                L += [f"det_v31_s trained {len(r)} epochs (last epoch {r[-1][0]}, {sessions} session(s)) in {wall / 3600:.2f} h "
+                      "(det_v3_s: 104 epochs in 2.09 h, "
                       f"stopped by the power cut); best epoch {best[0]}: val mAP50 {float(best[7]):.3f}, mAP50-95 {float(best[8]):.3f} "
                       "(val sets differ: v3.1 labels include the tiny objects).", ""]
         for f, title in (("phase9b_v3_vs_v31.md", "Acceptance, side by side (scripts/p9b_report.py)"),
