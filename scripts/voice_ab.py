@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Re-transcribe the saved utterances (brain/runs/voice_debug/*.wav) with different Whisper settings, to see what hurts short phrases.
-  docker compose run --rm voice python3 scripts/voice_ab.py [DIR]
+  scripts/gpu_lock.sh run gurdy3 -- docker compose run --rm voice python3 scripts/voice_ab.py [DIR]
 Configs: no_bias | prompt_only | full (initial_prompt + hotwords, what the live loop uses) | lead0.3 (full, 0.3 s of silence prepended)."""
 import json, sys
 from pathlib import Path

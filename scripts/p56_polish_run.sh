@@ -3,6 +3,7 @@
 #   scripts/p56_polish_run.sh OUT_DIR       (OUT_DIR on the host, inside the repo)
 set -eo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 OUT=${1:?out dir}; mkdir -p "$OUT"; export MODEL=${MODEL:-gurdy-sft-400}; PORT=11435
 [ -z "$(docker ps -q)" ] || { echo "containers running"; exit 1; }
 if ! curl -sf "localhost:$PORT/api/tags" >/dev/null; then

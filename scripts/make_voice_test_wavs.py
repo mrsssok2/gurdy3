@@ -1,5 +1,5 @@
 """One-off: synthesise the short WAVs in brain/tests/data/voice with Piper (CPU). Run in the vision image:
-docker run --rm --entrypoint python3 -v $PWD:/w -v ~/p5_models:/m -v ~/p5_pkgs:/pk -v ~/p5_tts:/t -e PYTHONPATH=/pk:/t -w /w gurdy2/vision:cuda scripts/make_voice_test_wavs.py"""
+scripts/gpu_lock.sh run gurdy3 -- docker run --rm --entrypoint python3 -v $PWD:/w -v ~/p5_models:/m -v ~/p5_pkgs:/pk -v ~/p5_tts:/t -e PYTHONPATH=/pk:/t -w /w gurdy2/vision:cuda scripts/make_voice_test_wavs.py"""
 import sys
 import numpy as np
 sys.path.insert(0, "/w")

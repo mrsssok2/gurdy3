@@ -19,6 +19,7 @@
 # RAM / VRAM are sampled every 5 s into /tmp/gurdy_web_ram.log; the peak is printed when you stop it.
 set -eo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 export MODEL=${MODEL:-gurdy-sft-400} GUI=${GUI:-false} MEMORY=${MEMORY:-true}; PORT=11435
 export FETCH=${FETCH:-false} DETECTOR_LOG=${DETECTOR_LOG:-true} VLN=${VLN:-false} FETCH_EXTRA=${FETCH_EXTRA:-}   # FETCH_EXTRA: extra run_text fetch flags (scripts/fetch_retest.sh), default none
 [ "$FETCH" = true ] && WORLD=${WORLD:-lab4_fetch}

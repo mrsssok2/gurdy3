@@ -4,6 +4,7 @@
 # Stops (non-zero exit) if the render fails; the training only starts after a successful finalize. One heavy job at a time.
 set -eo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 log() { echo "[$(date -u +%H:%M:%S)] $*"; }
 [ -z "$(docker ps -q)" ] || { log "another container is running - abort"; exit 1; }
 SCENES=${SCENES:-240}

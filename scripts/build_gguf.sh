@@ -13,6 +13,7 @@
 #      OLLAMA_BIN (~/ollama/bin/ollama), OLLAMA_HOST (127.0.0.1:11435), BASE_MODEL (Qwen3-1.7B).
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 [ $# -ge 3 ] || { sed -n 2,4p "$0"; exit 2; }
 RUN=$(realpath "$1"); STEP=$2; NAME=$3; DRY=0; [ "${4:-}" = "--dry-run" ] && DRY=1
 TAG=b12494; SHA=b40d84985b98330ca2d51c6eef3ead6e7ec1aae2af97f7452af708e5900e2fcb

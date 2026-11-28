@@ -9,6 +9,7 @@
 # Say: "go to room A" | "find the red box" | "open room B" (-> "Did you mean: go to room B?" -> say "yes" / "no") | "stop"
 set -eo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 source scripts/lib_voice.sh; SVC=$(voice_service)
 echo "voice service: $SVC ($([ $SVC = voice_gpu ] && echo "Whisper on the GPU" || echo "Whisper on the CPU, slow"))"
 if [ "$SVC" = voice_gpu ]; then

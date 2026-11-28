@@ -5,6 +5,7 @@
 # Say (when "RECORDING" appears): "go to room B and then find the red box"
 set -eo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 docker compose run --rm voice bash -c '
   echo "== PulseAudio server"; pactl info | grep -E "Server Name|Default Source|Default Sink" || { echo "no PulseAudio at $PULSE_SERVER (is WSLg running? try: wsl --shutdown, then reopen)"; exit 1; }
   echo "== sources (mic = non-monitor)"; pactl list short sources

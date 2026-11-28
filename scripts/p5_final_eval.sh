@@ -12,6 +12,7 @@
 # Results: brain/runs/final_eval/<timestamp>/{meta.json,status.txt,run.log,missions/<id>.json,logs/,report.md,summary.json}; at the end docs/results/phase5_final_eval.md.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 # EXTRA_LAUNCH_ARGS="shield:=true" adds sim.launch.py arguments to every stack (default empty = unchanged; Phase 8b live check).
 # RECORD_COSTMAP=true saves the global costmap + pose at every planner failure into <stack dir>/costmaps (default false).
 # SUITE=final_suite_lab4 (Gurdy 3.0 held-out, world lab4) selects the suite module, world, saved map, places file and map id; SEED=N seeds the start offset (final_eval_runner --seed).

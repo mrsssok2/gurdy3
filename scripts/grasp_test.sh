@@ -15,6 +15,7 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 NAME=gurdy3_grasp
 [ "${1:-}" = stop ] && { docker rm -f "$NAME"; exit 0; }
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 RUN=${1:-$(date +%Y%m%d_%H%M%S)}; shift || true
 [ "${1:-}" = "--" ] && shift
 RARGS="$*"

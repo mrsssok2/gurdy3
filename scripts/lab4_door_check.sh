@@ -1,6 +1,6 @@
 #!/bin/bash
 # Gurdy 3.0: does Nav2 + the policy pass EVERY lab4 doorway, in both directions? (saved map lab4_map, localization, headless, nothing else running)
-# Usage: docker compose run --rm -T --name gurdy3_doors sim bash -c 'cd ~/gurdy2 && scripts/lab4_door_check.sh [MAP]'
+# Usage: scripts/gpu_lock.sh run gurdy3 -- docker compose run --rm -T --name gurdy3_doors sim bash -c 'cd ~/gurdy2 && scripts/lab4_door_check.sh [MAP]'
 # Goals (x,y,yaw): doorway centres and room centres around the ring A-B-D-C-A forward, then backwards. Output: docs/results/data/lab4/door_check/
 set -eo pipefail
 MAP=${1:-lab4_map}

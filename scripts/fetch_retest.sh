@@ -15,6 +15,7 @@
 # Expected wall time (RTF ~0.3, start-up ~3-5 min per stack, try 2 of the dry run took 4 min): A ~20 min, B ~20, C ~25 -> ~65-80 min.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 VARIANTS=("$@"); [ ${#VARIANTS[@]} -eq 0 ] && VARIANTS=(A B C)
 TRIES=${TRIES:-3}; C_TRIES=${C_TRIES:-2}; TRY_TIMEOUT_S=${TRY_TIMEOUT_S:-900}
 TARGET_MODEL=f_blue_can; TX=-1.30; TY=0.30; TYAW=0.0; CMD="pick up the blue can"

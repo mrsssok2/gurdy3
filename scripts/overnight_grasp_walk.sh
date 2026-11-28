@@ -11,6 +11,7 @@
 # = ~2 h 15 min; total ~3-3.5 h. One container at a time; Ollama is not used. Ends with docker ps empty.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 if docker ps -q | grep -q .; then echo "docker ps not empty: not starting"; docker ps --format '  {{.Names}}'; exit 1; fi
 trap 'docker rm -f gurdy3_grasp gurdy3_day0927 >/dev/null 2>&1; echo "EXIT $(date -u +%T)"' EXIT
 echo "A: grasp walk-to-object $(date -u +%T)"

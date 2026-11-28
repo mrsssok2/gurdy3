@@ -1,6 +1,6 @@
 #!/bin/bash
 # Phase 6b: is the "ghost toolbox" a detector false positive or a still-rendered removed model? Run in the sim container, nothing else running.
-#   docker compose run --rm sim bash -c 'cd ~/gurdy2 && scripts/ghost_toolbox_check.sh OUT_DIR'
+#   scripts/gpu_lock.sh run gurdy3 -- docker compose run --rm sim bash -c 'cd ~/gurdy2 && scripts/ghost_toolbox_check.sh OUT_DIR'
 # Stands the robot 1.4 m from the toolbox facing it (set_pose), records detections, REMOVES the toolbox, keeps looking at the empty spot, then
 # turns away. Every detector sighting goes to OUT/sightings.jsonl, camera frames to OUT/frames/ (before / after removal).
 set -uo pipefail

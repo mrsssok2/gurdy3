@@ -7,6 +7,7 @@
 # Expected: ~60 s/step (v1 measured 8-9 h / 525 steps incl. a slow start) -> roughly 6.5-7.5 h; 3.3 GiB VRAM, <= 6 GiB RAM.
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 OLL=http://127.0.0.1:11435
 [ -s brain/data/v2/train_all.jsonl ] || { echo "missing brain/data/v2 (python3 -m brain.data_gen.generate_v2 / merge_v2)"; exit 1; }
 # training needs the GPU alone: unload models held by this project's Ollama (keep_alive 30 min), then check the free VRAM

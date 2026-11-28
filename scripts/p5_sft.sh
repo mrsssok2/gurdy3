@@ -3,6 +3,7 @@
 # `docker ps` shows no other GPU job. Extra args go to brain/train/sft.py (e.g. --epochs 1, --out brain/runs/sft_v1b).
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 docker ps --format '{{.Names}}' | grep -q . && { echo "other containers running:"; docker ps --format '{{.Names}}'; exit 1; }
 grep -q '^DONE' brain/data/full/status.txt || { echo "datagen not DONE:"; cat brain/data/full/status.txt; exit 1; }
 docker run -d --name gurdy3-sft --gpus all --memory 6g --shm-size 1g \

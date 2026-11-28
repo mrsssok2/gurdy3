@@ -1,7 +1,7 @@
 #!/bin/bash
 # Phase 8c accuracy check of the 3D object positions in Gazebo semantic_lab (NOT RUN YET; runbook: docs/results/phase8c_plan.md §8).
 # Usage (host, nothing else running: check `docker ps` first, one heavy workload at a time):
-#   docker compose run --rm -T --name gurdy3_o3d sim bash -c 'cd ~/gurdy2 && scripts/object3d_gazebo_check.sh NAME [OBJECT ...]'
+#   scripts/gpu_lock.sh run gurdy3 -- docker compose run --rm -T --name gurdy3_o3d sim bash -c 'cd ~/gurdy2 && scripts/object3d_gazebo_check.sh NAME [OBJECT ...]'
 #   NAME     run name -> docs/results/data/phase8c/gazebo/NAME/
 #   OBJECT   optional GT object names (e.g. red_box toolbox) for a short first run; default all 11 (132 stops)
 # Stack: semantic_lab headless, tripod gait standing (no /cmd_vel), ground-truth odom TF (odom_tf_node), detector_node with

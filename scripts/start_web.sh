@@ -8,6 +8,7 @@
 # Token: $GURDY_WEB_TOKEN if set, else a random one generated here and printed (never written to a file).
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 LAN=false; HTTPS=false; VOICE=false; TAIL=false
 for a in "$@"; do case "$a" in lan) LAN=true ;; https) HTTPS=true ;; voice) VOICE=true ;; tailscale) TAIL=true ;; *) echo "unknown argument: $a (lan | https | voice | tailscale)"; exit 2 ;; esac; done
 export GURDY_WEB_TOKEN="${GURDY_WEB_TOKEN:-$(python3 -c 'import secrets;print(secrets.token_urlsafe(24))')}"

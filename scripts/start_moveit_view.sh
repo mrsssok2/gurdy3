@@ -6,6 +6,7 @@
 #   scripts/start_moveit_view.sh stop     stop everything (container removed)
 set -uo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 NAME=gurdy3_view
 if [ "${1:-}" = stop ]; then docker rm -f $NAME >/dev/null 2>&1; echo "stopped ($NAME removed)"; exit 0; fi
 if docker ps -q | grep -q .; then echo "other containers are running:"; docker ps --format '  {{.Names}}'; exit 1; fi

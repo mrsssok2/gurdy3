@@ -10,6 +10,7 @@
 # eval ~20 min -> about 5.5-6 h in total. The runtime detector is NOT switched.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 STAGE=${1:-all}
 case "$STAGE" in all|render|train|eval|report) ;; *) echo "usage: $0 [all|render|train|eval|report]"; exit 2 ;; esac
 if [ "$STAGE" != report ] && docker ps -q | grep -q .; then echo "docker ps not empty: not starting"; exit 1; fi

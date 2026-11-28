@@ -7,6 +7,7 @@
 # Start:   nohup scripts/p5_tonight.sh > brain/runs/tonight.log 2>&1 &        Watch: tail -f brain/runs/tonight.log
 set -uo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 mkdir -p brain/runs
 D=brain/data/full
 EVAL_JSON=docs/results/data/phase5/eval_base_compact_qwen3-1.7b.json

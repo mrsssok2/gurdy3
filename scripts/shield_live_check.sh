@@ -1,6 +1,6 @@
 #!/bin/bash
 # Phase 8b live check of the LiDAR safety shield in Gazebo (lab4, localization on lab4_map, policy, GT odom, headless). One run each.
-# Usage (host): docker compose run --rm -T --name gurdy3_shield sim bash -c 'cd ~/gurdy2 && scripts/shield_live_check.sh off|on'
+# Usage (host): scripts/gpu_lock.sh run gurdy3 -- docker compose run --rm -T --name gurdy3_shield sim bash -c 'cd ~/gurdy2 && scripts/shield_live_check.sh off|on'
 #   off: Nav2 goals home -> room D centre (2 doorways) -> room C (1 doorway), no shield (baseline pass times)
 #   on : the same goals with shield:=true, then (direct /cmd_vel, the teleop path) diagonal into room C's NE corner + turning in place there,
 #        Nav2 to (0, 0.5) facing +x, full speed at the A-B divider, then the stale-scan test (scan producer killed 4 s).

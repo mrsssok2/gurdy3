@@ -6,6 +6,7 @@
 # Monitor:  tail -f OUT_DIR/pipeline.log ; cat OUT_DIR/status.txt
 set -uo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 OUT=${1:?out dir}; TRAIN=${2:-8600}; VAL=${3:-430}; MAXC=${4:-0}
 mkdir -p "$OUT"; LOG="$OUT/pipeline.log"; ST="$OUT/status.txt"
 say() { echo "[$(date -u +%H:%M:%S)] $*" | tee -a "$LOG"; }

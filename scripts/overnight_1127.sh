@@ -26,6 +26,7 @@
 # (scripts/overnight_1127_report.py). Env: TRY_TIMEOUT_S (900), DEADLINE_H (10), RUNS (10), WALK_S (90), SMOKE_ID (can_1).
 set -uo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 SMOKE=0; OUT=""
 while [ $# -gt 0 ]; do case "$1" in --smoke) SMOKE=1 ;; --out) OUT=$2; shift ;; *) echo "unknown argument $1 (--smoke | --out DIR)"; exit 2 ;; esac; shift; done
 [ -z "$OUT" ] && { [ $SMOKE = 1 ] && OUT=docs/results/data/overnight_1127_smoke || OUT=docs/results/data/overnight_1127; }

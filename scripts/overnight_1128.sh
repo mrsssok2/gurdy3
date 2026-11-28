@@ -20,6 +20,7 @@
 # Env: TRY_TIMEOUT_S (1800: the map-sized search limit is ~470 s), DEADLINE_H (10), EPOCHS (40), SKIP_CONE=1, SKIP_FETCH=1.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 OUT=""
 while [ $# -gt 0 ]; do case "$1" in --out) OUT=$2; shift ;; *) echo "unknown argument $1 (--out DIR)"; exit 2 ;; esac; shift; done
 OUT=${OUT:-docs/results/data/overnight_1128}

@@ -2,6 +2,7 @@
 # Phase 7c step 4: restart Ollama fresh, then benign_v1 + redteam_v1 + redteam_blind_v1, testset v1 / v1.1 / ood_v1, incident blind_v1 replay (picker off / on).
 # Usage: scripts/p7c_regression.sh TAG     Output: docs/results/phase7c/<TAG>_*.{txt,json}. Offline, no Gazebo.
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 TAG=${1:?tag}; OUT=docs/results/phase7c; mkdir -p $OUT
 . scripts/lib_ollama.sh
 pid=$(ss -ltnp 2>/dev/null | awk -v p=":$OLLAMA_PORT" '$4 ~ p"$" {print $6}' | grep -o 'pid=[0-9]*' | head -1 | cut -d= -f2)

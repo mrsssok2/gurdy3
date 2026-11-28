@@ -3,6 +3,7 @@
 # One run at a time (GPU). Output: docs/results/sft_v2_eval/<agent>_<set>.{txt,json}; finished runs are skipped (resumable).
 # Needs the project's Ollama listening on 0.0.0.0:11435 (containers reach it through the WSL address).
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 export OLLAMA_URL=${OLLAMA_URL:-http://$(hostname -I|cut -d' ' -f1):11435}
 OUT=docs/results/sft_v2_eval; mkdir -p $OUT
 for agent in ${AGENTS:-gurdy-sft-v2 gurdy-sft-400 qwen3-1.7b}; do

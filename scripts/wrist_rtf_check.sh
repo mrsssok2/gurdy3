@@ -4,6 +4,7 @@
 #   scripts/wrist_rtf_check.sh [variant ...]     variants: noarm off untriggered10 untriggered2 triggered10
 set -uo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 D=docs/results/data/day_0927/wrist_rtf
 for v in ${@:-noarm off untriggered10 untriggered2 triggered10}; do
   if docker ps -q | grep -q .; then echo "docker ps not empty: stop"; exit 1; fi

@@ -5,6 +5,7 @@
 #   nohup scripts/p9b_v31_resume.sh > /tmp/p9b_v31_resume.out 2>&1 &
 set -uo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 docker ps -q | grep -q . && { echo "docker ps not empty: not starting"; exit 1; }
 log() { echo "$(date -u +%T) $*"; }
 run_vis() { docker compose --profile vision run --rm -T vision "$@"; }

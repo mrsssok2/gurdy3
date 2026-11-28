@@ -12,6 +12,7 @@
 # Ctrl+C stops the current step (the trap removes the container). Check `docker ps` first: nothing else may run.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 OUT=${DAY0927_OUT:-docs/results/data/day_0927}     # DAY0927_OUT: other output dir (overnight runs), default unchanged
 SUMMARY=$OUT/summary.txt
 NAME=gurdy3_day0927

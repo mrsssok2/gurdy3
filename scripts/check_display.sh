@@ -1,6 +1,6 @@
 #!/bin/bash
 # Quick environment check inside the sim container: GUI sockets, OpenGL renderer, tool versions.
-# Usage: docker compose run --rm sim scripts/check_display.sh
+# Usage: scripts/gpu_lock.sh run gurdy3 -- docker compose run --rm sim scripts/check_display.sh
 set -u
 ok()   { echo "  [ok]   $*"; }
 bad()  { echo "  [FAIL] $*"; FAIL=1; }

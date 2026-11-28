@@ -12,6 +12,7 @@
 # ~33 min), eval ~10 min.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 STAGE=${1:-all}
 case "$STAGE" in all|make|render|train|eval|report|decide) ;; *) echo "usage: $0 [all|make|render|train|eval|report|decide]"; exit 2 ;; esac
 if [ "$STAGE" != report ] && [ "$STAGE" != decide ] && docker ps -q | grep -q .; then echo "docker ps not empty: not starting"; exit 1; fi

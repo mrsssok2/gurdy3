@@ -10,6 +10,7 @@
 #   scripts/p9b_small_dataset.sh eval        # old test sets (regression guard) + new test sets
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 BODY_SCENES=${BODY_SCENES:-350}
 WRIST_SCENES=${WRIST_SCENES:-250}
 EPOCHS=${EPOCHS:-150}

@@ -6,6 +6,7 @@
 # Preflight refuses to start while any other container runs (one heavy workload at a time), like scripts/p5_final_eval.sh.
 set -uo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 python3 scripts/make_incident_world.py >/dev/null || exit 1           # eval copy of lab4 with the 3 scenario objects dynamic (lab4.sdf itself is never touched)
 export WORLD_FILE=ros2_ws/src/gurdy_gazebo/worlds/lab4_incident.sdf MAP_NAME=lab4_map MAP_ID=lab4 PLACES_FILE=maps/lab4.places.yaml MODEL=${MODEL:-gurdy-sft-400}; PORT=11435; WALL=${WALL:-9000}
 TS=$(date -u +%Y%m%d_%H%M%S); RUN=${RUN_DIR:-brain/runs/incident_eval/$TS}; mkdir -p "$RUN/stack"

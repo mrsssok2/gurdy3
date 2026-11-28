@@ -8,6 +8,7 @@
 #   docker compose run --rm -T -e GURDY_FINAL_SUITE=final_suite_lab4_v3 brain python3 -m brain.eval.heldout_report $R/v3_regr1 $R/v3_regr2 $R/v3_regr3
 # Ollama is stopped at the end (nothing heavy left running).
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 V3_SUBSET=${V3_SUBSET:-v3_step_into_charlie,v3_bravo_then_alpha,v3_bravo_delta_home,v3_cone_in_d,v3_toolbox_search,v3_d_back_to_a,v3_room_b,v3_delta_phonetic,v3_c_then_b,v3_leg_walking}
 
 stop_ollama() {   # only our server (port 11435 / ~/ollama); the Windows Ollama on 11434 is not ours

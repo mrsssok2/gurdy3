@@ -9,6 +9,7 @@
 # Type e.g.: go to room B | find the red box | what is near you | stop | why did you stop | patrol room A and room B | quit
 set -eo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 export MODEL=${MODEL:-gurdy-sft-400} GUI=${GUI:-false} MEMORY=${MEMORY:-true} VOICE=${VOICE:-false} VAD=${VAD:-false}; PORT=11435
 mkdir -p "$HOME/.gurdy"
 if [ -n "$(docker ps -q)" ]; then echo "Other containers are running (docker ps). Stop them first (one heavy workload at a time)."; exit 1; fi

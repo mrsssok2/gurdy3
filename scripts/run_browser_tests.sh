@@ -4,6 +4,7 @@
 # Needs the images gurdy2/brain:cpu and a Playwright image with the python package (built here from mcr.microsoft.com/playwright/python, ~1.5 GB, removed again with REMOVE_IMAGE=true).
 set -euo pipefail
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 OUT=$(mktemp -d); trap 'docker rm -f gb_robot >/dev/null 2>&1 || true; [ "${REMOVE_IMAGE:-false}" = true ] && docker image rm pwshot mcr.microsoft.com/playwright/python:v1.49.0-noble >/dev/null 2>&1 || true; rm -rf "$OUT"' EXIT
 if ! docker image inspect pwshot >/dev/null 2>&1; then
   printf 'FROM mcr.microsoft.com/playwright/python:v1.49.0-noble\nRUN pip install --retries 10 -q playwright==1.49.0\n' > "$OUT/Dockerfile"; docker build -q -t pwshot "$OUT"

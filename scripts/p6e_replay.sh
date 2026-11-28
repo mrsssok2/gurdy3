@@ -3,6 +3,7 @@
 # Restarts the project's Ollama first (stale server = flaky outputs, see phase6d_picker.md). Offline: no Gazebo.
 set -u
 cd "$(dirname "$0")/.."
+source scripts/gpu_lock.sh && gpu_lock_acquire "gurdy3:$(basename "$0")" || exit 1   # shared GPU lock for the whole run (scripts/gpu_lock.sh)
 TAG=$1; SUITES=$2; PICKERS=$3; RUNS=${4:-3}; RUN_DIR=${5:-brain/runs/incident_eval/20261125_111853}
 . scripts/lib_ollama.sh
 pid=$(ss -ltnp 2>/dev/null | awk -v p=":$OLLAMA_PORT" '$4 ~ p"$" {print $6}' | grep -o 'pid=[0-9]*' | head -1 | cut -d= -f2)
