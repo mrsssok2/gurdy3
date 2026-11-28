@@ -2,7 +2,7 @@
 # Run the same checks as .github/workflows/ci.yml on this machine, in one command. Host only:
 # NO Docker, NO GPU, NO Ollama, NO Gazebo (CUDA hidden, OLLAMA_URL pointed at a closed port).
 #
-#   scripts/ci_local.sh [STEP ...]        steps: yaml urdf lint core vision brain web ros ops safety (default: all)
+#   scripts/ci_local.sh [STEP ...]        steps: yaml urdf lint core vision brain web ros ops safety results (default: all)
 #   PY=/path/to/python scripts/ci_local.sh   (default: ~/projects/.venv-gurdy3/bin/python, see scripts/make_host_venv.sh)
 #   LINT_STRICT=1 scripts/ci_local.sh lint   critical lint findings (syntax / undefined names) fail the run
 #
@@ -20,7 +20,7 @@ export CUDA_VISIBLE_DEVICES="" OLLAMA_URL="http://127.0.0.1:9" GURDY_CI=1 PYTHON
 export MPLBACKEND=Agg
 PYTEST=("$PY" -m pytest -q -p no:cacheprovider -rs --tb=short)
 
-ALL=(yaml urdf lint core vision brain web ros ops safety)
+ALL=(yaml urdf lint core vision brain web ros ops safety results)
 STEPS=("$@"); [ ${#STEPS[@]} -eq 0 ] && STEPS=("${ALL[@]}")
 
 step_yaml()   { "$PY" scripts/ci/check_yaml.py; }
@@ -57,6 +57,7 @@ step_ros() {   # pure-Python parts of the ROS packages; node tests skip without 
   return $rc
 }
 step_safety() { "$PY" scripts/ci/safety_gate.py --json "$LOG/safety.json"; }
+step_results() { "$PY" scripts/results_summary.py --check; }     # docs/RESULTS.md regenerated from the committed result files == the committed one
 
 avail=$(free -m 2>/dev/null | awk '/^Mem:/{print $7}')
 echo "gurdy3 CI (local)  python: $("$PY" --version 2>&1)  available RAM: ${avail:-?} MB  logs: $LOG"

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Backfill docs/incidents/incidents.jsonl (2026-11-28): every past incident with a CONFIRMED root cause, from docs/results,
 CLAUDE.md and commit messages. Evidence is never typed by hand: each spec names (file glob or commit, regex) and this script copies
-the first matching line verbatim (file:line or commit hash). A pattern that matches nothing aborts the build.
+the first matching line verbatim (file:line read AT commit PIN, or a commit message), so later edits never break a quote. A pattern that matches nothing aborts the build.
 
   evidence_status "full"    at least one evidence line comes from a run's own log / trace (docs/results/data/**, *.log, *.jsonl)
   evidence_status "partial" only docs / commit messages / code state it (the run's logs are not in the repo)
@@ -19,6 +19,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 OUT = ROOT / "docs/incidents/incidents.jsonl"
+PIN = "357c115"      # every file quote is read at this commit (git show PIN:path): later edits (CLAUDE.md!) never move a cited line
 GAZ, MUJ, MOCK, HOST, EVAL = "gazebo", "mujoco", "mock backend", "host / tooling", "eval harness"
 
 # (id, date, env, symptom, logs [globs], root_cause, evidence [(glob | commit:HASH, regex)], fix_commit [hashes], tests [paths])
@@ -223,11 +224,29 @@ SPECS = [
 LOGISH = re.compile(r"(^docs/results/data/|\.log$|\.jsonl$)")
 
 
+_TREE = None
+
+
+def _tree():
+    global _TREE
+    if _TREE is None:
+        _TREE = subprocess.run(["git", "-C", str(ROOT), "ls-tree", "-r", "--name-only", PIN], capture_output=True, text=True,
+                               check=True).stdout.splitlines()
+    return _TREE
+
+
 def _files(glob):
+    """Paths (repo-relative) at PIN matching a glob, a file or a directory."""
+    import fnmatch
     if any(c in glob for c in "*?["):
-        return sorted(p for p in ROOT.glob(glob) if p.is_file())
-    p = ROOT / glob
-    return [p] if p.is_file() else sorted(q for q in p.rglob("*") if q.is_file()) if p.is_dir() else []
+        return sorted(f for f in _tree() if fnmatch.fnmatch(f, glob))
+    if glob in _tree():
+        return [glob]
+    return sorted(f for f in _tree() if f.startswith(glob.rstrip("/") + "/"))
+
+
+def _read(path):
+    return subprocess.run(["git", "-C", str(ROOT), "show", f"{PIN}:{path}"], capture_output=True, text=True, errors="replace").stdout
 
 
 def _window(line: str, m, width: int = 360) -> str:
@@ -250,13 +269,10 @@ def _evidence(src, rx):
                 return {"commit": h, "text": _window(line, m)}
         return None
     for f in _files(src):
-        try:
-            for i, line in enumerate(f.read_text(errors="replace").splitlines(), 1):
-                m = re.search(rx, line)
-                if m:
-                    return {"file": str(f.relative_to(ROOT)), "line": i, "text": _window(line, m)}
-        except OSError:
-            continue
+        for i, line in enumerate(_read(f).splitlines(), 1):
+            m = re.search(rx, line)
+            if m:
+                return {"file": f, "at_commit": PIN, "line": i, "text": _window(line, m)}
     return None
 
 
@@ -270,12 +286,12 @@ def build() -> list:
                 errs.append(f"{iid}: no line matches {rx!r} in {src}")
             else:
                 items.append(e)
-        log_paths = sorted({str(f.relative_to(ROOT)) for g in logs for f in _files(g)})
+        log_paths = sorted({f for g in logs for f in _files(g)})
         for h in fixes:
             if subprocess.run(["git", "-C", str(ROOT), "cat-file", "-e", f"{h}^{{commit}}"], capture_output=True).returncode:
                 errs.append(f"{iid}: fix commit {h} not found")
         for t in tests:
-            if not (ROOT / t).exists():
+            if not (ROOT / t).exists() and not _files(t):
                 errs.append(f"{iid}: test path {t} missing")
         full = any("file" in e and LOGISH.search(e["file"]) for e in items) and bool(log_paths)
         out.append({"id": iid, "date": date, "robot": "gurdy hexapod (simulation)" if env in (GAZ, MUJ) else "gurdy agent / tooling",

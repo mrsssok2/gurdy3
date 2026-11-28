@@ -15,6 +15,8 @@ Gurdy 3.0 extends Gurdy 2.0 (https://github.com/mrsssok2/gurdy2, frozen at commi
 
 ## Results at a glance
 
+The complete, generated list (every number with its source file, date and n; development vs held-out / blind kept apart; missing results marked "not run yet") is **[docs/RESULTS.md](docs/RESULTS.md)**. If a number below disagrees with it, RESULTS.md is right.
+
 | What | Result | Source |
 |---|---|---|
 | Held-out missions, lab4 v3 (3 runs of 33 unseen missions) | **79 % mean (76-82 %)**, 0 falls, 0 wrong claims | `docs/results/phase5_heldout_lab4_v3.md` |
@@ -231,6 +233,57 @@ For a phone on the same Wi-Fi, use `lan https voice` (`docs/phase7_voice.md`, `d
 | `scripts/` | Start scripts, evaluation runners, generators |
 | `maps/`, `models/` | Saved maps and exported policy and detector models |
 | `docs/` | Design notes and all results (`docs/results/`) |
+
+<!-- results-linked:start (no numbers here: every number lives in docs/RESULTS.md; brain/tests/test_results_md.py checks it) -->
+## Fetch, VLN and VLM (in progress)
+
+All numbers for these parts are in **[docs/RESULTS.md](docs/RESULTS.md)**, generated from the committed result files, each with
+its source, date and n, and with development results kept apart from held-out / blind ones. So far every fetch, VLN and VLM number
+is a **development** result or **not run yet**.
+
+### Fetch: "bring me the blue can"
+
+A small arm with a coupled two-finger gripper sits at the rear of the body and folds forward over it while walking. One fetch
+command runs: find the object (semantic map, then a room sweep), walk to a stand-off point and turn the back to it, re-approach if
+Nav2 stopped short, line the gripper up with the wrist depth camera (gated by the body camera's map position), move to the
+pre-grasp with MoveIt, close, check the hold (finger positions **and** the arm's joint efforts carrying the weight), fold, carry at
+a reduced speed limit, then hand over standing still or put it down. The robot says "Here's your ..." only when the hold check
+confirmed it; in Gazebo every take is also graded from ground truth.
+
+- Results: [grasp tests](docs/RESULTS.md#grasp-tests-dev), [fetch runs](docs/RESULTS.md#fetch-runs-dev) (development; no
+  held-out fetch suite yet).
+- Run: `FETCH=true scripts/start_web_robot.sh`, a single watched take `scripts/demo_bring_gui.sh "bring me the blue can"`,
+  the grasp bench `scripts/grasp_test.sh`.
+- Details: `docs/demo_runbook.md`, `docs/results/demo_bring_1128.md`, `docs/results/phase9i_first_grasp.md`.
+- Limits: the small objects sit below the lidar plane (Nav2 cannot see them); coloured mini cones need the retrained detector;
+  grasping is tuned on the same world it is measured in.
+
+### VLN: "go to the kitchen, past the chair, stop near the red barrel"
+
+Instructions become a route of rooms and semantic-map landmarks. A small LLM returns a constrained JSON plan (schema-checked by
+Ollama), code validates every word against the user's sentence and the map, and a keyword parser produces the same plan when the
+model is down or rejected. Waypoints keep a clearance of margin plus three sigma of each landmark's position uncertainty; avoided
+rooms become temporary no-go zones; every waypoint's path is checked before the robot moves. Unknown or ambiguous landmarks
+and unreachable goals get an honest answer instead of a walk. Rooms have demo names (hallway, office, living room, kitchen); the
+evaluation suites use the room letters.
+
+- Results: [VLN rows in the offline sets](docs/RESULTS.md#offline-agent-test-sets-dev) (development) and the
+  [VLN blind suite](docs/RESULTS.md#held-out-and-blind-suites-held-out--blind) (not run yet).
+- Run: `VLN=true scripts/start_web_robot.sh`; Gazebo evaluation `scripts/vln_eval.sh SUITE.yaml` (one fresh stack per episode,
+  graded from ground truth); first check `scripts/vln_dev_run.sh`.
+- Details: `docs/results/vln_plan.md`.
+
+### VLM: "what colour is the box near the barrel?"
+
+A small open vision-language model looks at the body camera **as a second witness only**. Its answer is checked against the
+detector, the semantic map and the path check: agreement is stated, disagreement becomes "I'm not sure" with both sides, and an
+object only the VLM saw is never stated as present. Replies are built from checked fields, never from the model's free text.
+
+- Results: [VLM eval](docs/RESULTS.md#offline-agent-test-sets-dev) (not run yet).
+- Run (later, on the GPU): `scripts/vlm_eval.sh`; Gazebo runs can save body-camera frames for replay with
+  `DETECTOR_FRAMES=true scripts/start_web_robot.sh`.
+- Details: `docs/results/vlm_plan.md`.
+<!-- results-linked:end -->
 
 ## Honest limits
 

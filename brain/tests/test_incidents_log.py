@@ -28,7 +28,12 @@ def test_fields_ids_dates():
 def test_quotes_are_verbatim(r):
     for e in r["evidence"]:
         parts = [p for p in e["text"].split("...") if p.strip()]
-        if "file" in e:
+        if "file" in e and e.get("at_commit"):          # quotes are pinned to a commit: edits after it never move them
+            if not GIT:
+                pytest.skip("no git")
+            text = subprocess.run(["git", "-C", str(ROOT), "show", f"{e['at_commit']}:{e['file']}"], capture_output=True, text=True, errors="replace").stdout
+            line = text.splitlines()[e["line"] - 1]
+        elif "file" in e:
             line = (ROOT / e["file"]).read_text(errors="replace").splitlines()[e["line"] - 1]
         else:
             if not GIT:
@@ -41,8 +46,11 @@ def test_quotes_are_verbatim(r):
 def test_status_commits_tests_logs(r):
     logq = [e for e in r["evidence"] if "file" in e and re.search(r"(^docs/results/data/|\.log$|\.jsonl$)", e["file"])]
     assert (r["evidence_status"] == "full") == (bool(logq) and bool(r["logs"])), r["id"]
-    for p in r["logs"]:
-        assert p.startswith("...") or (ROOT / p).exists(), (r["id"], p)
+    for p in r["logs"]:                                 # log paths existed at the pinned commit (later moves do not matter)
+        pin = next((e["at_commit"] for e in r["evidence"] if e.get("at_commit")), None)
+        if p.startswith("...") or (ROOT / p).exists():
+            continue
+        assert pin and GIT and subprocess.run(["git", "-C", str(ROOT), "cat-file", "-e", f"{pin}:{p}"], capture_output=True).returncode == 0, (r["id"], p)
     for t in r["test_added"] or []:
         assert (ROOT / t).exists(), (r["id"], t)
     if GIT:

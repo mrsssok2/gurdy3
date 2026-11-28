@@ -11,7 +11,7 @@ append a record here in the same commit as the fix.
 | `symptom` | what was observed |
 | `logs` | the run's own logs / traces in the repo (paths); `[]` when they were never saved or not committed |
 | `root_cause` | the confirmed cause |
-| `evidence` | exact lines, copied verbatim: `{file, line, text}` or `{commit, text}`; never typed by hand; `...` marks a cut of a long line |
+| `evidence` | exact lines, copied verbatim: `{file, at_commit, line, text}` (the file AS OF that commit, so later edits never move the line) or `{commit, text}` (a commit message); never typed by hand; `...` marks a cut of a long line |
 | `evidence_status` | `full` = at least one evidence line is from the run's own log / trace data; `partial` = only docs / commit messages state it (logs missing) |
 | `fix_commit` | the commit(s) that fixed it, or null (not fixed / not a code bug) |
 | `test_added` | test file(s) / directory covering it, or null |
@@ -21,6 +21,6 @@ Backfill (2026-11-28): 63 incidents from 2026-11-14 to 2026-11-28, taken from `d
 Not included: failures whose cause the sources call unknown / not identified / not established (e.g. the 0-frame renders of
 2026-11-16, the Gazebo-vs-MuJoCo tracking gap, the cube / mini toolbox not found in overnight_1127, the first incident-eval hang).
 
-Appending by hand: copy the field order, `"source": "manual"`, quote log lines exactly (file + line number). `brain/tests/test_incidents_log.py`
+Appending by hand: copy the field order, `"source": "manual"`, quote log lines exactly (file + line number + `at_commit` = a commit that contains the file). `brain/tests/test_incidents_log.py`
 checks every record: fields, unique ids, quotes present verbatim at file:line (or in the commit message), commits / tests exist, `full` only
 with a log quote, and that the backfilled lines match the generator.

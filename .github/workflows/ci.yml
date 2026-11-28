@@ -23,11 +23,13 @@ env:
 
 jobs:
   checks:
-    name: yaml + urdf + lint + safety gate
+    name: yaml + urdf + lint + safety gate + RESULTS.md up to date
     runs-on: ubuntu-24.04
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0    # full history: RESULTS.md dates + incident-log commit checks read git log
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
@@ -36,7 +38,7 @@ jobs:
       - name: Install check_urdf (liburdfdom-tools)
         run: sudo apt-get update -qq && sudo apt-get install -y -qq liburdfdom-tools
       - run: pip install -r requirements/host-tests.txt
-      - run: scripts/ci_local.sh yaml urdf lint safety
+      - run: scripts/ci_local.sh yaml urdf lint safety results
         env:
           CI_LOG_DIR: ci_logs
       - if: always()
@@ -56,6 +58,8 @@ jobs:
         steps: ["brain", "core vision", "web ros ops"]
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0    # full history: RESULTS.md dates + incident-log commit checks read git log
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
