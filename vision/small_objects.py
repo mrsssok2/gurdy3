@@ -124,7 +124,8 @@ def model_sdf(name: str, cls: str, colour: str, x: float = 0.0, y: float = 0.0, 
     vis = []
     for i, (kind, size, pos, rgb) in enumerate(c["visual"](COL[colour])):
         if kind == "mesh_cone":
-            geom, _ = O._geom({"kind": "mesh_cone", "size": list(size), "pos": list(pos)}, mesh_dir, f"{name}_p{i}", mesh_rel)
+            geom, _ = O._geom({"kind": "mesh_cone", "size": list(size), "pos": list(pos)}, mesh_dir, f"{name}_p{i}", mesh_rel,
+                              normals=True)       # renders its colour (no normals = white; 2026-11-28)
         else:
             geom = _geom_sdf(kind, size)
         r, g, b = rgb

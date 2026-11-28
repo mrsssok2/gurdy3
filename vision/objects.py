@@ -42,8 +42,10 @@ def _darker(rgb, f=0.55):
     return [c * f for c in rgb]
 
 
-def cone_obj(r_base: float, r_top: float, h: float, n: int = 24) -> str:
-    """Wavefront OBJ of a truncated cone (lathe), base centred on z = 0 (written next to the world by the scene builder)."""
+def cone_obj(r_base: float, r_top: float, h: float, n: int = 24, normals: bool = False, mtl: str | None = None) -> str:
+    """Wavefront OBJ of a truncated cone (lathe), base centred on z = 0 (written next to the world by the scene builder).
+    normals: per-vertex normals (side: smooth, caps: flat); mtl: name of a .mtl file next to the OBJ (material 'paint')
+    so Gazebo uses the colour (2026-11-28: the plain OBJ rendered WHITE whatever the SDF <material> said)."""
     v, f = [], []
     for k in range(n):
         a = 2 * math.pi * k / n
@@ -57,8 +59,27 @@ def cone_obj(r_base: float, r_top: float, h: float, n: int = 24) -> str:
         f.append((k + 1, k2 + 1, n + k2 + 1, n + k + 1))
         f.append((2 * n + 1, k2 + 1, k + 1))            # bottom cap (faces down)
         f.append((2 * n + 2, n + k + 1, n + k2 + 1))    # top cap
-    return "# generated\n" + "".join(f"v {x:.5f} {y:.5f} {z:.5f}\n" for x, y, z in v) + \
-        "".join("f " + " ".join(map(str, t)) + "\n" for t in f)
+    head = "# generated\n" + (f"mtllib {mtl}\n" if mtl else "")
+    vs = "".join(f"v {x:.5f} {y:.5f} {z:.5f}\n" for x, y, z in v)
+    if not normals:
+        return head + vs + ("usemtl paint\n" if mtl else "") + "".join("f " + " ".join(map(str, t)) + "\n" for t in f)
+    slope = math.atan2(r_base - r_top, h)                # side normal tilts up by the cone's half angle
+    vn = [(math.cos(2 * math.pi * k / n) * math.cos(slope), math.sin(2 * math.pi * k / n) * math.cos(slope), math.sin(slope))
+          for k in range(n)] + [(0.0, 0.0, -1.0), (0.0, 0.0, 1.0)]
+    ns = "".join(f"vn {x:.5f} {y:.5f} {z:.5f}\n" for x, y, z in vn)
+    fs = []
+    for k in range(n):
+        k2 = (k + 1) % n
+        fs.append(f"f {k + 1}//{k + 1} {k2 + 1}//{k2 + 1} {n + k2 + 1}//{k2 + 1} {n + k + 1}//{k + 1}")
+        fs.append(f"f {2 * n + 1}//{n + 1} {k2 + 1}//{n + 1} {k + 1}//{n + 1}")
+        fs.append(f"f {2 * n + 2}//{n + 2} {n + k + 1}//{n + 2} {n + k2 + 1}//{n + 2}")
+    return head + vs + ns + ("usemtl paint\n" if mtl else "") + "\n".join(fs) + "\n"
+
+
+def mtl_text(rgb) -> str:
+    r, g, b = rgb
+    return (f"# generated\nnewmtl paint\nKa {r:.3f} {g:.3f} {b:.3f}\nKd {r:.3f} {g:.3f} {b:.3f}\nKs 0.200 0.200 0.200\n"
+            "Ns 10\nd 1.0\nillum 2\n")
 
 
 def parts(cls: str, scale: float = 1.0, variant: dict | None = None) -> list:
@@ -137,7 +158,9 @@ def footprint(cls: str, scale: float = 1.0, variant: dict | None = None) -> tupl
             max(b for _, b in zs) - min(a for a, _ in zs))
 
 
-def _geom(p, mesh_dir: str | None, name: str, mesh_rel: str | None = None):
+def _geom(p, mesh_dir: str | None, name: str, mesh_rel: str | None = None, normals: bool = False):
+    """normals=True writes per-vertex normals into the cone OBJ: without them Gazebo renders the mesh WHITE whatever the SDF
+    <material> (2026-11-28, vision/cone_check.py). Default False = the meshes every dataset / world so far was made with."""
     k, sz = p["kind"], p["size"]
     if k == "box":
         return f"<box><size>{sz[0]:.4f} {sz[1]:.4f} {sz[2]:.4f}</size></box>", p["pos"]
@@ -147,7 +170,7 @@ def _geom(p, mesh_dir: str | None, name: str, mesh_rel: str | None = None):
         return f"<sphere><radius>{sz[0]:.4f}</radius></sphere>", p["pos"]
     path = f"{mesh_dir}/{name}.obj"
     with open(path, "w") as fh:
-        fh.write(cone_obj(*sz))
+        fh.write(cone_obj(*sz, normals=normals))
     uri = f"{mesh_rel}/{name}.obj" if mesh_rel else f"file://{path}"      # relative = resolved against the world file
     return f"<mesh><uri>{uri}</uri></mesh>", p["pos"]
 
