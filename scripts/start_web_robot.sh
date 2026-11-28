@@ -11,13 +11,16 @@
 #   VLN=true WORLD=lab4 scripts/start_web_robot.sh  # VLN instructions (brain/vln, NOT run yet; default VLN=false = as before)
 #   FETCH=true scripts/start_web_robot.sh # Phase 9h (first dry run 2026-11-27, docs/results/phase9j_fetch_dry_run.md): world lab4_fetch + arm:=true + object3d:=true + move_group, agent --fetch
 #                                         # (brain/ros/fetch_robot.py; default FETCH=false = the stack and agent exactly as before)
+#                                         # FETCH=true also writes every detector sighting to /tmp/chat/sightings.jsonl (class, score, position,
+#                                         # colour, range; 2026-11-28: needed to tell a missed detection from a failed confirmation / colour);
+#                                         # DETECTOR_LOG=false turns it off. Kept on the host with CHAT_LOG_DIR (scripts/lib_fetch_run.sh does).
 #   GURDY_WEB_TOKEN=... to choose the access token; otherwise a random one is generated and printed (never written to a file).
 # Needs: docker ps empty (one heavy workload at a time). Takes ~2.5 min until the page works. Ctrl+C stops everything.
 # RAM / VRAM are sampled every 5 s into /tmp/gurdy_web_ram.log; the peak is printed when you stop it.
 set -eo pipefail
 cd "$(dirname "$0")/.."
 export MODEL=${MODEL:-gurdy-sft-400} GUI=${GUI:-false} MEMORY=${MEMORY:-true}; PORT=11435
-export FETCH=${FETCH:-false} VLN=${VLN:-false} FETCH_EXTRA=${FETCH_EXTRA:-}   # FETCH_EXTRA: extra run_text fetch flags (scripts/fetch_retest.sh), default none
+export FETCH=${FETCH:-false} DETECTOR_LOG=${DETECTOR_LOG:-true} VLN=${VLN:-false} FETCH_EXTRA=${FETCH_EXTRA:-}   # FETCH_EXTRA: extra run_text fetch flags (scripts/fetch_retest.sh), default none
 [ "$FETCH" = true ] && WORLD=${WORLD:-lab4_fetch}
 export WORLD=${WORLD:-flat_lab}
 case "$WORLD" in
@@ -50,12 +53,13 @@ cleanup() { $TAIL && ts_stop; [ -n "${SAMPLER:-}" ] && kill "$SAMPLER" 2>/dev/nu
 trap cleanup EXIT INT TERM
 [ -n "${CHAT_LOG_DIR:-}" ] && EXTRA+=(-v "$CHAT_LOG_DIR:/tmp/chat")   # optional: keep the stack logs on the host (default off)
 SVC=sim; [ "$FETCH" = true ] && SVC=sim_moveit     # fetch needs move_group (MoveIt only in the derived image gurdy3/ros:jazzy-moveit)
-docker compose --profile moveit run --rm -T --name gurdy3_agent "${PORTS[@]}" "${EXTRA[@]}" -e OLLAMA_URL -e MODEL -e GUI -e MEMORY -e WORLD -e MAP_NAME -e MAP_ID -e PLACES_FILE -e FETCH -e FETCH_EXTRA -e VLN -e GURDY_WEB_TOKEN -e GURDY_ALLOWED_ORIGINS \
+docker compose --profile moveit run --rm -T --name gurdy3_agent "${PORTS[@]}" "${EXTRA[@]}" -e OLLAMA_URL -e MODEL -e GUI -e MEMORY -e WORLD -e MAP_NAME -e MAP_ID -e PLACES_FILE -e FETCH -e FETCH_EXTRA -e DETECTOR_LOG -e VLN -e GURDY_WEB_TOKEN -e GURDY_ALLOWED_ORIGINS \
   -v "$HOME/.gurdy:/home/ubuntu/.gurdy" "$SVC" bash -c '
   cd ~/gurdy2 && source ros2_ws/install/setup.bash && export PYTHONPATH=$HOME/gurdy2:$HOME/gurdy2/gurdy_core:$HOME/gurdy2/sim_mujoco:$PYTHONPATH
   source scripts/lib_nav_start.sh; mkdir -p /tmp/chat; cp "$PLACES_FILE" /tmp/chat/places.yaml
   trap "stop_nav_stack" EXIT
   FETCH_LAUNCH=""; FETCH_ARGS=""; [ "$FETCH" = true ] && FETCH_LAUNCH="arm:=true object3d:=true" && FETCH_ARGS="--fetch ${FETCH_EXTRA:-}"
+  [ "$FETCH" = true ] && [ "${DETECTOR_LOG:-true}" = true ] && FETCH_LAUNCH="$FETCH_LAUNCH detector_log:=/tmp/chat/sightings.jsonl"
   [ "$VLN" = true ] && FETCH_ARGS="$FETCH_ARGS --vln"
   start_nav_stack /tmp/chat gui:=$GUI world:=$WORLD $FETCH_LAUNCH perception:=true estop_gate:=true target_frame:=map nav:=localization map:=$MAP_NAME navigation:=true controller:=policy odom_source:=ground_truth > /tmp/chat/start.log 2>&1 < /dev/null \
     || { echo "Nav2 never became ready (see /tmp/chat/launch.log)"; exit 1; }
