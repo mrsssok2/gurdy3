@@ -65,3 +65,18 @@ elapsed() { echo $(( $(date +%s) - START_S + $(cat "$DRY_STATE/clock" 2>/dev/nul
 _real_run_yolo_stage=$(declare -f run_yolo_stage)
 eval "${_real_run_yolo_stage/run_yolo_stage/_dry_yolo_stage}"
 run_yolo_stage() { [ "$1" = render ] && echo "${DRY_RENDER_ADD_S:-0}" > "$DRY_STATE/clock"; _dry_yolo_stage "$@"; }
+# overnight_1128 block a (cone retrain, scripts/p9b_v32_night.sh stages): fake outputs under $DRY_STATE/p9b_v32 (the real
+# detector_node.py is NEVER edited in DRY_RUN). DRY_CONE_FAIL=make|render|train|eval|report|decide makes that stage fail;
+# DRY_CONE_DECISION=switch|keep (default keep); DRY_CONE_CALLS counts stage calls (resume tests).
+CONE_OUTD=${CONE_OUTD:-$DRY_STATE/p9b_v32}            # tests may keep it across two runs (resume)
+run_cone_stage() {
+  mkdir -p "$CONE_OUTD"; echo "$1" >> "$DRY_STATE/cone_calls"; echo "fake $1 log Bearer $TOKEN" > "$RAW/cone/$1.log"
+  [ "${DRY_CONE_FAIL:-}" = "$1" ] && { [ "$1" = render ] && return 2; return 1; }
+  case $1 in
+    train)  { echo "epoch,time"; for e in $(seq 1 40); do echo "$e,$((e * 50))"; done; } > "$CONE_OUTD/det_v32_s_results.csv" ;;
+    eval)   echo '{"recall_all": 0.83, "n": 300}' > "$CONE_OUTD/cone_new.json"; echo '{"recall_all": 0.86, "n": 300}' > "$CONE_OUTD/cone_ref.json"
+            echo '{"recall_all": 0.10, "n": 300}' > "$CONE_OUTD/cone_v31_coloured.json" ;;
+    report) echo '{"det_v31_s": true, "det_v32_s": true}' > "$CONE_OUTD/verdict.json" ;;
+    decide) if [ "${DRY_CONE_DECISION:-keep}" = switch ]; then m=det_v32_s; s=true; w='[]'; else m=det_v31_s; s=false; w='["coloured-cone recall 0.5 < 0.77"]'; fi
+            echo "{\"switch\": $s, \"model\": \"$m\", \"acceptance\": true, \"cone_recall_coloured\": 0.83, \"cone_recall_white_ref\": 0.86, \"cone_needed\": 0.774, \"why_not\": $w}" > "$CONE_OUTD/decision.json" ;;
+  esac; return 0; }

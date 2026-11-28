@@ -44,6 +44,7 @@ def main():
     ap.add_argument("--model", action="append", required=True, help="NAME:PREFIX")
     ap.add_argument("--baseline", required=True, help="PREFIX of the det_v2_s baseline files (PREFIX_<set>_baseline_v2s.md)")
     ap.add_argument("--out", default="")
+    ap.add_argument("--json", default="", help="also write {model: acceptance true/false} here")
     a = ap.parse_args()
     models = [m.split(":", 1) for m in a.model]
     base = {s: mean_ap(per_class(Path(f"{a.baseline}_{s}_baseline_v2s.md")), OLD) for s in ("synth_v1", "synth_v2")}
@@ -57,7 +58,8 @@ def main():
             verdict[n] &= ok
             vals.append(f"{fmt(v)} {'PASS' if ok else 'FAIL'}")
         rows.append(f"| old classes mAP50, {s} test | >= det_v2_s - 0.01 | {fmt(base[s])} | " + " | ".join(vals) + " |")
-    for s, tgt in (("synth_v3_wrist", 0.80), ("synth_v3_body", 0.70), ("synth_v31_wrist", 0.80), ("synth_v31_body", 0.70)):
+    for s, tgt in (("synth_v3_wrist", 0.80), ("synth_v3_body", 0.70), ("synth_v31_wrist", 0.80), ("synth_v31_body", 0.70),
+                   ("synth_v32_wrist", 0.80), ("synth_v32_body", 0.70)):
         vals, any_file = [], False
         for n, p in models:
             f = Path(f"{p}_{s}.md")
@@ -78,6 +80,9 @@ def main():
     print(txt)
     if a.out:
         Path(a.out).write_text(txt + "\n")
+    if a.json:
+        import json
+        Path(a.json).write_text(json.dumps(verdict))
 
 
 if __name__ == "__main__":

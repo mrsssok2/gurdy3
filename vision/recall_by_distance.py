@@ -122,13 +122,24 @@ def main():
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--out", default="")
     ap.add_argument("--only", nargs="*", default=None, help="count only these small classes (default: all)")
+    ap.add_argument("--json", default="", help="also write the totals over all --data sets: {n, hit, labelled, hit_labelled, "
+                    "recall_all, recall_labelled}")
     a = ap.parse_args()
     from gurdy_core.vision.detector import OnnxDetector
     det = OnnxDetector(a.model, a.providers, conf=a.conf, names=CLASSES_V3)
     what = ", ".join(a.only) if a.only else "small classes"
     lines = [f"Recall by distance, {what}, model `{a.model}`, split {a.split}, conf {a.conf} (vision/recall_by_distance.py)", ""]
+    tot = defaultdict(int)
     for d in a.data:
-        lines += table(f"{d} ({a.split})", evaluate_split(det, Path(d), a.split, a.limit, a.only))
+        st = evaluate_split(det, Path(d), a.split, a.limit, a.only)
+        lines += table(f"{d} ({a.split})", st)
+        for b in st.values():
+            for k, v in b.items():
+                tot[k] += v
+    if a.json:
+        Path(a.json).write_text(json.dumps({"data": a.data, "only": a.only, **{k: tot[k] for k in ("n", "hit", "labelled", "hit_labelled")},
+                                            "recall_all": tot["hit"] / tot["n"] if tot["n"] else None,
+                                            "recall_labelled": tot["hit_labelled"] / tot["labelled"] if tot["labelled"] else None}))
     txt = "\n".join(lines)
     print(txt)
     if a.out:

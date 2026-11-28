@@ -16,7 +16,6 @@ mini cone (default: synth_v31_body test split), identical except for the mini-co
 """
 import argparse
 import json
-import re
 import shutil
 import sys
 from pathlib import Path
@@ -26,7 +25,6 @@ sys.path.insert(0, str(ROOT))
 from vision import objects as O  # noqa: E402
 from vision.small_objects import CATALOG, COL  # noqa: E402
 
-CONTAINER_ROOT = "/home/ubuntu/gurdy2"
 VARIANTS = {"white": (False, False), "normals": (True, False), "mtl": (False, True), "both": (True, True)}
 
 
@@ -53,7 +51,7 @@ def make(src: Path, dst: Path, variant: str, n: int, ids=None) -> list:
     if (src / "assets" / "textures").exists() and not (dst / "assets" / "textures").exists():
         shutil.copytree(src / "assets" / "textures", dst / "assets" / "textures")
     r0, h0, ht = cone_size()
-    src_c, dst_c = f"{CONTAINER_ROOT}/{src.as_posix().split('gurdy3/')[-1]}", f"{CONTAINER_ROOT}/{dst.as_posix().split('gurdy3/')[-1]}"
+    src_c, dst_c = f"/datasets/{src.name}/", f"/datasets/{dst.name}/"      # absolute mesh URIs (container paths)
     for i in ids:
         sc = json.loads((src / "worlds" / f"scene_{i:04d}.json").read_text())
         sdf = (src / "worlds" / f"scene_{i:04d}.sdf").read_text().replace(src_c, dst_c)
@@ -77,6 +75,40 @@ def make(src: Path, dst: Path, variant: str, n: int, ids=None) -> list:
     return ids
 
 
+def retrofit(src: Path, dst: Path) -> list:
+    """dst = a copy of the dataset `src` in which every scene with a mini cone gets the FIXED (normals) cone mesh and is marked
+    for re-rendering (its frames / labels / meta / depth removed, its line dropped from rendered.txt). Idempotent and
+    resume-safe: the marker retrofit.json is written last; a second call after it exists changes nothing.
+    Then: generate_dataset.py render --out dst --labels v3.1 (renders only the missing scenes) + finalize."""
+    marker = dst / "retrofit.json"
+    if marker.exists():
+        return json.loads(marker.read_text())["scenes"]
+    if not dst.exists():
+        shutil.copytree(src, dst, ignore=shutil.ignore_patterns("logs", "*.cache"))
+    src_c, dst_c = f"/datasets/{src.name}/", f"/datasets/{dst.name}/"      # absolute mesh URIs (container paths)
+    r0, h0, ht = cone_size()
+    ids = []
+    for jf in sorted((dst / "worlds").glob("scene_*.json")):
+        sc = json.loads(jf.read_text())
+        sdf_f = jf.with_suffix(".sdf")
+        sdf_f.write_text(sdf_f.read_text().replace(src_c, dst_c))
+        cones = [o for o in sc.get("small", []) if o["cls"] == "mini_cone"]
+        if not cones:
+            continue
+        i = sc["index"]
+        ids.append(i)
+        for o in cones:
+            (dst / "assets" / "meshes" / f"s{i:04d}" / f"{o['name']}_p1.obj").write_text(O.cone_obj(r0, h0, ht, normals=True))
+        for f in dst.glob(f"*/*/s{i:04d}_v*"):                    # images / labels / meta / depth of this scene
+            f.unlink()
+    done = dst / "rendered.txt"
+    if done.exists():
+        drop = {f"scene_{i:04d}" for i in ids}
+        done.write_text("".join(f"{x}\n" for x in done.read_text().split() if x not in drop))
+    marker.write_text(json.dumps({"src": str(src.name), "scenes": ids, "note": "mini-cone mesh with normals (coloured)"}))
+    return ids
+
+
 def main():
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -86,7 +118,14 @@ def main():
     m.add_argument("--src", default="datasets/synth_v31_body")
     m.add_argument("--n", type=int, default=30)
     m.add_argument("--ids", default="", help="comma-separated scene indices (default: the first --n test scenes with a cone)")
+    r = sub.add_parser("retrofit", help="copy a dataset, fix the cone mesh, mark the cone scenes for re-rendering")
+    r.add_argument("--src", required=True)
+    r.add_argument("--dst", required=True)
     a = ap.parse_args()
+    if a.cmd == "retrofit":
+        got = retrofit((ROOT / a.src).resolve(), (ROOT / a.dst).resolve())
+        print(f"retrofit {a.src} -> {a.dst}: {len(got)} scenes with a mini cone to re-render")
+        return
     ids = [int(x) for x in a.ids.split(",") if x] or None
     got = make((ROOT / a.src).resolve(), (ROOT / a.out).resolve(), a.variant, a.n, ids)
     print(f"{a.variant}: {len(got)} scenes -> {a.out}: {got}")

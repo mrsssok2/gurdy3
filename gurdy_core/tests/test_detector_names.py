@@ -25,8 +25,11 @@ def test_runtime_default_is_det_v31_s_and_v3_stays_selectable():
     from pathlib import Path
     root = Path(__file__).resolve().parents[2]
     src = (root / "ros2_ws/src/gurdy_perception/gurdy_perception/detector_node.py").read_text()
-    assert re.search(r'^DEFAULT_MODEL = "det_v31_s\.onnx"', src, re.M)
-    for name in ("det_v31_s", "det_v3_s"):                     # model cards are committed (the .onnx files are not)
+    m = re.search(r'^DEFAULT_MODEL = "(det_v3[12]_s)\.onnx"', src, re.M)   # det_v32_s only if overnight_1128 switched it
+    assert m, "default must be det_v31_s or det_v32_s"
+    if m.group(1) == "det_v32_s":
+        assert "rollback: model:=det_v31_s.onnx" in src
+    for name in sorted({m.group(1), "det_v31_s", "det_v3_s"}):  # model cards are committed (the .onnx files are not)
         card = json.loads((root / f"models/detector/{name}.json").read_text())
         assert list(card["classes"].values()) == list(CLASSES_V3) and card["input_hw"] == [256, 320]
     for name in ("det_v31_s", "det_v3_s"):
