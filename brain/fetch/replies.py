@@ -10,7 +10,7 @@ from .catalog import label
 CLAIMS = {
     "picked": re.compile(r"\b(picked (it |\w+ )?up|i('ve| have) got (it|the)|got it|i'm holding|i am holding|holding the)\b", re.I),
     "placed": re.compile(r"\b(put (it|the [\w ]+?) (down )?(in|at)|placed|left (it|the [\w ]+?) in|delivered)\b", re.I),
-    "handed_over": re.compile(r"\b(here you are|here it is|handed|you have it|you've got it)\b", re.I),
+    "handed_over": re.compile(r"\b(here you are|here it is|here's your|here is your|handed|you have it|you've got it)\b", re.I),
 }
 NEG = re.compile(r"\b(not|n't|couldn't|could not|failed|never|didn't|unable)\b", re.I)
 
@@ -34,11 +34,15 @@ def describe(obj) -> str:
     return f"the {c}{label(obj.cls)}"
 
 
-def outcome_reply(out, objects) -> str:
+def outcome_reply(out, objects, handover_text: str = "Here you are: {what}.") -> str:
     o = objects.get(out.obj) if out.obj else None
     what = describe(o) if o else "it"
     if out.status == "handed_over":
-        return f"Here you are: {what}." if "handed_over" in out.confirmed else "I could not confirm the hand-over."
+        if "handed_over" not in out.confirmed:
+            return "I could not confirm the hand-over."
+        if "{what}" in handover_text and "your" in handover_text and o:       # "Here's your red can." (no 'the')
+            return handover_text.format(what=what.removeprefix("the "))
+        return handover_text.format(what=what)
     if out.status == "placed":
         return f"I put {what} down in {out.where}." if out.where not in ("home",) else f"I put {what} down at home."
     if out.status == "holding" and out.code is None:
@@ -57,6 +61,12 @@ def outcome_reply(out, objects) -> str:
         return f"I dropped {what} on the way. It's on the floor in {out.where}. Shall I try to pick it up again?"
     if code == "NOT_TAKEN":
         return f"You didn't take {what}, so I'm still holding it. Tell me where it should go, or say 'hand it to me' again."
+    if code == "NOT_STATIONARY":
+        return f"I couldn't stand still to hand over {what}, so I didn't let go: I'm still holding it."
+    if code == "NOT_RELEASED":
+        return f"My gripper did not open, so I'm still holding {what}."
+    if code == "DELIVERY_UNCONFIRMED":
+        return f"I opened my gripper, but I can't confirm that {what} reached you. Please check the floor next to me."
     if code == "NOT_HOLDING":
         return "I'm not holding anything."
     if code == "BUSY":

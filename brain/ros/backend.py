@@ -599,6 +599,29 @@ class RosBackend:
                       {"kind": "rel", "motion": "turn", "direction": "left", "amount": 360.0 / self.SCAN_QUARTERS}]
         return steps
 
+    # search budget sized from the map (2026-11-27 dry run: a fixed 300 s is too short for a whole-house sweep; with
+    # search_view_radius_m 1.5 the fake sweep needs > 900 s)
+    SEARCH_SPEED_MPS = 0.10       # nominal walking speed of the search legs (mock / Nav2 cruise)
+    SEARCH_TURN_RADPS = 0.3       # scan turn rate (relmotion)
+    SEARCH_PATH_FACTOR = 1.3      # planned paths are longer than straight lines (doors)
+
+    def search_budget_s(self, factor: float = 1.5, extra_s: float = 60.0) -> float:
+        """Time the room sweep of `find` needs from the current pose: legs between the sweep viewpoints (straight line x
+        SEARCH_PATH_FACTOR at SEARCH_SPEED_MPS) + every scan (dwell + quarter turns), x `factor`, + `extra_s`. Uses the same step
+        list as `find` (rooms, viewpoints with search_view_radius_m, no-go rooms skipped), so it grows with the map."""
+        pose = self._pose()
+        cur = (pose[0], pose[1]) if pose else (0.0, 0.0)
+        travel = scan = 0.0
+        for s in self._sweep_steps():
+            if s["kind"] == "nav":
+                travel += math.hypot(s["x"] - cur[0], s["y"] - cur[1]) * self.SEARCH_PATH_FACTOR / self.SEARCH_SPEED_MPS
+                cur = (s["x"], s["y"])
+            elif s["kind"] == "wait":
+                scan += s.get("secs", 0.0)
+            elif s["kind"] == "rel" and s.get("motion") == "turn":
+                scan += math.radians(s["amount"]) / self.SEARCH_TURN_RADPS
+        return round((travel + scan) * factor + extra_s, 1)
+
     def _rooms_mapped(self) -> bool:
         """The named rooms are (almost) all known in the map: there is nothing worth exploring, the robot should go and LOOK. Without this the
         explore step of `find` ran first and walked the frontier cells of a saved map for the whole search budget (lab4 v2: 214-392 s
