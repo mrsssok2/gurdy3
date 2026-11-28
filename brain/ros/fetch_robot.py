@@ -450,20 +450,39 @@ class RosFetchRobot:
             return False
         self._plan, self._rest = plan, self._world(xy)
         a["rest_world"] = [round(float(v), 4) for v in self._rest]
-        self.arm.gripper(+GRIP_EFFORT)
-        self._wait(0.5)
+        # fingers OPEN before the pre-grasp is planned: MoveIt checks the goal with the fingers where they are, and half-open
+        # fingers (40 mm take 0.8 s at 0.05 m/s; the old code waited 0.5 s) are inside the padded target -> goal rejected ->
+        # unchecked direct swing (2026-11-28: every fetch run)
+        a["fingers_open"] = self._open_gripper()
+        if a["fingers_open"] is not None and min(a["fingers_open"]) < G.FINGERS_OPEN_MIN:
+            self._end_attempt("missed", "gripper did not open")
+            return False
         tgt = moveit and hasattr(self.arm, "target_in_scene") and self.arm.target_in_scene(o.cls, xy, True)
         a["target_in_scene"] = bool(tgt)
         try:
             if not self._move_arm([plan.pre], 3.0, big=True):
                 self._end_attempt("missed", "pre-grasp move failed")
                 return False
+            a["pre_via"] = self.log[-1].get("arm") if self.log and "arm" in self.log[-1] else None
             if hasattr(self.arm, "settle"):
-                a["settle_pre_rad"] = round(self.arm.settle(plan.pre), 4)
-                q_meas = self.arm.arm_q()
-                if q_meas is not None:
-                    delta = G.centre_correction(self.ARM, plan.pre, q_meas)
+                def at_pre():
+                    e = self.arm.settle(plan.pre)
+                    qm = self.arm.arm_q()
+                    d = G.centre_correction(self.ARM, plan.pre, qm) if qm is not None else None
+                    return e, qm, d, G.pre_grasp_ok(e, d, G.grasp_centre(self.ARM, plan.pre)[:2])
+                err, q_meas, delta, (ok_pre, why_pre) = at_pre()
+                if not ok_pre:                    # not there: once more, then give this attempt up WITHOUT going in
+                    self._move_arm([plan.pre], 1.5)
+                    err, q_meas, delta, (ok_pre, why_pre) = at_pre()
+                a["settle_pre_rad"] = round(err, 4)
+                if delta is not None:
                     a["centre_shift_m"] = [round(float(d), 4) for d in delta]
+                    a["lateral_shift_m"] = round(G.lateral_shift(delta, G.grasp_centre(self.ARM, plan.pre)[:2]), 4)
+                if not ok_pre:
+                    self._end_attempt("missed", why_pre)
+                    self._move_arm([self.ARM.poses["ready"]], 2.0)
+                    return False
+                if q_meas is not None:
                     if float(np.linalg.norm(delta[:2])) > 0.001:
                         p2 = G.grasp_plan(self.ARM, self.RB, o.cls, np.asarray(xy, float) + delta[:2], yaw)
                         a["centre_replan_ok"] = p2.ok
@@ -483,6 +502,18 @@ class RosFetchRobot:
         self._wait(1.5)
         a["fingers_closed"] = self.arm.fingers()
         return True
+
+    def _open_gripper(self, timeout_s: float = 2.5):
+        """Open and WAIT (sim time) until both fingers are open (>= FINGERS_OPEN_MIN) or timeout; -> finger positions."""
+        from gurdy_core import grasp_test as G
+        self.arm.gripper(+GRIP_EFFORT)
+        t0, f = self.now(), None
+        while self.now() - t0 < timeout_s:
+            self._wait(0.2)
+            f = self.arm.fingers()
+            if f is not None and min(f) >= G.FINGERS_OPEN_MIN:
+                break
+        return [round(float(v), 4) for v in f] if f is not None else None
 
     def _wrist_view_retry(self):
         """A fresh wrist frame, asked for again until it comes: >= cfg.view_tries requests AND cfg.view_window_s of SIM time

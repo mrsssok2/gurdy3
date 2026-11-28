@@ -200,6 +200,68 @@ def centre_correction(a, q_cmd, q_meas, max_shift: float = 0.02) -> np.ndarray:
     return d * (max_shift / n) if n > max_shift else d
 
 
+PRE_GROSS_RAD = 0.15        # rad: a max joint error above this at the pre-grasp = the arm never arrived (headless take 2: 0.235)
+PRE_LATERAL_M = 0.003       # m: sideways (out of the arm plane) offset of the finger midpoint at the pre-grasp. Gravity sags the
+#                             arm only IN its plane (corrected by centre_correction); a sideways offset means the yaw joint is
+#                             held off its goal, e.g. the open gripper resting against the object. 2026-11-28 fetch data: the
+#                             8 grasps that held had <= 0.4 mm, the 3 sideways misses 5.7-8.3 mm (finger clearance: 7 mm)
+FINGER_T = 0.008            # m, finger thickness (arm.yaml links.finger.size[1])
+FINGERS_OPEN_MIN = 0.037    # m per finger: "open" (upper limit 0.040)
+
+
+def lateral_shift(shift_xyz, gc_xy) -> float:
+    """Signed component of a centre shift perpendicular to the arm plane (the horizontal direction base -> grasp centre)."""
+    g = np.asarray(gc_xy, float)[:2]
+    n = float(np.linalg.norm(g))
+    if n < 1e-6:
+        return 0.0
+    t = np.array([-g[1], g[0]]) / n
+    return float(np.asarray(shift_xyz, float)[:2] @ t)
+
+
+def pre_grasp_ok(settle_err, shift_xyz, gc_xy) -> tuple:
+    """(ok, why). False = do NOT go in and do NOT apply the centre correction (it assumes a steady in-plane sag): the arm is
+    not where it was told to be."""
+    if settle_err is None or settle_err != settle_err:
+        return False, "arm position unknown at the pre-grasp"
+    if float(settle_err) > PRE_GROSS_RAD:
+        return False, "arm did not reach the pre-grasp pose"
+    if shift_xyz is not None and abs(lateral_shift(shift_xyz, gc_xy)) > PRE_LATERAL_M:
+        return False, "arm held sideways off the pre-grasp pose (touching something?)"
+    return True, ""
+
+
+def finger_target_clearance(a, q, cls: str, xy_base, finger_q, pad: float = 0.01, ground_z: float = -0.11) -> float:
+    """Smallest distance (m, negative = inside) between the two fingers at arm pose q with each finger opened `finger_q`
+    (m from the centre line) and the PADDED grasp target that the fetch puts into MoveIt's scene for the big moves
+    (class-size cylinder / box + pad, standing on the floor at base-frame xy). MoveIt rejects a goal state with a negative
+    value ('Unable to sample any valid states for goal tree': 2026-11-28, the pre-grasp was planned 0.5 s after the open
+    command, fingers at ~25 of 40 mm)."""
+    o = A.PICKABLE[cls]
+    T = A.T_base_palm(a, np.asarray(q, float))
+    R = T[:3, :3]
+    tip = np.asarray(A.fk(a, np.asarray(q, float))["T"], float)
+    h = (o["size"][2] if o["shape"] == "box" else o["height"]) + pad
+    best = float("inf")
+    for sgn in (1.0, -1.0):
+        for along in np.linspace(0.0, a.Lf, 9):                       # from the tip back along the finger
+            for lat in (finger_q, finger_q + FINGER_T):                # inner and outer face
+                for nz in (-0.006, 0.006):
+                    pt = tip - along * R[:, 0] + sgn * lat * R[:, 1] + nz * R[:, 2]
+                    dz = max(ground_z - pt[2], pt[2] - (ground_z + h), 0.0)
+                    if o["shape"] == "box":
+                        dx = max(abs(pt[0] - xy_base[0]) - (o["size"][0] / 2 + pad), 0.0)
+                        dy = max(abs(pt[1] - xy_base[1]) - (o["size"][1] / 2 + pad), 0.0)
+                        inside = dx == 0.0 and dy == 0.0 and dz == 0.0
+                        d = -min(o["size"][0] / 2 + pad - abs(pt[0] - xy_base[0]), o["size"][1] / 2 + pad - abs(pt[1] - xy_base[1])) \
+                            if inside else float(np.linalg.norm([dx, dy, dz]))
+                    else:
+                        rad = float(np.hypot(pt[0] - xy_base[0], pt[1] - xy_base[1])) - (o["radius"] + pad)
+                        d = rad if dz == 0.0 else float(np.hypot(max(rad, 0.0), dz))
+                    best = min(best, d)
+    return best
+
+
 def fingers_apart(fingers, cls: str, frac: float = 0.5) -> bool:
     """Scorer rule: the object is BETWEEN the fingers only if their total opening (sum of both finger joints, each measured
     from the centre) is at least `frac` of the class grip width. Fully closed fingers = nothing held (wedged / pushed)."""

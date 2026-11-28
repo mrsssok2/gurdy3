@@ -78,6 +78,19 @@ class FetchMachine:
                           f"{ALIGN_WHY.get(getattr(self.r, 'align_code', None), ALIGN_WHY[None])}, {MAX_ALIGN} tries")
             return out
         for attempt in range(MAX_GRASP):
+            if attempt > 0:
+                # never re-use the estimate after a miss: the failed grasp may have pushed the object (2026-11-28 GUI take:
+                # attempts 2-3 grasped 11 / 15 cm beside it). Look again; if it is no longer seen, say so.
+                ok, err = self.r.fine_align(name)
+                self._log(out, "RE_ALIGN", ok, f"residual {err * 100:.1f} cm" if err is not None else
+                          f"not measured ({getattr(self.r, 'align_code', None) or 'no observation'})")
+                if not ok:
+                    out.regrasps = attempt
+                    if err is None:
+                        out.code, out.detail = "LOST_AFTER_MISS", f"{attempt} attempt{'s' if attempt > 1 else ''}"
+                    else:
+                        out.code, out.detail = "NOT_REACHABLE", f"residual {err * 100:.0f} cm after a missed grasp"
+                    return out
             ok = self._log(out, "GRASP", self.r.grasp(name), f"attempt {attempt + 1}")
             if ok and self._log(out, "VERIFY_GRASP", self.r.verify_grasp(name)):
                 break

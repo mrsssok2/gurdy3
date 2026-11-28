@@ -49,7 +49,8 @@ class FakeArmPort:
         self.unseen = set(unseen)
         self.estop_at = estop_at
         fake.reveal = [(20.0 + 10 * k, self._entry(o)) for k, o in enumerate(o for o in self.objs if o["name"] in self.unseen)]
-        self.finger = (0.04, 0.04)
+        self.finger = (0.0, 0.0) if self.faults.get("finger_dynamics") else (0.04, 0.04)   # the sim starts with closed fingers
+        self._opening = None
         self.held = None
         self.held_since_xy = None
         self.present_t = None
@@ -108,7 +109,14 @@ class FakeArmPort:
         return [float(v) for v in self.q]
 
     def move_arm(self, qs, seconds, use_moveit=False):
-        self.moves.append({"t": self.f.now(), "n": len(qs), "moveit": bool(use_moveit)})
+        fnow = self.fingers()
+        self.moves.append({"t": self.f.now(), "n": len(qs), "moveit": bool(use_moveit), "fingers": tuple(fnow) if fnow else None})
+        tg = next((e for e in reversed(self.scene) if e[0] == "target"), None)
+        if use_moveit and self.faults.get("finger_dynamics") and tg is not None and tg[3]:
+            from gurdy_core import grasp_test as G                 # the planner rejects a goal state in collision
+            if fnow and G.finger_target_clearance(self.a, qs[-1], tg[1], tg[2], min(fnow)) < 0:
+                self.moves[-1]["rejected"] = "goal state in collision: finger vs grasp_target"
+                return False
         z0 = self._gc_world()[2]
         self.f.advance(seconds)
         self.q = np.array(qs[-1], float) + self.sag            # where the arm really settles
@@ -123,8 +131,11 @@ class FakeArmPort:
             return                                                  # jammed: stays closed on the object
         if effort > 0:
             self._put_down()
+            if self.faults.get("finger_dynamics"):                 # 0.05 m/s per finger (arm.yaml), from where they are
+                self._opening = (self.f.now(), min(self.fingers()))
             self.finger, self.present_t = (0.04, 0.04), None
             return
+        self._opening = None
         if self.held is not None:
             self.present_t = self.f.now() if abs(effort) < 2.0 else None      # light grip = presenting to the user
             return
@@ -132,6 +143,11 @@ class FakeArmPort:
         for o in self.objs:
             p = A.PICKABLE[o["class"]]
             zg = A.grasp_point(p)
+            if math.hypot(g[0] - o["x"], g[1] - o["y"]) <= 0.015 and abs(g[2] - zg) <= 0.02 and o["name"] in self.faults.get("miss_push_once", {}):
+                dx, dy = self.faults["miss_push_once"].pop(o["name"])     # this grasp misses and pushes the object (world m)
+                o["x"], o["y"] = o["x"] + dx, o["y"] + dy
+                self.finger = (0.0, 0.0)
+                return
             if math.hypot(g[0] - o["x"], g[1] - o["y"]) <= 0.015 and abs(g[2] - zg) <= 0.02 and o["name"] not in self.faults.get("miss", set()):
                 self.held, self.held_since_xy = o, self.f.pose()[:2]
                 self.finger = (p["grip_w"] / 2 - 0.001,) * 2
@@ -139,6 +155,10 @@ class FakeArmPort:
         self.finger = (0.0, 0.0)
 
     def fingers(self):
+        op = getattr(self, "_opening", None)
+        if op is not None:                                          # still travelling open (finger_dynamics)
+            q = min(0.04, op[1] + 0.05 * (self.f.now() - op[0]))
+            return (q, q)
         return self.finger
 
     def efforts(self):
