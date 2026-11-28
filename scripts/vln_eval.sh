@@ -5,6 +5,7 @@
 #   MODEL=gurdy-sft-400 scripts/vln_eval.sh SUITE.yaml     # plan by the LLM (+ keyword fallback); default MODEL=keyword = no Ollama
 #   LANDMARKS=map ...                                      # landmarks from the live semantic map only (default gt: GT positions,
 #                                                          # confirmation by the live detector)
+#   SAVE_FRAMES=1 ...                                      # also save body RGB frames per episode (logs/<id>.attemptN.stack/frames; VLM replay)
 #   ONLY=id1,id2  ATTEMPTS=3  WALL_MIN=600  WALL_FACTOR=4  GUI=false  RUN_DIR=brain/runs/vln_eval/<ts> (resume: valid episodes skipped)
 # Holds the shared GPU lock (scripts/gpu_lock.sh) for the WHOLE batch. Refuses to start when `docker ps` is not empty.
 # Builds the colcon workspace in the container first if the world is not installed (a fresh worktree has no ros2_ws/install;
@@ -77,11 +78,12 @@ run_one() {
     t_att=$SECONDS
     timeout -k 30 "$wall" docker compose run --rm -T --name gurdy3_vln_eval -e OLLAMA_URL -e EP="$id" -e OUT="$out" -e CHAT="$chat" \
       -e SUITE_FILE="$SUITE_FILE" -e WORLD="$WORLD" -e MAP_NAME="$MAP_NAME" -e MAP_ID="$MAP_ID" -e PLACES_FILE="$PLACES_FILE" \
-      -e LANDMARKS="$LANDMARKS" -e OLLAMA_ARG="$OLLAMA_ARG" -e GUI="$GUI" sim bash -c '
+      -e LANDMARKS="$LANDMARKS" -e OLLAMA_ARG="$OLLAMA_ARG" -e GUI="$GUI" -e SAVE_FRAMES="${SAVE_FRAMES:-0}" sim bash -c '
       cd ~/gurdy2 && source ros2_ws/install/setup.bash && export PYTHONPATH=$HOME/gurdy2:$HOME/gurdy2/gurdy_core:$HOME/gurdy2/sim_mujoco:$PYTHONPATH
       source scripts/lib_nav_start.sh; mkdir -p "$CHAT"; cp "$PLACES_FILE" "$CHAT/places.yaml"
       trap "stop_nav_stack" EXIT
-      start_nav_stack "$CHAT" gui:=$GUI world:=$WORLD perception:=true estop_gate:=true target_frame:=map nav:=localization map:=$MAP_NAME navigation:=true controller:=policy odom_source:=ground_truth > "$CHAT/start.log" 2>&1 < /dev/null \
+      FRAMES_ARG=""; [ "$SAVE_FRAMES" = 1 ] && FRAMES_ARG="detector_frames:=$HOME/gurdy2/$CHAT/frames"
+      start_nav_stack "$CHAT" gui:=$GUI world:=$WORLD $FRAMES_ARG perception:=true estop_gate:=true target_frame:=map nav:=localization map:=$MAP_NAME navigation:=true controller:=policy odom_source:=ground_truth > "$CHAT/start.log" 2>&1 < /dev/null \
         || { echo "Nav2 never became ready"; tail -20 "$CHAT/launch.log"; exit 5; }
       ros2 launch gurdy_safety monitors.launch.py odom_topic:=/odom > "$CHAT/monitors.log" 2>&1 < /dev/null &
       sleep 12

@@ -84,6 +84,8 @@ class DetectorNode(Node):
         P("min_span", 2.0); P("min_mean_score", 0.6); P("max_scatter", 0.5)   # track confirmation (semantic_map.py)
         P("dominance_ratio", 4.0); P("dominance_radius", 0.35)   # a sparse track on top of a >= 4x better seen one is a class confusion
         P("log_path", "")                # JSON-lines log of every sighting, for offline replay of the confirmation rules
+        P("frame_dir", "")               # save body RGB frames + sidecar (camera pose, this frame's detections) for VLM replay; "" = off
+        P("frame_every_s", 1.0); P("frame_max", 3000)            # (gurdy_core/vision/frame_saver.py)
         P("debug_image", False); P("save_path", "")
         P("position_method", "pixel")    # pixel (Phase 4, default) | object3d (Phase 8c)
         P("floor_z", -0.11); P("floor_fit", True); P("floor_hold_s", 3.0)   # floor plane prior / RANSAC fit in target_frame
@@ -98,6 +100,11 @@ class DetectorNode(Node):
                                max_scatter=g("max_scatter"),
                                dominance_ratio=g("dominance_ratio"), dominance_radius=g("dominance_radius"))
         self.log = open(g("log_path"), "w") if g("log_path") else None
+        self.frames = None
+        if g("frame_dir"):
+            from gurdy_core.vision.frame_saver import FrameSaver
+            self.frames = FrameSaver(g("frame_dir"), every_s=float(g("frame_every_s")), max_frames=int(g("frame_max")))
+            self.get_logger().info(f"saving RGB frames to {g('frame_dir')} (every {g('frame_every_s')} s sim, at most {g('frame_max')})")
         self.tf = Buffer()
         self.tfl = TransformListener(self.tf, self)
         self.K = None
@@ -158,6 +165,7 @@ class DetectorNode(Node):
         if use3d:
             T_map_opt = T_from_tq(t_xyz, q)
             plane = self.floor.update(depth, self.K, T_map_opt, t)
+        frame_dets = []                         # this frame's detections for the frame saver (VLM replay facts)
         for d in dets:
             x1, y1, x2, y2 = d.box
             z, _ = box_depth(depth, d.box)
@@ -201,6 +209,8 @@ class DetectorNode(Node):
             if wscale > 0:
                 crop = rgb[int(y1 + 0.25 * (y2 - y1)):int(y2 - 0.25 * (y2 - y1)) + 1, int(x1 + 0.25 * (x2 - x1)):int(x2 - 0.25 * (x2 - x1)) + 1]
                 col = color_name(crop)
+                frame_dets.append({"cls": d.name, "score": round(float(d.score), 4), "box": [round(float(c), 1) for c in d.box], "color": col,
+                                   "p": [round(float(c), 4) for c in p], "truncated": truncated})
                 self.map.update(d.name, p, d.score, t, range_m=float(np.linalg.norm(p_opt)), color=col, weight_scale=wscale, obs3d=s3)
                 self.n["used"] += 1
                 self.n["truncated"] += int(truncated)
@@ -216,6 +226,10 @@ class DetectorNode(Node):
                     self.log.write(json.dumps(rec) + "\n")
         self.pub_det.publish(out)
         self.publish_map(rgb_m.header.stamp, frame)
+        if self.frames is not None and not self.frames.stopped:
+            self.frames.maybe_save(t, rgb, t_xyz + q, frame_dets)
+            if self.frames.stopped:
+                self.get_logger().warn(f"frame saving stopped: {self.frames.stopped} ({self.frames.saved} frames saved)")
 
     def publish_map(self, stamp, frame):
         arr = MarkerArray()

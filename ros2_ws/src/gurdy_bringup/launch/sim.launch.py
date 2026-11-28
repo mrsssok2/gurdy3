@@ -79,6 +79,8 @@ def generate_launch_description():
                       parameters=[{"model": LaunchConfiguration("detector_model"), "use_sim_time": False,
                                    "target_frame": LaunchConfiguration("target_frame"),
                                    "log_path": LaunchConfiguration("detector_log"),
+                                   "frame_dir": LaunchConfiguration("detector_frames"),
+                                   "frame_every_s": PythonExpression(["float(", LaunchConfiguration("detector_frames_every_s"), ")"]),
                                    "ttl": PythonExpression(["float(", LaunchConfiguration("detector_ttl"), ")"]),
                                    "position_method": PythonExpression(["'object3d' if '", LaunchConfiguration("object3d"),
                                                                         "' == 'true' else 'pixel'"])}])
@@ -104,6 +106,8 @@ def generate_launch_description():
            DeclareLaunchArgument("perception", default_value="false", description="Phase 4: detector + semantic map (camera on)"),
            DeclareLaunchArgument("detector_model", default_value="", description="ONNX in models/detector/ (default det_v31_s.onnx; rollback det_v3_s.onnx / det_v2_s.onnx)"),
            DeclareLaunchArgument("detector_log", default_value="", description="JSON-lines log of every detector sighting"),
+           DeclareLaunchArgument("detector_frames", default_value="", description="directory for body RGB frames + sidecars (VLM replay); '' = off"),
+           DeclareLaunchArgument("detector_frames_every_s", default_value="1.0", description="at most one saved frame per this many sim seconds"),
            DeclareLaunchArgument("detector_ttl", default_value="30.0",
                                  description="s an unconfirmed detector track is kept after its last sighting (was 10)"),
            DeclareLaunchArgument("object3d", default_value="false",

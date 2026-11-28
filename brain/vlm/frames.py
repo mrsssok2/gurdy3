@@ -80,3 +80,18 @@ def frame_from_render(png, meta, scene=None) -> Frame:
     cx, cy, _ = m["cam_pos"]
     yaw = m["cam_rpy"][2]
     return Frame(t=m.get("stamp_ns", 0) / 1e9, detections=dets, cam=(cx, cy, yaw), image=Path(png).read_bytes(), source=str(png))
+
+
+def frames_from_saved(dir_) -> list:
+    """Frames saved by a Gazebo run with `detector_frames:=DIR` (gurdy_core/vision/frame_saver.py): image + sidecar
+    (camera pose, the detections of that frame in the sightings.jsonl fields) -> [Frame] in time order."""
+    out = []
+    for side in sorted(Path(dir_).glob("f_*.json")):
+        d = json.loads(side.read_text())
+        img = next((side.with_suffix(s) for s in (".jpg", ".png") if side.with_suffix(s).exists()), None)
+        dets = [{"cls": x["cls"], "color": x.get("color") or "", "x": (x.get("p") or [None])[0], "y": (x.get("p") or [None, None])[1],
+                 "z": (x.get("p") or [None, None, None])[2], "score": x.get("score"), "box": x.get("box"), "truncated": x.get("truncated", False)}
+                for x in d.get("detections", [])]
+        out.append(Frame(t=d["t"], detections=dets, cam=tuple(d["cam"]) if d.get("cam") else None,
+                         image=img.read_bytes() if img else None, source=str(img or side)))
+    return out

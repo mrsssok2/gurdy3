@@ -360,3 +360,23 @@ def test_eval_script_mock_run_uses_its_own_lock_file(tmp_path):
 def test_eval_script_refuses_while_containers_run(tmp_path):
     r = _run_script(tmp_path, ps_out="abc\\n")
     assert r.returncode == 1 and "docker ps" in r.stdout + r.stderr
+
+
+# ------------------------------------------------------------------ frames saved by a Gazebo run (detector_frames:=DIR), replayed
+def test_saved_frames_replay_through_the_tool(tmp_path):
+    import io
+    import numpy as np
+    from PIL import Image
+    from gurdy_core.vision.frame_saver import FrameSaver
+    from brain.vlm.frames import frames_from_saved
+    src = frames_from_sightings(CUBE_LOG)
+    f = next(x for x in src if abs(x.t - 79.993) < 1e-6)
+    rgb = np.asarray(Image.open(io.BytesIO((DATA / "s0099_v01.png").read_bytes())).convert("RGB"))   # pixels: a stand-in render
+    dets = [{"cls": d["cls"], "score": d["score"], "box": d["box"], "color": d["color"], "p": [d["x"], d["y"], d["z"]],
+             "truncated": d["truncated"]} for d in f.detections]
+    FrameSaver(tmp_path, free_gb=lambda: 100.0).maybe_save(f.t, rgb, f.cam, dets)      # tmp_path: small tmpfs
+    back = frames_from_saved(tmp_path)
+    assert len(back) == 1 and back[0].image[:2] == b"\xff\xd8" and back[0].cam_xy_yaw() == pytest.approx(f.cam_xy_yaw())
+    assert [(d["cls"], d["color"], d["x"]) for d in back[0].detections] == [(d["cls"], d["color"], d["x"]) for d in f.detections]
+    r = tool_for(back[0], vlm({"name": "box", "color": "blue"}))("what colour is the box near the barrel?")
+    assert r["reply"] == "The box near the barrel is blue."
