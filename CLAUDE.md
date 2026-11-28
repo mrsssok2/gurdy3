@@ -98,6 +98,11 @@ Extras (after the core): 5.5 DPO, 5.10 VLM, Phase 5b VLN, Experiment B v2, YOLO 
 7. Keep ROADMAP.md checkboxes and this file current as we progress.
 8. **Before measuring, check `docker ps`**: no other sim containers may run (they share CPU, and
    without isolation they share /clock). Stop GUI demos when done (`docker rm -f <name>`).
+9. **Never kill by pattern (user, 2026-11-28).** No `pkill` / `killall` / `kill` with broad patterns (`pkill -f`, name
+   patterns, `-P` parent sweeps). Only kill exact PIDs you started yourself and have just verified with
+   `ps -o pid,ppid,etime,args -p PID`. Never touch processes of another project (gurdy4, humanoid, ...), the overnight run, or the
+   GPU lock holder (`scripts/gpu_lock.sh status`). If unsure whose a process is, ask. Tests that ran while something was killed
+   are re-run to confirm they were not cut off.
 
 ## Lessons from Gurdy 1.0 (design constraints, not trivia)
 | Gurdy 1.0 problem | Gurdy 2.0 rule |
