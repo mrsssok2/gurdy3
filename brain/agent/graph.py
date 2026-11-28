@@ -291,6 +291,12 @@ class Agent:
             w = self.executor.waiting
             self.gate.hold("mission_step", {"calls": self.executor.remaining_calls(), "resume": True}, w.reason)
         msgs = self._announce(evs)
+        fs = getattr(self.layer.backend, "fetch_session", None)
+        poll = getattr(fs, "poll", None)
+        if callable(poll):                                   # a mid-plan "which one?" that nobody answered: the plan stops, said once
+            m = poll()
+            if m:
+                msgs.append(m)
         if self.followup is not None:
             if self.executor.state == "done":
                 msgs += self._run_followup()

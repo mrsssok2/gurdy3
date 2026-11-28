@@ -25,12 +25,16 @@ SIZE_WORDS = re.compile(r"\b(big|large|huge|tall|traffic|fire|full[- ]size)\b", 
 class FetchSession:
     MIN_BATTERY_PCT = 25.0             # multi-step plans: no new step below this battery level
     MAX_TASK_S = 1800.0                # multi-step plans: no new step after this much (robot clock) since the request
+    QUESTION_TIMEOUT_S = 60.0          # a "which one?" asked mid-plan expires after this (wall clock); then the plan stops
 
     def __init__(self, robot, picker=None, tasks=None):
         self.r = robot
         self.picker = picker           # Phase 9f: brain.fetch.picker.FetchPicker for free phrasings (None = router only)
         self.tasks = tasks             # brain.fetch.tasks.TaskPlanner for multi-step requests (None = off: the router as before)
         self.plan_log: list = []       # last multi-step run: [{step, status, reply}]
+        self.plan_pending: dict | None = None   # a plan waiting for the answer to "which one?": {steps, i, t0, asked}
+        import time as _time
+        self.clock = _time.monotonic   # wall clock of the question timeout (tests inject a fake one)
         self.m = FetchMachine(robot)
         self.pending = None            # (intent, candidates) waiting for 'the red one' / 'the one in room C'
         self.queue: list = []          # remaining items of a multi-object request ("the red can and the blue cube"), in order
@@ -86,6 +90,8 @@ class FetchSession:
         self.calls = []
         self._requester_noted = False
         chosen = None
+        if self.plan_pending is not None:
+            return self._resume_plan(text)
         if self.pending:
             res = self._resolve_pending(text)
             if res and res[0] == "ask":
@@ -153,11 +159,55 @@ class FetchSession:
         return {"intent": "fetch", "object": step["object"], "mode": "user" if mode == "here" else mode, **({"room": to} if mode == "room" else {})}
 
     def run_plan(self, plan: dict) -> str:
+        self.plan_log, self.plan_pending = [], None
+        return self._plan_from(plan["steps"], 0, self.r.now(), None)
+
+    def _rest(self, steps, i):
         from .tasks import step_text
-        self.plan_log, parts, t0 = [], [], self.r.now()
-        steps = plan["steps"]
         names_rev = {v: k for k, v in getattr(self.tasks, "names", {}).items()}
-        for i, step in enumerate(steps):
+        return "; ".join(step_text(s, names_rev) for s in steps[i:])
+
+    def _plan_timed_out(self) -> bool:
+        return self.plan_pending is not None and self.clock() - self.plan_pending["asked"] > self.QUESTION_TIMEOUT_S
+
+    def _drop_plan(self, why: str) -> str:
+        pp, self.plan_pending, self.pending = self.plan_pending, None, None
+        self.plan_log.append({"step": self._rest(pp["steps"], pp["i"]).split("; ")[0], "status": "stopped", "reply": why})
+        return f"{why} Not done: {self._rest(pp['steps'], pp['i'])}."
+
+    def poll(self) -> str | None:
+        """Called by the agent's pump: an unanswered mid-plan question expires after QUESTION_TIMEOUT_S -> the plan stops, once."""
+        if self._plan_timed_out():
+            return self._drop_plan(f"Nobody answered my question for {self.QUESTION_TIMEOUT_S:.0f} seconds, so I stopped the plan.")
+        return None
+
+    def _resume_plan(self, text: str) -> str | None:
+        """The answer to a mid-plan "which one?": run that step with the chosen object, then the REMAINING steps (nothing repeated).
+        A timed-out question stops the plan (then the text is handled as a new request); a reply that does not answer drops the
+        rest of the plan and is handled as a new request. Stop still wins: the step is pre-checked again before it starts."""
+        if self._plan_timed_out():
+            note = self.poll()
+            new = self.handle(text)
+            return " ".join(x for x in (note, new) if x)
+        pp = self.plan_pending
+        res = self._resolve_pending(text)
+        if res and res[0] == "ask":                              # still more than one: ask again (new timer)
+            pp["asked"] = self.clock()
+            return self._clarify(self.pending[0], res[1])
+        if not res:
+            note = self._drop_plan("I dropped the rest of that plan.")
+            new = self.handle(text)
+            return " ".join(x for x in (note, new) if x)
+        intent, chosen = res
+        self.plan_pending = None
+        return self._plan_from(pp["steps"], pp["i"], pp["t0"], chosen)
+
+    def _plan_from(self, steps, i0, t0, chosen_first):
+        from .tasks import step_text
+        parts = []
+        names_rev = {v: k for k, v in getattr(self.tasks, "names", {}).items()}
+        for i in range(i0, len(steps)):
+            step = steps[i]
             what = step_text(step, names_rev)
             st, why = self._precheck(step, t0)
             if st == "stop":
@@ -171,7 +221,7 @@ class FetchSession:
                 continue
             self.last = None
             try:
-                reply = self._run(self._intent_of(step), None)
+                reply = self._run(self._intent_of(step), chosen_first if i == i0 else None)
             except FetchAborted as e:                          # stop wins: nothing after it runs
                 held = self.r.carrying
                 h = f"I'm still holding {describe(self.r.objects[held])}." if held and held in self.r.objects else "I'm not holding anything."
@@ -181,10 +231,11 @@ class FetchSession:
                 self.pending = None
                 break
             ok = self.last is not None and self.last.status in ("placed", "handed_over", "holding")
-            if self.pending is not None:                       # a question (which one?): the plan stops here, honestly
+            if self.pending is not None:                       # a question (which one?): the plan waits for the answer
                 rest = "; ".join(step_text(s, names_rev) for s in steps[i + 1:])
-                parts.append(reply + (f" (Not started yet: {rest}.)" if rest else ""))
+                parts.append(reply + (f" (After that: {rest}.)" if rest else ""))
                 self.plan_log.append({"step": what, "status": "asked", "reply": reply})
+                self.plan_pending = {"steps": steps, "i": i, "t0": t0, "asked": self.clock()}
                 break
             head = self._name(step["object"]) if step.get("object") else what
             parts.append(reply if ok else f"{_cap(head)}: {reply}")

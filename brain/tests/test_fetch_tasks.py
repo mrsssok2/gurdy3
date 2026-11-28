@@ -168,10 +168,11 @@ def test_stop_latched_before_a_step():
     assert reply.startswith("I stopped (emergency stop). Not done: bring the blue can to you; bring the red cube to you.")
 
 
-def test_ambiguity_mid_plan_asks_and_says_what_is_not_started():
+def test_ambiguity_mid_plan_asks_and_says_what_comes_after():
+    # changed 2026-11-28 (resumable questions): the plan now WAITS for the answer instead of stopping
     s, r = session()
     reply = s.handle("bring me the can, then the red cube")         # two cans in the world
-    assert "Which one?" in reply and "(Not started yet: bring the red cube to you.)" in reply
+    assert "Which one?" in reply and "(After that: bring the red cube to you.)" in reply and s.plan_pending is not None
 
 
 def test_safety_refusals_are_never_planned():
@@ -203,3 +204,110 @@ def test_plan_on_the_ros_fetch_robot_and_estop_latched():
     fp2.estop = True                                                     # the e-stop is latched before the request
     reply = s2.handle("pick up the green cone and put it in room A")
     assert reply.startswith("I stopped (emergency stop). Not done: pick up the green cone; put it in room A (the hallway).") and arm2.held is None
+
+
+
+# ------------------------------------------------------------------ resumable "which one?" mid-plan (2026-11-28)
+class Clock:
+    def __init__(self):
+        self.t = 1000.0
+
+    def __call__(self):
+        return self.t
+
+
+def asked(faults=None, text="bring me the can, then the red cube"):
+    s, r = session(faults)
+    s.clock = Clock()
+    q = s.handle(text)
+    assert q.startswith("I know more than one can: the blue can in room A or the red can in room C. Which one?"), q
+    return s, r
+
+
+def test_answer_resumes_with_the_remaining_steps_without_repeating():
+    s, r = asked()
+    reply = s.handle("the red one")
+    assert reply == "Here you are: the red can. Here you are: the red cube."
+    assert [x["status"] for x in s.plan_log] == ["asked", "done", "done"] and s.plan_pending is None and s.pending is None
+    assert r.objects["red_can"].with_user or r.carrying is None
+
+
+def test_question_in_the_second_step_does_not_repeat_the_first():
+    s, r = session()
+    s.clock = Clock()
+    first = s.handle("bring me the red cube, then the can")
+    assert first.startswith("Here you are: the red cube. I know more than one can")
+    reply = s.handle("the blue one")
+    assert reply == "Here you are: the blue can." and "red cube" not in reply
+
+
+def test_answer_still_ambiguous_asks_again_with_a_new_timer():
+    s, r = session()
+    s.clock = Clock()
+    q = s.handle("bring me the cone, then the red cube")             # two traffic cones + two mini cones
+    assert "Which one?" in q and s.plan_pending is not None
+    s.clock.t += 50
+    again = s.handle("the mini cone")                                # narrows to the two mini cones: asked again
+    assert again.startswith("I know more than one mini cone") and again.endswith("Which one?") and s.plan_pending is not None
+    s.clock.t += 50                                                  # 100 s after the first question, 50 s after the second
+    assert s.poll() is None
+    assert s.handle("the green one") == "Here you are: the green mini cone. Here you are: the red cube."
+
+
+def test_question_times_out_after_60_s_and_the_plan_stops_honestly():
+    s, r = asked()
+    s.clock.t += 59
+    assert s.poll() is None
+    s.clock.t += 2
+    msg = s.poll()
+    assert msg == ("Nobody answered my question for 60 seconds, so I stopped the plan. "
+                   "Not done: bring the can to you; bring the red cube to you.")
+    assert s.poll() is None and s.plan_pending is None and s.pending is None and r.carrying is None
+    assert s.handle("the red one") is None                           # a late answer is not a command: nothing moves
+
+
+def test_timeout_noticed_by_the_next_message_then_the_message_is_handled():
+    s, r = asked()
+    s.clock.t += 120
+    reply = s.handle("bring me the blue can")
+    assert reply.startswith("Nobody answered my question for 60 seconds, so I stopped the plan. Not done: ")
+    assert reply.endswith("Here you are: the blue can.")
+
+
+def test_stop_still_wins_while_waiting_for_the_answer():
+    s, r = asked()
+    r.faults["estop_at_s"] = r.t                                     # the e-stop latched while the robot waited
+    reply = s.handle("the red one")
+    assert reply == "I stopped (emergency stop). Not done: bring the can to you; bring the red cube to you."
+    assert r.carrying is None and s.plan_pending is None
+
+
+def test_a_new_command_instead_of_an_answer_drops_the_rest_of_the_plan():
+    s, r = asked()
+    reply = s.handle("bring me the yellow mini toolbox")
+    assert reply.startswith("I dropped the rest of that plan. Not done: bring the can to you; bring the red cube to you.")
+    assert "yellow mini toolbox" in reply and s.plan_pending is None
+
+
+def test_the_answer_cannot_add_an_object():
+    s, r = asked()
+    reply = s.handle("the green one")                                # no green can exists: not one of the candidates
+    assert reply == "I dropped the rest of that plan. Not done: bring the can to you; bring the red cube to you."
+    assert r.carrying is None and not any(o.with_user for o in r.objects.values())
+
+
+def test_agent_pump_announces_the_timeout_once():
+    from brain.agent.graph import Agent
+    from brain.agent.llm import KeywordLLM
+    from brain.mock import MockBackend, gazebo_lab4
+    from brain.tools import ToolLayer
+    be = MockBackend(gazebo_lab4())
+    be.fetch_session, r = session()
+    be.fetch_session.clock = Clock()
+    ag = Agent(ToolLayer(be), KeywordLLM(be.known_places))
+    assert "Which one?" in ag.say("bring me the can, then the red cube").reply
+    assert not any("Nobody answered" in m for m in ag.pump())
+    be.fetch_session.clock.t += 61
+    msgs = ag.pump()
+    assert sum("Nobody answered my question for 60 seconds" in m for m in msgs) == 1
+    assert not any("Nobody answered" in m for m in ag.pump())

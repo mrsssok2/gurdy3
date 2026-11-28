@@ -37,5 +37,17 @@ question mid-plan, safety refusal never planned, flag off unchanged; the same pl
 Suites: brain 1628 passed / 3 skipped (test_final_eval_wall_timeout left out: it takes the real GPU lock); fetch DEV 42/42
 (unchanged); keyword v1 58 %; CI local yaml lint core web ros safety results PASS.
 
-**Not done / limits:** not run in Gazebo or against Ollama; a clarifying question mid-plan does not resume the plan after the
-answer (the user repeats the rest); battery / time thresholds are defaults, not measured needs; no `go_to` step (fetch skills only).
+**Resumable "which one?" (added the same evening).** A question mid-plan now waits: `plan_pending` keeps the validated plan, the
+step and the request time. The answer is resolved among the SAME candidates (the map's objects of that step; an answer cannot add an
+object), the step is pre-checked again (stop / battery / time / gripper: stop still wins), then the plan continues with the remaining
+steps; the reply has only the new lines (nothing repeated). An answer that narrows but leaves several asks again (new timer); a
+reply that is not an answer drops the rest of the plan ("I dropped the rest of that plan. Not done: ...") and is handled as a new
+request. Unanswered for `QUESTION_TIMEOUT_S` (60 s wall) -> the plan stops: announced once through the agent's `pump()`
+(`FetchSession.poll()`), or noticed by the next message (which is then handled as a new request). Tests (+9, one existing test
+changed to the new behaviour: the plan now waits instead of stopping): resume without repeating, question in the second step,
+re-ask with a new timer, 60 s timeout (59 s no, 61 s yes, said once), timeout noticed by the next message, e-stop while waiting,
+new command instead of an answer, an answer that matches no candidate, the agent's pump announcing the timeout once.
+Suites: test_fetch_tasks 40, brain 1637 passed / 3 skipped (lock test left out), fetch DEV 42/42.
+
+**Not done / limits:** not run in Gazebo or against Ollama; battery / time thresholds are defaults, not measured needs; no `go_to`
+step (fetch skills only); a typed "stop" while the question waits only stops the plan through the e-stop latch / the next message.
