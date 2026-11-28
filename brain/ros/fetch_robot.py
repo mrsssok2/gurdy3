@@ -31,6 +31,7 @@ from __future__ import annotations
 import json
 import math
 from dataclasses import dataclass
+from pathlib import Path
 
 import numpy as np
 
@@ -41,6 +42,12 @@ from ..fetch.mock import HOME, ROOMS, Obj
 BACKUP_M = 0.25
 GRIP_EFFORT = 3.0                  # N per finger (joint limit 10 N; 80 g at mu 1 needs ~0.4 N)
 HOLD_EFFORT = 1.0                  # N while presenting (the user can pull it out)
+def align_log_path(attempt_log: str) -> str:
+    """attempts.jsonl -> attempts_align.jsonl (one record per wrist-camera alignment)."""
+    p = Path(attempt_log)
+    return str(p.with_name(p.stem + "_align" + (p.suffix or ".jsonl")))
+
+
 FINGER_CLOSED = 0.004              # m per finger: below this nothing is between the fingers
 
 
@@ -366,7 +373,14 @@ class RosFetchRobot:
         res = VisualServo(self._servo_robot(), arm_reachable=reach).run(o.cls, prior_xy=self._base((o.x, o.y)))
         self._servo = res
         self.log.append({"t": round(self.now(), 1), "servo": res.code, "steps": res.steps, "residual": res.residual})
-        return res.ok, res.residual if res.residual is not None else 0.99
+        self.align_code = res.code
+        if self.cfg.attempt_log:     # the servo outcome is saved even when no grasp attempt follows (own file: the attempt
+            with open(align_log_path(self.cfg.attempt_log), "a") as fh:      # log's line counts are used by the run scripts)
+                fh.write(json.dumps({"t": round(self.now(), 1), "align": res.code, "object": name, "cls": o.cls,
+                                     "steps": res.steps, "residual": res.residual,
+                                     "obs": res.obs.reason if res.obs is not None else None}, default=float) + "\n")
+        # residual None = never measured (the wrist camera never saw the object): pass None on, never a made-up number
+        return res.ok, res.residual
 
     def _gt_xy(self, cls, xy_world):
         if self.truth is None:

@@ -17,6 +17,11 @@ from .mock import HOME, room_of
 from .safety import carry_speed
 
 MAX_ALIGN, MAX_GRASP = 3, 3
+# why the alignment failed when no residual was measured (VisualServo codes); words only, never a number
+ALIGN_WHY = {"TARGET_LOST": "my wrist camera couldn't see it, so I couldn't measure where it is",
+             "OCCLUDED": "something blocked my wrist camera's view, so I couldn't measure where it is",
+             "TIMEOUT": "I ran out of time before I could measure where it is",
+             None: "I couldn't measure where it is"}
 
 
 class FetchAborted(Exception):
@@ -62,12 +67,15 @@ class FetchMachine:
             out.code, out.detail = "NO_PATH", d
             return out
         for _ in range(MAX_ALIGN):
-            ok, err = self.r.fine_align(name)
-            self._log(out, "FINE_ALIGN", ok, f"residual {err * 100:.1f} cm")
+            ok, err = self.r.fine_align(name)          # err: measured residual (m) or None = not measured
+            self._log(out, "FINE_ALIGN", ok, f"residual {err * 100:.1f} cm" if err is not None else
+                      f"residual not measured ({getattr(self.r, 'align_code', None) or 'no observation'})")
             if ok:
                 break
         if not ok:
-            out.code, out.detail = "NOT_REACHABLE", f"residual {err * 100:.0f} cm after {MAX_ALIGN} tries"
+            out.code = "NOT_REACHABLE"
+            out.detail = (f"residual {err * 100:.0f} cm after {MAX_ALIGN} tries" if err is not None else
+                          f"{ALIGN_WHY.get(getattr(self.r, 'align_code', None), ALIGN_WHY[None])}, {MAX_ALIGN} tries")
             return out
         for attempt in range(MAX_GRASP):
             ok = self._log(out, "GRASP", self.r.grasp(name), f"attempt {attempt + 1}")
