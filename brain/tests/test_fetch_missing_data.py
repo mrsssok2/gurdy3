@@ -140,19 +140,38 @@ def test_missing_ground_truth_is_not_a_drop_on_the_way():
     assert rec["confirmed"] is False and "can't confirm that the blue can reached you" in r   # GT can't confirm: say so
 
 
-def test_ground_truth_far_is_still_a_drop():
-    """Real GT data saying 'not in the gripper' remains a drop (the rule is about MISSING data only)."""
+def test_ground_truth_on_the_floor_is_still_a_drop():
+    """Real GT data saying the carried model lies on the floor remains a drop (the rule is about MISSING data only)."""
     s, rob, arm, fp = bring_rig()
 
-    class Far(FakeTruth):
-        def nearest(self, cls, xy, max_d=0.6):
-            return None if rob.carrying else super().nearest(cls, xy, max_d)
-
-        def has_data(self, cls):
-            return True
-    rob.truth = Far(arm, fp)
+    class Floor(FakeTruth):
+        def get(self, model):
+            v = super().get(model)
+            return None if v is None else (v[0], v[1], 0.0, v[3])            # always on the floor
+    rob.truth = Floor(arm, fp)
     r = s.handle("bring me the blue can")
     assert "dropped the blue can" in r
+
+
+def test_xy_offset_between_gt_and_localisation_is_not_a_drop():
+    """2026-11-28 headless take: GT can still in the gripper (z 0.245) but 'I dropped the blue can on the way' -- the old
+    check compared GT xy with the localisation pose while walking. A 0.3 m xy offset with the can held high is NOT a drop."""
+    s, rob, arm, fp = bring_rig()
+    rob.truth = FakeTruth(arm, fp, bias=(0.3, -0.3))
+    r = s.handle("bring me the blue can")
+    assert "dropped" not in r and not any(x.get("deliver") == "lost" for x in rob.log)
+    assert any(x.get("deliver") == "released" for x in rob.log)           # carried all the way and handed over
+
+
+def test_stale_gt_pose_of_the_carried_model_is_not_a_drop():
+    s, rob, arm, fp = bring_rig()
+
+    class Stale(FakeTruth):
+        def get(self, model):
+            return None if rob.carrying else super().get(model)
+    rob.truth = Stale(arm, fp)
+    r = s.handle("bring me the blue can")
+    assert "dropped" not in r
 
 
 def test_unreadable_fingers_after_the_open_command_say_so_honestly():

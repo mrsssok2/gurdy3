@@ -224,6 +224,13 @@ class FakeTruth:
         d, o = min(c, key=lambda t: t[0]) if c else (9, None)
         return None if d > max_d else (o["model"], o["x"] + self.bias[0], o["y"] + self.bias[1])
 
+    def get(self, model):
+        o = next((o for o in self.arm.objs if o.get("model") == model), None)
+        return None if o is None else (o["x"] + self.bias[0], o["y"] + self.bias[1], o.get("z0", 0.0), self.fp.now())
+
+    def has_data(self, cls):
+        return True
+
     def teleport(self, x, y, yaw):
         self.teleports.append((x, y, yaw))
         self.fp.x, self.fp.y, self.fp.yaw = x, y, yaw

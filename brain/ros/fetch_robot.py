@@ -80,7 +80,8 @@ class FetchConfig:
     still_mps: float = 0.01         # stationary: |v| below this ...
     still_s: float = 1.0            # ... for this long (sim s) before the gripper opens
     still_timeout_s: float = 15.0
-    gt_held_m: float = 0.10         # GT: a held object is within this of the grasp centre (xy)
+    gt_held_m: float = 0.10         # GT: a held object is within this of the grasp centre (xy) (diagnostics only)
+    gt_floor_z: float = 0.05        # GT: the carried model's origin below this = on the floor = dropped (held: >= ~0.09)
     gt_release_m: float = 0.15      # GT: after the release it lies within this of the release point (xy) and on the floor
 
 
@@ -572,12 +573,14 @@ class RosFetchRobot:
                              hold=hv.to_dict(), standing_points=standing, standing_why=rec["standing_why"])
         if hv.holding:
             self.carrying = name
+            self._lock_gt_model(name)
             self._end_attempt("success")
             return True
         if hv.holding is None:                         # disagreement / missing data: never a release, never a claim
             self.verify_code = "UNCONFIRMED"
             self.verify_why = hv.why
             self.carrying = name
+            self._lock_gt_model(name)
             self._end_attempt("unconfirmed", hv.why)
             self.fold_arm()
             return False
@@ -641,6 +644,26 @@ class RosFetchRobot:
         self.user = (float(xy[0]), float(xy[1]))
         self.log.append({"t": round(self.now(), 1), "requester": [round(v, 3) for v in self.user], "source": src})
 
+    def _lock_gt_model(self, name):
+        """Remember WHICH Gazebo model is in the gripper (the one of the class standing at the rest spot), so the carry checks
+        follow that model and never the nearest other object of the class."""
+        self._carried_model = None
+        o = self._objects.get(name)
+        if self.truth is None or o is None or self._rest is None:
+            return
+        r = self.truth.nearest(o.cls, self._rest, 0.3)
+        self._carried_model = r[0] if r else None
+        self.log.append({"t": round(self.now(), 1), "gt_model": self._carried_model})
+
+    def _gt_carried(self):
+        """GT (x, y, z) of the carried model, or None = no data (no truth, model unknown, pose stale)."""
+        m = getattr(self, "_carried_model", None)
+        get = getattr(self.truth, "get", None)
+        if self.truth is None or not self.carrying or m is None or get is None:
+            return None
+        v = get(m)
+        return None if v is None else (float(v[0]), float(v[1]), float(v[2]))
+
     def _gt_obj(self):
         """GT (x, y) of the carried object near the grasp centre, or None (no truth / not found within 0.6 m)."""
         if self.truth is None or not self.carrying or self.carrying not in self._objects:
@@ -664,10 +687,13 @@ class RosFetchRobot:
         fingers did not close fully, e.g. jammed). Two polls in a row, so one stale pose sample does not count."""
         if not (self.cfg.bring_me and self.truth is not None and self.carrying):
             return False
-        g = self._gt_obj()
-        if g is None and not self._gt_has_data():
-            return False                      # no ground-truth data (stale / missing poses): unknown, never "dropped"
-        far = g is None or math.hypot(g[0] - g[2][0], g[1] - g[2][1]) > self.cfg.gt_held_m
+        # DROPPED = the carried model lies on the floor (origin z), two polls in a row. Not an xy comparison with the
+        # localisation pose: while walking the GT sample (<= 2 s old) and the robot pose differ by more than 10 cm
+        # (2026-11-28: a held can was reported 'dropped on the way'). No GT data = unknown, never "dropped".
+        g = self._gt_carried()
+        if g is None:
+            return False
+        far = g[2] < self.cfg.gt_floor_z
         self._gt_far = (getattr(self, "_gt_far", 0) + 1) if far else 0
         return self._gt_far >= 2
 
@@ -709,18 +735,15 @@ class RosFetchRobot:
         self._move_arm([self.handover_pose()], 3.0, big=True)
         self._wait(0.5)
         f_before = self._fingers_retry()
-        g_before = self._gt_obj()
+        g_before = self._gt_carried()
         if f_before is None:                  # unknown: not "lost", and opening blind could drop it -> keep holding
             self.fold_arm()
             self.handover_code = "HOLD_UNCONFIRMED"
             self.log.append({"t": round(self.now(), 1), "deliver": "fingers unknown: kept holding"})
             return False
         held_state = min(f_before) > FINGER_CLOSED
-        if self.truth is None or (g_before is None and not self._gt_has_data()):
-            held_gt = True                    # no ground truth (real robot) or no GT data now: decide on the state alone
-        else:
-            held_gt = g_before is not None and \
-                math.hypot(g_before[0] - g_before[2][0], g_before[1] - g_before[2][1]) <= self.cfg.gt_held_m
+        # no ground truth (real robot) or no GT data now: decide on the state alone; else: not lying on the floor
+        held_gt = True if g_before is None else g_before[2] >= self.cfg.gt_floor_z
         if not held_state or not held_gt:
             self.fold_arm()
             self._lost_on_the_way(f"at the hand-over pose (fingers {f_before}, gt {g_before})")
