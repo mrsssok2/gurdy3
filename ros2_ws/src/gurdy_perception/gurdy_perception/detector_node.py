@@ -50,7 +50,7 @@ from gurdy_core.vision.object3d import Object3DParams
 from gurdy_core.vision.transforms import R_to_quat, T_from_tq
 from gurdy_core.vision.semantic_map import SemanticMap
 
-DEFAULT_MODEL = "det_v3_s.onnx"   # 12 classes (Phase 9b, 2026-11-27); rollback: model:=det_v2_s.onnx (7 classes, names follow the ONNX)
+DEFAULT_MODEL = "det_v31_s.onnx"  # 12 classes (Phase 9b v3.1, 2026-11-28); rollback: model:=det_v3_s.onnx (or det_v2_s.onnx, 7 classes; names follow the ONNX)
 
 
 def image_to_numpy(m: Image) -> np.ndarray:
