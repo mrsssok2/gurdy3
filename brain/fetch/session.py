@@ -23,9 +23,14 @@ SIZE_WORDS = re.compile(r"\b(big|large|huge|tall|traffic|fire|full[- ]size)\b", 
 
 
 class FetchSession:
-    def __init__(self, robot, picker=None):
+    MIN_BATTERY_PCT = 25.0             # multi-step plans: no new step below this battery level
+    MAX_TASK_S = 1800.0                # multi-step plans: no new step after this much (robot clock) since the request
+
+    def __init__(self, robot, picker=None, tasks=None):
         self.r = robot
         self.picker = picker           # Phase 9f: brain.fetch.picker.FetchPicker for free phrasings (None = router only)
+        self.tasks = tasks             # brain.fetch.tasks.TaskPlanner for multi-step requests (None = off: the router as before)
+        self.plan_log: list = []       # last multi-step run: [{step, status, reply}]
         self.m = FetchMachine(robot)
         self.pending = None            # (intent, candidates) waiting for 'the red one' / 'the one in room C'
         self.queue: list = []          # remaining items of a multi-object request ("the red can and the blue cube"), in order
@@ -93,6 +98,8 @@ class FetchSession:
                 intent = parse(text)
         else:
             self.queue = []
+            if self.tasks is not None and refuse_reason(text) is None and (plan := self.tasks.plan(text)) is not None:
+                return self.run_plan(plan)                 # safety refusals (throw, people) are never planned: the router refuses
             intent = parse(text)
         if intent is None and self.picker is not None:
             ref = refuse_reason(text)                  # text-level safety BEFORE any model sees the request
@@ -115,6 +122,74 @@ class FetchSession:
             what = f"I'm still holding {describe(self.r.objects[held])}." if held and held in self.r.objects else \
                 "I'm not holding anything."
             return f"I stopped ({e}). {what}"
+
+    # ---- multi-step plans (brain/fetch/tasks.py): every step checked before it starts, stop wins, one honest line per step
+    def _precheck(self, step, t0):
+        est = getattr(self.r, "estop_active", None)
+        if callable(est) and est():
+            return "stop", "I stopped (emergency stop)."
+        bat = getattr(self.r, "battery_pct", None)
+        b = bat() if callable(bat) else None
+        if b is not None and b < self.MIN_BATTERY_PCT:
+            return "stop", f"My battery is at {b:.0f} %, too low to start another step, so I stopped."
+        if self.r.now() - t0 > self.MAX_TASK_S:
+            return "stop", f"This request has taken {(self.r.now() - t0) / 60:.0f} minutes, so I stopped before the next step."
+        held = self.r.carrying
+        if step["skill"] in ("bring", "pick_up") and held:
+            return "skip", f"I'm still holding {describe(self.r.objects[held])}, so I didn't start this one."
+        if step["skill"] in ("put", "hand_over") and not held:
+            return "skip", "I'm not holding anything, so there was nothing to take there."
+        return None, None
+
+    def _intent_of(self, step):
+        sk, to = step["skill"], step.get("to")
+        if sk == "pick_up":
+            return {"intent": "pick", "object": step["object"]}
+        if sk == "hand_over":
+            return {"intent": "hand_over"}
+        mode = to if to in ("user", "home", "here") else "room"
+        if sk == "put":
+            return {"intent": "deliver", "mode": mode, **({"room": to} if mode == "room" else {})}
+        return {"intent": "fetch", "object": step["object"], "mode": "user" if mode == "here" else mode, **({"room": to} if mode == "room" else {})}
+
+    def run_plan(self, plan: dict) -> str:
+        from .tasks import step_text
+        self.plan_log, parts, t0 = [], [], self.r.now()
+        steps = plan["steps"]
+        names_rev = {v: k for k, v in getattr(self.tasks, "names", {}).items()}
+        for i, step in enumerate(steps):
+            what = step_text(step, names_rev)
+            st, why = self._precheck(step, t0)
+            if st == "stop":
+                rest = "; ".join(step_text(s, names_rev) for s in steps[i:])
+                parts.append(f"{why} Not done: {rest}.")
+                self.plan_log.append({"step": what, "status": "stopped", "reply": why})
+                break
+            if st == "skip":
+                parts.append(f"{_cap(self._name(step['object']) if step.get('object') else what)}: {why}")
+                self.plan_log.append({"step": what, "status": "skipped", "reply": why})
+                continue
+            self.last = None
+            try:
+                reply = self._run(self._intent_of(step), None)
+            except FetchAborted as e:                          # stop wins: nothing after it runs
+                held = self.r.carrying
+                h = f"I'm still holding {describe(self.r.objects[held])}." if held and held in self.r.objects else "I'm not holding anything."
+                rest = "; ".join(step_text(s, names_rev) for s in steps[i:])
+                parts.append(f"I stopped ({e}) during: {what}. {h} Not done: {rest}.")
+                self.plan_log.append({"step": what, "status": "stopped", "reply": str(e)})
+                self.pending = None
+                break
+            ok = self.last is not None and self.last.status in ("placed", "handed_over", "holding")
+            if self.pending is not None:                       # a question (which one?): the plan stops here, honestly
+                rest = "; ".join(step_text(s, names_rev) for s in steps[i + 1:])
+                parts.append(reply + (f" (Not started yet: {rest}.)" if rest else ""))
+                self.plan_log.append({"step": what, "status": "asked", "reply": reply})
+                break
+            head = self._name(step["object"]) if step.get("object") else what
+            parts.append(reply if ok else f"{_cap(head)}: {reply}")
+            self.plan_log.append({"step": what, "status": "done" if ok else "failed", "reply": reply})
+        return " ".join(p for p in parts if p)
 
     # ---- multi-object requests: one after another; stop at the first item that does not end as asked
     def _run_queue(self, reply: str | None) -> str | None:
@@ -226,3 +301,7 @@ class FetchSession:
         confirmed = out.confirmed | ({"picked"} if held else set())
         text = getattr(self.r, "handover_text", "Here you are: {what}.")
         return safe(outcome_reply(out, self.r.objects, text), confirmed, held)
+
+
+def _cap(s: str) -> str:
+    return s[:1].upper() + s[1:]

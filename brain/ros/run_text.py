@@ -39,6 +39,8 @@ def main() -> None:
     ap.add_argument("--fetch-log", default=None, metavar="JSONL", help="one diagnostics record per grasp attempt")
     ap.add_argument("--fetch-gt", choices=("off", "log", "use"), default="off",
                     help="Gazebo ground truth of the target: log it next to the estimates, or use it for the grasp (variant B)")
+    ap.add_argument("--fetch-tasks", action="store_true", help="multi-step fetch requests ('bring me X, then Y', 'pick up X and put it in "
+                    "the kitchen'): brain/fetch/tasks.py, plan by --ollama (else the keyword parser) + validator; default off")
     ap.add_argument("--fetch-bring-me", action="store_true", help="Phase 9k demo: 'bring me X' returns to the requester, opens "
                     "the gripper only when stationary, claims delivery only when state + Gazebo GT confirm it (default off)")
     ap.add_argument("--fetch-search-s", type=float, default=None, metavar="S", help="fixed fetch search limit (default: sized "
@@ -76,7 +78,12 @@ def main() -> None:
             from .fetch_robot import FetchConfig
             cfg = FetchConfig(attempt_log=a.fetch_log, gt=a.fetch_gt, approach=a.fetch_approach, bring_me=a.fetch_bring_me,
                               search_timeout_s=a.fetch_search_s, search_view_radius_m=a.fetch_search_radius)
-            be.fetch_session = FetchSession(RosFetchRobot(be, arm, cfg))
+            tasks = None
+            if a.fetch_tasks:
+                from ..fetch.tasks import TaskPlanner
+                tasks = TaskPlanner(None, model=a.ollama) if a.ollama else TaskPlanner(False)
+                print(f"fetch multi-step plans: ON ({'model ' + a.ollama + ' + keyword fallback' if a.ollama else 'keyword parser'})")
+            be.fetch_session = FetchSession(RosFetchRobot(be, arm, cfg), tasks=tasks)
             if a.fetch_log or a.fetch_gt != "off" or a.fetch_approach != "nav":
                 print(f"fetch diagnostics: log {a.fetch_log}, gt {a.fetch_gt}, approach {a.fetch_approach}")
             if a.fetch_bring_me:

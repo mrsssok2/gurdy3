@@ -2,7 +2,9 @@
 virtual time, and fault injection for every failure the state machine must handle.
 
 faults: {"not_found": {names}, "unreachable": {names}, "grasp_fail": {name: n_failed_attempts}, "drop": {names},
-         "slip": {names} (grasp closes but verify finds nothing), "no_path": {room names}, "user_takes": bool}
+         "slip": {names} (grasp closes but verify finds nothing), "no_path": {room names}, "user_takes": bool,
+         "estop_at_s": t (the e-stop latches when the virtual clock passes t: the next primitive raises FetchAborted)}
+battery: None (no reading, default) or a percentage that drains `battery_per_m` per metre walked (multi-step plan checks).
 """
 from __future__ import annotations
 
@@ -52,6 +54,8 @@ class FetchMock:
     known: set = field(default_factory=set)     # objects already in the semantic map
     speeds: list = field(default_factory=list)  # every (speed, carrying) used for motion: carry-limit evidence
     grasp_attempts: dict = field(default_factory=dict)
+    battery: float | None = None
+    battery_per_m: float = 0.0
 
     @classmethod
     def lab4_fetch(cls, faults: dict | None = None, all_known: bool = True, **kw):
@@ -64,8 +68,24 @@ class FetchMock:
         return m
 
     # ---- motion primitives (virtual time; speed recorded)
+    def _estop_check(self):
+        at = self.faults.get("estop_at_s")
+        if at is not None and self.t >= at:
+            from .machine import FetchAborted
+            raise FetchAborted("emergency stop")
+
+    def estop_active(self) -> bool:
+        at = self.faults.get("estop_at_s")
+        return at is not None and self.t >= at
+
+    def battery_pct(self):
+        return self.battery
+
     def _move(self, xy, speed):
+        self._estop_check()
         d = math.hypot(xy[0] - self.robot[0], xy[1] - self.robot[1]) * 1.3          # paths are longer than straight lines
+        if self.battery is not None:
+            self.battery = max(0.0, self.battery - self.battery_per_m * d)
         self.speeds.append((speed, self.carrying is not None))
         self.t += d / speed
         self.robot = tuple(xy)
@@ -103,6 +123,7 @@ class FetchMock:
         return True, 0.012
 
     def grasp(self, name):
+        self._estop_check()
         self.t += 6.0
         n = self.grasp_attempts.get(name, 0) + 1
         self.grasp_attempts[name] = n

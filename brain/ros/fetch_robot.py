@@ -133,6 +133,15 @@ class RosFetchRobot:
         """The RosBackend itself (run_text wraps it: incidents, memory): the one whose tick() runs the task machine."""
         return task_engine(self.b)
 
+    def estop_active(self) -> bool:
+        """Multi-step plans check this before every step (brain/fetch/session.run_plan)."""
+        return bool(self.p.estop_active())
+
+    def battery_pct(self):
+        """The (simulated) battery level the port reports, or None: multi-step plans stop below a minimum."""
+        f = getattr(self.p, "battery_pct", None)
+        return f() if callable(f) else None
+
     def now(self) -> float:
         return self.p.now()
 
