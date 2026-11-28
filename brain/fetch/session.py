@@ -33,6 +33,7 @@ class FetchSession:
         self.tasks = tasks             # brain.fetch.tasks.TaskPlanner for multi-step requests (None = off: the router as before)
         self.plan_log: list = []       # last multi-step run: [{step, status, reply}]
         self.plan_pending: dict | None = None   # a plan waiting for the answer to "which one?": {steps, i, t0, asked}
+        self._note: str | None = None          # a reply to announce through poll() (a cancel from the e-stop button / host)
         import time as _time
         self.clock = _time.monotonic   # wall clock of the question timeout (tests inject a fake one)
         self.m = FetchMachine(robot)
@@ -175,8 +176,29 @@ class FetchSession:
         self.plan_log.append({"step": self._rest(pp["steps"], pp["i"]).split("; ")[0], "status": "stopped", "reply": why})
         return f"{why} Not done: {self._rest(pp['steps'], pp['i'])}."
 
+    CANCEL_RE = re.compile(r"^\W*(?:please\s+)?(?:stop|cancel|abort|never\s*mind|forget (?:it|that|about it))"
+                           r"(?:\s+(?:it|that|this|the plan|everything|all|please|now))*\W*$", re.I)
+
+    def cancel_plan(self, why: str = "you cancelled it", announce: bool = False) -> str | None:
+        """Drop a plan that waits for a "which one?" answer, at once: says what is held and which steps are not done.
+        None when no plan is waiting. announce=True (no reply channel, e.g. the e-stop button): poll() returns the text once."""
+        if self.plan_pending is None:
+            return None
+        pp, self.plan_pending, self.pending = self.plan_pending, None, None
+        held = self.r.carrying
+        h = f"I'm still holding {describe(self.r.objects[held])}." if held and held in self.r.objects else "I'm not holding anything."
+        self.plan_log.append({"step": self._rest(pp["steps"], pp["i"]).split("; ")[0], "status": "cancelled", "reply": why})
+        msg = f"I dropped the plan ({why}). {h} Not done: {self._rest(pp['steps'], pp['i'])}."
+        if announce:
+            self._note = msg
+        return msg
+
     def poll(self) -> str | None:
-        """Called by the agent's pump: an unanswered mid-plan question expires after QUESTION_TIMEOUT_S -> the plan stops, once."""
+        """Called by the agent's pump: a cancel queued by the e-stop button, or an unanswered mid-plan question that expired after
+        QUESTION_TIMEOUT_S (the plan stops); each said once."""
+        if self._note:
+            m, self._note = self._note, None
+            return m
         if self._plan_timed_out():
             return self._drop_plan(f"Nobody answered my question for {self.QUESTION_TIMEOUT_S:.0f} seconds, so I stopped the plan.")
         return None
@@ -190,6 +212,8 @@ class FetchSession:
             new = self.handle(text)
             return " ".join(x for x in (note, new) if x)
         pp = self.plan_pending
+        if self.CANCEL_RE.match(text):                            # "cancel" / "never mind" / "stop" instead of an answer
+            return self.cancel_plan("you cancelled it")
         res = self._resolve_pending(text)
         if res and res[0] == "ask":                              # still more than one: ask again (new timer)
             pp["asked"] = self.clock()

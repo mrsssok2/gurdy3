@@ -311,3 +311,71 @@ def test_agent_pump_announces_the_timeout_once():
     msgs = ag.pump()
     assert sum("Nobody answered my question for 60 seconds" in m for m in msgs) == 1
     assert not any("Nobody answered" in m for m in ag.pump())
+
+
+# ------------------------------------------------------------------ cancel hook while a "which one?" waits (2026-11-28)
+NOT_DONE = "Not done: bring the can to you; bring the red cube to you."
+
+
+@pytest.mark.parametrize("word", ["cancel", "Cancel that.", "never mind", "forget it", "stop", "please stop now"])
+def test_cancel_words_drop_the_waiting_plan_at_once(word):
+    s, r = asked()
+    t0 = r.t
+    reply = s.handle(word)
+    assert reply == f"I dropped the plan (you cancelled it). I'm not holding anything. {NOT_DONE}"
+    assert s.plan_pending is None and s.pending is None and r.t == t0 and r.carrying is None      # nothing moved
+    assert s.plan_log[-1]["status"] == "cancelled"
+    assert s.handle("the red one") is None                           # the late answer does nothing
+
+
+def test_cancel_says_what_is_held():
+    s, r = asked()
+    r.carrying = "red_cube"
+    assert s.cancel_plan("you cancelled it") == f"I dropped the plan (you cancelled it). I'm still holding the red cube. {NOT_DONE}"
+
+
+def test_cancel_without_a_waiting_plan_changes_nothing():
+    s, r = session()
+    assert s.cancel_plan() is None and s.poll() is None
+
+
+def _agent():
+    from brain.agent.graph import Agent
+    from brain.agent.llm import KeywordLLM
+    from brain.mock import MockBackend, gazebo_lab4
+    from brain.tools import ToolLayer
+    be = MockBackend(gazebo_lab4())
+    be.fetch_session, r = session()
+    be.fetch_session.clock = Clock()
+    return Agent(ToolLayer(be), KeywordLLM(be.known_places)), be, r
+
+
+def test_agent_typed_stop_while_waiting_stops_and_drops_the_plan():
+    ag, be, r = _agent()
+    assert "Which one?" in ag.say("bring me the can, then the red cube").reply
+    res = ag.say("stop")
+    assert res.reply == f"Stopped. I dropped the plan (you stopped me). I'm not holding anything. {NOT_DONE}"
+    assert [c["tool"] for c in res.calls] == ["stop"] and be.fetch_session.plan_pending is None
+
+
+def test_agent_typed_cancel_while_waiting_reaches_the_plan():
+    ag, be, r = _agent()
+    ag.say("bring me the can, then the red cube")
+    assert ag.say("cancel").reply == f"I dropped the plan (you cancelled it). I'm not holding anything. {NOT_DONE}"
+    assert be.fetch_session.plan_pending is None
+
+
+def test_agent_stop_without_a_plan_is_unchanged():
+    ag, be, r = _agent()
+    assert ag.say("stop").reply == "Stopped."
+
+
+def test_estop_button_drops_the_plan_and_the_pump_says_it_once():
+    from brain.voice.host import AgentHost
+    ag, be, r = _agent()
+    ag.say("bring me the can, then the red cube")
+    AgentHost(ag).estop()                                            # the web E-STOP button / a spoken stop on the fast path
+    assert be.fetch_session.plan_pending is None
+    msgs = ag.pump()
+    assert msgs.count(f"I dropped the plan (emergency stop). I'm not holding anything. {NOT_DONE}") == 1
+    assert not any("dropped the plan" in m for m in ag.pump())

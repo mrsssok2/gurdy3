@@ -482,7 +482,9 @@ class Agent:
             self.gate.clear()
             res = self.layer.call("stop")
             self.last_stop = {"reason": "user_stop", "at": self.clock.wall(), "command": text.strip()}
-            return {"reply_parts": ["Stopped." + (" " + untrusted.STOP_ONLY_NOTE if untrusted.stop_prefix(text) else "")], "next": "finish", "events": ev, "has_query": False,
+            plan = self._cancel_fetch_plan("you stopped me")
+            return {"reply_parts": ["Stopped." + (" " + untrusted.STOP_ONLY_NOTE if untrusted.stop_prefix(text) else "") + (" " + plan if plan else "")],
+                    "next": "finish", "events": ev, "has_query": False,
                     "calls": [{"tool": "stop", "args": {}}], "verdicts": [{"outcome": "allow", "rule": "estop_fast_path"}]} \
                 if res.ok else {"reply_parts": ["I could not stop."], "next": "finish"}
         # ---- Phase 7b: what the user's TEXT may do (untrusted.py). A stop always wins and is handled above; nothing below can change state or rules.
@@ -491,7 +493,8 @@ class Agent:
             self.gate.clear()
             res = self.layer.call("stop")
             self.last_stop = {"reason": "user_stop", "at": self.clock.wall(), "command": text.strip()}
-            return {"reply_parts": ["Stopped. " + untrusted.STOP_ONLY_NOTE if res.ok else "I could not stop."], "next": "finish", "events": ev, "has_query": False,
+            plan = self._cancel_fetch_plan("you stopped me")
+            return {"reply_parts": [("Stopped. " + untrusted.STOP_ONLY_NOTE + (" " + plan if plan else "")) if res.ok else "I could not stop."], "next": "finish", "events": ev, "has_query": False,
                     "calls": [{"tool": "stop", "args": {}}], "verdicts": [{"outcome": "allow", "rule": "stop_wins"}]}
         save_text = bool(_SAVE_WORDS.search(text))
         blocked = (("untrusted_text", untrusted.SPOOF_REPLY) if untrusted.spoofed_input(text) else
@@ -604,6 +607,16 @@ class Agent:
         reply = res.reply if not plan.notes or not res.ok else plan.notes[0] + " " + res.reply
         return {"reply_parts": [reply], "next": "finish", "verdicts": verdict, "has_query": False,
                 "calls": [{"tool": "go_to", "args": {"point": {"x": w["x"], "y": w["y"]}}} for w in plan.waypoints]}
+
+    def _cancel_fetch_plan(self, why: str) -> str | None:
+        """A stop while a multi-step fetch plan waits for a "which one?" answer drops the plan at once (brain/fetch/session.py)."""
+        fs = getattr(self.layer.backend, "fetch_session", None)
+        cancel = getattr(fs, "cancel_plan", None)
+        try:
+            return cancel(why) if callable(cancel) else None
+        except Exception as e:                                # noqa: BLE001  the stop itself already happened
+            self.errors.append(f"fetch plan cancel failed: {e}")
+            return None
 
     # ---- scene questions (VLM, brain/vlm): routed without the planner; the reply is built from checked facts only
     def _vlm_route(self, text: str) -> dict | None:

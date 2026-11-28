@@ -61,6 +61,12 @@ class AgentHost:
             pass
         self.agent.layer.call("stop")
         be = self.agent.layer.backend
+        fs = getattr(be, "fetch_session", None)
+        if callable(getattr(fs, "cancel_plan", None)):    # a fetch plan waiting for "which one?": dropped, announced by the pump
+            try:
+                fs.cancel_plan("emergency stop", announce=True)
+            except Exception:                              # noqa: BLE001
+                pass
         if callable(getattr(be, "estop", None)):          # real robot: also latch /estop (policy stands, gate blocks velocity) until released
             try:
                 be.estop(True)

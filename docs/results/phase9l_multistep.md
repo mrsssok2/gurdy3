@@ -49,5 +49,12 @@ re-ask with a new timer, 60 s timeout (59 s no, 61 s yes, said once), timeout no
 new command instead of an answer, an answer that matches no candidate, the agent's pump announcing the timeout once.
 Suites: test_fetch_tasks 40, brain 1637 passed / 3 skipped (lock test left out), fetch DEV 42/42.
 
+**Cancel hook (added the same evening).** While a plan waits for a "which one?" answer, these drop it AT ONCE with "I dropped the plan
+(<why>). <what I hold>. Not done: <steps>.": a typed / spoken "stop" (the agent's e-stop fast path: "Stopped. I dropped the plan (you
+stopped me). ..."), "cancel" / "never mind" / "forget it" (`FetchSession.CANCEL_RE`, reached through the fetch route), and the web
+E-STOP button / host stop (`AgentHost.estop` -> `cancel_plan(announce=True)`, said once through the agent's pump). Nothing moves;
+a late answer afterwards does nothing; "stop" without a waiting plan is unchanged ("Stopped."). Tests +12 (52 in
+test_fetch_tasks.py); brain 1649 passed / 3 skipped (lock test left out), fetch DEV 42/42, web OK, keyword v1 58 %.
+
 **Not done / limits:** not run in Gazebo or against Ollama; battery / time thresholds are defaults, not measured needs; no `go_to`
-step (fetch skills only); a typed "stop" while the question waits only stops the plan through the e-stop latch / the next message.
+step (fetch skills only).
