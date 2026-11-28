@@ -1,0 +1,37 @@
+# VLN Gazebo DEV episodes (scripts/vln_dev_run.sh). Written by the assistant on 2026-11-28 while building the runner:
+# NOT held-out, never report it as a result. The user's blind suite uses the same format (letters for rooms) and is run with
+#   scripts/vln_eval.sh PATH/TO/blind_suite.yaml
+#
+# Format:
+#   world / map_name / places / gt: the Gazebo world, the saved Nav2 map, the places file (rooms, names) and the world's GT objects
+#   episodes: id, text (typed to the agent), limit_s (sim seconds, default 900), and expect, ONE of
+#     a reference plan (the brain/vln/plan.py JSON): graded from GROUND TRUTH -- the goal, the landmarks to pass and the avoided
+#       rooms are recomputed on the GT world from the robot's real start pose (never from the robot's own semantic map)
+#     {error: CODE}: the robot must answer with that code and move <= 0.3 m (refusal accuracy)
+world: lab4_vln
+map_name: lab4_map
+places: maps/lab4_vln.places.yaml
+gt: docs/results/data/lab4_vln/lab4_vln_gt.json
+episodes:
+  - id: dev_kitchen_chair_barrel
+    text: go to the kitchen, past the chair, stop near the red barrel
+    limit_s: 1200
+    expect:
+      kind: go
+      steps:
+        - {action: enter, target: {room: room D}}
+        - {action: pass, target: {object: {class: chair}}}
+        - {action: stop, target: {object: {class: barrel, color: red}}}
+      avoid: []
+  - id: dev_kitchen_avoid_office
+    text: go to the kitchen but stay out of the office
+    limit_s: 1200
+    expect:
+      kind: go
+      steps:
+        - {action: enter, target: {room: room D}}
+      avoid: [room B]
+  - id: dev_unknown_sofa
+    text: go past the sofa to the office
+    limit_s: 300
+    expect: {error: UNKNOWN_LANDMARK}

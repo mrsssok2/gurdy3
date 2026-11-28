@@ -144,6 +144,8 @@ class RosBackend:
             if "rect" in v:
                 x0, y0, x1, y1 = v["rect"]
                 self.places[name] = {"x": (x0 + x1) / 2, "y": (y0 + y1) / 2, "kind": v.get("kind", "room"), "rect": [x0, y0, x1, y1]}
+                if v.get("names"):                       # spoken room names ("kitchen"), used by VLN (brain/vln/world.room_names)
+                    self.places[name]["names"] = [str(x) for x in v["names"]]
             else:
                 self.places[name] = {"x": v["x"], "y": v["y"], "kind": v.get("kind", "waypoint")}
         self.zones = [z for z in (d.get("no_go_zones") or []) if not z.get("temporary")]
@@ -157,7 +159,7 @@ class RosBackend:
         if getattr(self, "doors", None):
             out["doors"] = {k: [round(v[0], 3), round(v[1], 3)] for k, v in self.doors.items()}
         for n, v in self.places.items():
-            out["places"][n] = ({"rect": v["rect"], "kind": v["kind"]} if "rect" in v
+            out["places"][n] = ({"rect": v["rect"], "kind": v["kind"], **({"names": v["names"]} if v.get("names") else {})} if "rect" in v
                                 else {"x": round(v["x"], 3), "y": round(v["y"], 3), "kind": v["kind"]})
         self.places_file.write_text(yaml.safe_dump(out, sort_keys=False))
 

@@ -40,7 +40,7 @@ _LATCHED = QoSProfile(depth=1, durability=DurabilityPolicy.TRANSIENT_LOCAL, reli
 
 class RclpyPort:
     def __init__(self, map_id: str = "unknown", odom_topic: str = "/odometry/filtered", cmd_topic: str = "cmd_vel_smoothed",
-                 node_name: str = "gurdy_agent_backend", spin: bool = True, interior_bounds=None):
+                 node_name: str = "gurdy_agent_backend", spin: bool = True, interior_bounds=None, gt_topic: str | None = None):
         if not rclpy.ok():
             rclpy.init()
         self.node = n = Node(node_name, parameter_overrides=[])
@@ -67,6 +67,9 @@ class RclpyPort:
         self._tfl = TransformListener(self.tf, n)
         n.create_subscription(ClockMsg, "/clock", self._on_clock, 10)
         n.create_subscription(Odometry, odom_topic, self._on_odom, 10)
+        self._gt = None
+        if gt_topic:                                     # evaluation only (VLN runner): Gazebo's ground-truth pose, world frame
+            n.create_subscription(Odometry, gt_topic, self._on_gt, 10)
         n.create_subscription(Imu, "/imu", self._on_imu, qos_profile_sensor_data)
         n.create_subscription(String, "/policy/status", lambda m: setattr(self, "_policy", m.data), 10)
         n.create_subscription(String, "semantic_map/objects", self._on_objects, _LATCHED)
@@ -92,6 +95,14 @@ class RclpyPort:
     # ---- callbacks
     def _on_clock(self, m):
         self._t = m.clock.sec + m.clock.nanosec * 1e-9
+
+    def _on_gt(self, m):
+        p, q = m.pose.pose.position, m.pose.pose.orientation
+        self._gt = (p.x, p.y, math.atan2(2 * (q.w * q.z + q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z)))
+
+    def gt_pose(self):
+        """(x, y, yaw) from the ground-truth topic given as gt_topic, else None."""
+        return self._gt
 
     def _on_odom(self, m):
         v = m.twist.twist.linear

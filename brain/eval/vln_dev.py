@@ -163,7 +163,8 @@ def run(planner: VLNPlanner, verbose=True) -> dict:
     names = {"o": "object goal", "w": "room with X", "q": "sequential", "p": "past / through", "r": "relational",
              "n": "negation", "f": "failure", "x": "not nav"}
     out = {"n": len(DEV), "ok": n_ok, "by_type": {names[k]: f"{v[0]}/{v[1]}" for k, v in by.items()},
-           "calls": planner.calls, "failures": planner.failures, "rejected": planner.rejected, "rows": rows}
+           "calls": planner.calls, "failures": planner.failures, "rejected": planner.rejected,
+           "keyword_used": getattr(planner, "keyword_used", 0), "rows": rows}
     if verbose:
         print({k: v for k, v in out.items() if k != "rows"})
     return out
@@ -232,20 +233,26 @@ def run_mock(planner_factory, verbose=True) -> dict:
 def main(argv=None) -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model", action="append", default=[])
-    ap.add_argument("--oracle", action="store_true")
+    ap.add_argument("--oracle", action="store_true", help="each case's reference plan as the model (no keyword fallback)")
+    ap.add_argument("--keyword", action="store_true", help="the keyword parser alone (no model; brain/vln/keyword.py)")
+    ap.add_argument("--no-fallback", action="store_true", help="model runs: no keyword fallback (the model alone)")
     ap.add_argument("--mock", action="store_true", help="end to end through the agent on the lab4 mock backend")
     ap.add_argument("--out")
     a = ap.parse_args(argv)
     res = []
     if a.mock:
-        fac = (lambda: VLNPlanner(OracleLLM())) if a.oracle else (lambda: VLNPlanner(model=(a.model or ["gurdy-sft-400"])[0]))
-        res.append({"model": "oracle" if a.oracle else (a.model or ["gurdy-sft-400"])[0], "mode": "mock_e2e", **run_mock(fac)})
+        fac = (lambda: VLNPlanner(OracleLLM(), fallback=False)) if a.oracle else (lambda: VLNPlanner(False)) if a.keyword else \
+            (lambda: VLNPlanner(model=(a.model or ["gurdy-sft-400"])[0], fallback=not a.no_fallback))
+        name = "oracle" if a.oracle else "keyword" if a.keyword else (a.model or ["gurdy-sft-400"])[0]
+        res.append({"model": name, "mode": "mock_e2e", **run_mock(fac)})
     elif a.oracle:
-        res.append({"model": "oracle", **run(VLNPlanner(OracleLLM()))})
+        res.append({"model": "oracle", **run(VLNPlanner(OracleLLM(), fallback=False))})
+    elif a.keyword:
+        res.append({"model": "keyword", **run(VLNPlanner(False))})
     else:
         for m in a.model or ["gurdy-sft-400"]:
             print(f"== {m}")
-            pl = VLNPlanner(model=m)
+            pl = VLNPlanner(model=m, fallback=not a.no_fallback)
             r = run(pl)
             if pl.calls and pl.failures == pl.calls:
                 print(f"!! every call failed: is Ollama running at {pl.llm.host} with {m!r}?", file=sys.stderr)

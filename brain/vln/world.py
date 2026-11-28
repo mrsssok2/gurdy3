@@ -22,18 +22,22 @@ class VLNWorld:
     robot: tuple = (0.0, 0.0, 0.0)               # x, y, yaw (map frame)
     sigma_k: float = 3.0                         # clearance += sigma_k * position sigma (see `free`)
     margin: float = 0.0                          # extra fixed clearance (m) for every free-spot check
+    names: dict = field(default_factory=dict)    # spoken room names -> room: {"kitchen": "room D"} (places file `names:`)
+    places: tuple = ()                           # every place name the backend knows (rooms, waypoints, saved places)
 
     @classmethod
-    def lab4(cls, objects=None, robot=(0.0, 0.0, 0.0), drop=()):
-        """lab4 rooms + doors; objects = the lab4 ground truth (all 10 big objects, as if all were seen) minus `drop` names."""
+    def lab4(cls, objects=None, robot=(0.0, 0.0, 0.0), drop=(), names=None):
+        """lab4 rooms + doors; objects = the lab4 ground truth (all 10 big objects, as if all were seen) minus `drop` names;
+        names = extra spoken room names ({"kitchen": "room D"}), added to any in the places file."""
         places = yaml.safe_load((ROOT / "maps/lab4.places.yaml").read_text())["places"]
         rooms = {k: tuple(v["rect"]) for k, v in places.items() if v.get("kind") == "room"}
+        nm = {**room_names(places), **{k.lower(): v for k, v in (names or {}).items()}}
         gt = json.loads((ROOT / "docs/results/data/lab4/lab4_gt.json").read_text())
         doors = {k: tuple(v) for k, v in gt["doors"].items()}
         if objects is None:
             objects = [{"id": i + 1, "name": o["name"], "class": o["class"], "color": o.get("color") or "", "x": o["x"], "y": o["y"]}
                        for i, o in enumerate(gt["objects"]) if o["name"] not in drop]
-        return cls(rooms, doors, list(objects), tuple(robot))
+        return cls(rooms, doors, list(objects), tuple(robot), names=nm, places=tuple(places))
 
     @classmethod
     def from_backend(cls, be):
@@ -48,7 +52,8 @@ class VLNWorld:
             objs = [{"id": t["id"], "class": t["class"], "color": t.get("color") or "", "x": t["x"], "y": t["y"],
                      "last_seen": t.get("last_seen"), "sigma": OBS_SIGMA}         # the mock's sighting noise
                     for t in be.tracks.values() if t.get("state", "present") == "present"]
-            return cls(rooms, doors, objs, (be.x, be.y, be.yaw))
+            nm = {k.lower(): v for k, v in (getattr(w, "room_names", None) or {}).items()}
+            return cls(rooms, doors, objs, (be.x, be.y, be.yaw), names=nm, places=_known_places(be))
         if hasattr(be, "p") and hasattr(be, "places"):
             return cls.from_ros(be)
         raise NotImplementedError("VLNWorld.from_backend: mock or RosBackend")
@@ -73,7 +78,27 @@ class VLNWorld:
             objs.append({"id": t["id"], "class": t["class"], "color": t.get("color") or "", "x": float(t["x"]), "y": float(t["y"]),
                          "last_seen": t.get("last_seen"), "sigma": float(sig if sig is not None else default_sigma)})
         pose = be.p.pose() or (0.0, 0.0, 0.0)
-        return cls(rooms, doors, objs, tuple(pose))
+        return cls(rooms, doors, objs, tuple(pose), names=room_names(be.places), places=_known_places(be))
+
+    # ---- room names
+    def canon_room(self, name):
+        """'room D' / 'D' / 'kitchen' / 'the kitchen' -> 'room D'; None if no such room."""
+        if not isinstance(name, str):
+            return None
+        v = name.strip().lower()
+        v = v[4:] if v.startswith("the ") else v
+        for r in self.rooms:
+            if r.lower() == v or r.lower() == f"room {v}":
+                return r
+        return self.names.get(v)
+
+    def room_label(self, room) -> str:
+        """'room D (the kitchen)' when the room has a spoken name, else 'room D'."""
+        n = [k for k, v in self.names.items() if v == room]
+        return f"{room} (the {n[0]})" if n else str(room)
+
+    def rooms_text(self) -> str:
+        return ", ".join(self.room_label(r) for r in sorted(self.rooms))
 
     # ---- geometry
     def room_of(self, x, y, margin: float = 0.0):
@@ -149,6 +174,23 @@ class VLNWorld:
             return False
         return all(math.hypot(x - o["x"], y - o["y"]) >= obj_margin + m + k * math.hypot(o.get("sigma", 0.0), ref_sigma)
                    for o in self.objects if o.get("id") not in ignore)
+
+
+def _known_places(be) -> tuple:
+    try:
+        return tuple(be.known_places())
+    except Exception:                                   # noqa: BLE001
+        return ()
+
+
+def room_names(places: dict) -> dict:
+    """Spoken names of the rooms from a places dict: `room D: {rect: [...], kind: room, names: [kitchen]}` -> {"kitchen": "room D"}."""
+    out = {}
+    for k, v in (places or {}).items():
+        if isinstance(v, dict) and v.get("kind", "room") == "room" and v.get("rect"):
+            for n in v.get("names") or []:
+                out[str(n).strip().lower()] = k
+    return out
 
 
 def _letter(room: str) -> str:

@@ -50,7 +50,7 @@ def test_flag_off_means_the_planner_handles_navigation_as_before():
 def test_vln_object_goal_end_to_end():
     ag, be = make()
     r = ag.say("go to the red barrel")
-    assert r.reply == "I'm at the red barrel in room D."
+    assert r.reply == "I'm at the red barrel in room D (the kitchen)."
     v = ag.vln_last
     assert v.ok and v.rooms_visited == ["room A", "room B", "room D"] and be.zones == []
     assert [c["type"] for c in v.claims] == ["arrived", "in_room"]
@@ -72,7 +72,7 @@ def test_avoid_room_becomes_a_temporary_zone_and_is_removed():
             return super().add_temp_zone(rect, tag, name)
     ag, be = make(backend_cls=Spy)
     r = ag.say("go to room D but avoid room B")
-    assert r.reply == "I'm in room D."
+    assert r.reply == "I'm in room D (the kitchen)."
     assert seen == [((2.0, -2.0, 6.0, 2.0), "room B (avoid, this walk only)")]
     assert "room B" not in ag.vln_last.rooms_visited and be.zones == []          # removed at the end
     assert not any(2.0 < x < 6.0 and -2.0 < y < 2.0 for _, x, y in ag.vln_last.trajectory)
@@ -87,7 +87,7 @@ def test_avoided_start_room_gets_its_zone_after_leaving():
             return super().add_temp_zone(rect, tag, name)
     ag, be = make(backend_cls=Spy)
     r = ag.say("go to room C without going through room A")
-    assert r.reply.startswith("I'm in room A now; I'll leave it the shortest way.") and r.reply.endswith("I'm in room C.")
+    assert r.reply.startswith("I'm in room A (the hallway) now; I'll leave it the shortest way.") and r.reply.endswith("I'm in room C (the living room).")
     assert len(seen) == 1 and seen[0][2] == "room A (avoid, this walk only)"
     assert VLNWorld.from_backend(be).room_of(seen[0][0], seen[0][1]) == "room C" and seen[0][1] > 2.0   # added only after leaving A
     assert be.zones == []
@@ -103,7 +103,7 @@ def test_impossible_avoid_is_answered_without_moving():
 def test_pass_landmark_comes_within_the_check_distance():
     ag, be = make()
     r = ag.say("go past the blue box into room D")
-    assert r.reply == "I'm in room D. On the way I went past the blue box in room B."
+    assert r.reply == "I'm in room D (the kitchen). On the way I went past the blue box in room B (the office)."
     L = next(o for o in be.world.objects if o.cls == "box" and o.color == "blue")
     assert min(math.hypot(x - L.x, y - L.y) for _, x, y in ag.vln_last.trajectory) <= PASS_CHECK
 
@@ -126,7 +126,7 @@ def test_room_with_goal_re_observes_its_landmark():
     ag, be = make()
     be.remove_object(gid(be, "barrel", "red"))
     r = ag.say("go to the room with the red barrel")
-    assert ag.vln_last.code == "LANDMARK_NOT_CONFIRMED" and "I'm in room D." not in r.reply
+    assert ag.vln_last.code == "LANDMARK_NOT_CONFIRMED" and "I'm in room D (the kitchen)." not in r.reply
 
 
 def test_arrival_only_after_checking_the_real_pose():
@@ -144,7 +144,9 @@ def test_blocked_leg_is_an_honest_failure():
     from brain.mock.world import Rect
     be.add_obstacle(Rect(1.95, -1.3, 2.05, -0.1))                   # close the A-B doorway
     r = ag.say("go to room B, don't go through room C")
-    assert not ag.vln_last.ok and ag.vln_last.code in ("LEG_FAILED", "LEG_REFUSED") and "I'm in room B" not in r.reply
+    # the pre-move path check sees it (2026-11-28): refused before moving, not halfway (a mid-walk block: test_vln_route.py)
+    assert not ag.vln_last.ok and ag.vln_last.code == "UNREACHABLE" and "I'm in room B" not in r.reply
+    assert "haven't moved" in r.reply and math.hypot(be.x, be.y) < 1e-6
     assert be.zones == []
 
 
@@ -158,7 +160,7 @@ def test_wrong_room_stops_and_replans_once():
     plan = validate(raw, "go to room D", w)
     plan.rooms = ["room A", "room C", "room D"]                     # the legs go through B: the room check must catch it
     res = VLNExecutor(be, lambda: VLNWorld.from_backend(be)).run(plan, raw, "go to room D")
-    assert res.replans == 1 and res.ok and res.reply == "I'm in room D."
+    assert res.replans == 1 and res.ok and res.reply == "I'm in room D (the kitchen)."
 
 
 def test_never_in_is_the_safety_net_when_zones_fail():
