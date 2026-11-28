@@ -230,3 +230,43 @@ def test_dominance_suppresses_sparse_class_confusion_on_a_well_seen_object():
     on = SemanticMap(min_hits=5, min_span=2.0, min_mean_score=0.5, dominance_ratio=4.0)
     feed(on)
     assert {t.cls for t in on.confirmed()} == {"box", "traffic_cone"}      # far-away real object unaffected
+
+
+def test_color_from_saturated_pixels_only():
+    """2026-11-28: a white band / grey floor around a coloured object must not name it (old median rule: 'white')."""
+    from gurdy_core.vision.colors import color_name_v1
+    crop = np.full((10, 10, 3), (235, 235, 235), np.uint8)       # 70 % white band / highlight
+    crop[:2] = (120, 120, 125)                                    # 20 % grey floor
+    crop[-1] = (255, 115, 5)                                      # 10 %... below the 15 % threshold: genuinely white
+    assert color_name(crop) == "white" and color_name_v1(crop) == "white"
+    crop[-3:] = (255, 115, 5)                                     # 30 % orange: the object's colour wins over the band
+    assert color_name(crop) == "orange" and color_name_v1(crop) != "orange"
+    assert color_name(np.full((4, 4, 3), (194, 196, 204))) in ("gray", "white")   # silver can: unsaturated fallback
+    assert color_name(np.full((4, 4, 3), (128, 128, 128))) == "gray"
+    red = np.full((6, 6, 3), (230, 20, 20), np.uint8)
+    red[:3, :3] = (240, 20, 60)                                   # hue wraps around 0/360: still red, not pink
+    assert color_name(red) == "red"
+
+
+def test_color_rule_not_worse_on_the_labelled_test_images():
+    """Per-class accuracy on the rendered synth_v3 test splits (vision/color_eval.py); skipped without the datasets."""
+    import importlib.util
+    from collections import defaultdict
+    from pathlib import Path
+    root = Path(__file__).resolve().parents[2]
+    D = root / "datasets/synth_v3_wrist"
+    if not (D / "meta/test").exists():
+        pytest.skip("datasets/synth_v3_wrist not rendered here")
+    spec = importlib.util.spec_from_file_location("color_eval", root / "vision/color_eval.py")
+    CE = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(CE)
+    from gurdy_core.vision.colors import color_name_v1
+    n, old, new = defaultdict(int), defaultdict(int), defaultdict(int)
+    for cls, col, img, box in CE.instances(D, "test"):
+        exp, c = CE.EXPECT.get(col, {col}), CE.crop_of(img, box)
+        n[cls] += 1
+        old[cls] += color_name_v1(c) in exp
+        new[cls] += color_name(c) in exp
+    for cls in n:
+        assert new[cls] >= old[cls], cls
+    assert sum(new.values()) / sum(n.values()) >= 0.75
