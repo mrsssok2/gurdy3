@@ -53,3 +53,15 @@ Why the approach ended too far (now logged): NOT a skipped back-up -- the back-u
 12 cm tolerance short of the stand-off goal (5.4 / 10.9 cm here), and the 180-degree turn walks the body 10-17 cm (the hexapod
 does not turn exactly on the spot), away from the can. Together: can ~0.5 m behind after the back-up; the re-approach (measured
 from the map, walk the difference) closes it before the alignment.
+
+## Evening checks before overnight_1128
+
+* Height bug: looking down, the object's height is now its measured top above the fitted floor (91475ac). Replayed on all
+  saved real frames: no can frame implausible (4 were), every full top view 12 +- 1 cm.
+* Track memory 30 s on all 28 sighting logs of the day: red cube confirmed in 22 logs (10 s: 18); the extra 'false' red small
+  box is the cube teleported for that try (a real one); the other one (near the big red box) exists with 10 s too. No mini
+  toolbox target logs exist (none of today's fetches targeted it).
+* Headless cube fetch, small_box_1 (cube at (-0.8, 0.7), the try that failed in the morning), under the lock: "I picked up the
+  red cube in room A and I'm holding it with the arm folded." -- GT: lifted (z 0.20 m), still held 5 s later; 435 s;
+  first attempt, MoveIt pre-grasp, fingers 26/25 mm, hold check HOLDING (ratio 1.01); no re-approach needed (0.30 m).
+* overnight_1128.sh DRY_RUN: all stages + 15 fetch tries + summary, no token in any saved file; takes the GPU lock.
