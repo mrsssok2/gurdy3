@@ -65,6 +65,7 @@ class RclpyArmPort:
     def _js(self, m):
         with self._lock:
             self.js.update(dict(zip(m.name, m.position)))
+            self.js_stamp = m.header.stamp.sec + m.header.stamp.nanosec * 1e-9     # sim time (sim_wait)
             if len(m.effort) == len(m.name):
                 self.eff = getattr(self, "eff", {})
                 self.eff.update(dict(zip(m.name, m.effort)))
@@ -75,11 +76,22 @@ class RclpyArmPort:
         self.n_depth = getattr(self, "n_depth", 0) + 1                      # diagnostics (wrist_view returning None)
         self.depth_seen = (getattr(self, "depth_seen", []) + [(now, m.header.stamp.sec + m.header.stamp.nanosec * 1e-9)])[-20:]
 
+    def sim_now(self):
+        """Sim time (s) of the latest /joint_states, or None before the first message."""
+        return getattr(self, "js_stamp", None) or None
+
     @staticmethod
     def _done(fut, timeout):
+        """Wall-clock wait (goal acceptance: a ROS round trip, not sim motion)."""
         end = time.monotonic() + timeout
         while not fut.done() and time.monotonic() < end:
             time.sleep(0.02)
+        return fut.result() if fut.done() else None
+
+    def _done_sim(self, fut, sim_timeout):
+        """Wait for a motion result in SIM time (RTF ~0.2 with the GUI: wall timeouts gave up before the arm arrived)."""
+        from .sim_wait import wait_sim
+        wait_sim(fut.done, self.sim_now, sim_timeout)
         return fut.result() if fut.done() else None
 
     # ---- ArmPort
@@ -107,7 +119,7 @@ class RclpyArmPort:
         h = self._done(self.arm_ac.send_goal_async(g), 10.0)
         if h is None or not h.accepted:
             return False
-        r = self._done(h.get_result_async(), seconds + 10.0)
+        r = self._done_sim(h.get_result_async(), seconds + 10.0)
         return r is not None and r.result.error_code == 0
 
     def _moveit(self, q):
@@ -125,7 +137,7 @@ class RclpyArmPort:
         h = self._done(self.mg.send_goal_async(goal), 10.0)
         if h is None or not h.accepted:
             return False
-        r = self._done(h.get_result_async(), 40.0)
+        r = self._done_sim(h.get_result_async(), 40.0)
         return r is not None and r.result.error_code.val == MoveItErrorCodes.SUCCESS
 
     def move_arm(self, qs, seconds, use_moveit=False):
@@ -137,14 +149,18 @@ class RclpyArmPort:
         self.grip.publish(self.F64(data=[float(effort), float(effort)]))
 
     def efforts(self):
-        """Arm joint efforts (N m) averaged over ~0.5 s (as scripts/grasp_test.py); None when the joints publish no effort."""
+        """Arm joint efforts (N m) averaged over ~0.5 s of SIM time (as scripts/grasp_test.py, which averaged 0.5 s); None
+        when the joints publish no effort."""
+        from .sim_wait import wait_sim
         acc = []
-        for _ in range(10):
-            time.sleep(0.05)
+
+        def sample():
             with self._lock:
                 e = dict(getattr(self, "eff", {}))
             if all(j in e for j in self.A.ARM_JOINTS):
                 acc.append([e[j] for j in self.A.ARM_JOINTS])
+            return False
+        wait_sim(sample, self.sim_now, 0.5, wall_cap=10.0, poll=0.05)
         if len(acc) < 3:
             return None
         m = np.mean(np.array(acc), axis=0)
@@ -183,16 +199,18 @@ class RclpyArmPort:
         return None
 
     def settle(self, q, tol=0.003, timeout=3.0):
-        """Wait until the effort-controlled arm is within `tol` rad of q (integral term) or `timeout`; -> max error (rad)."""
-        t0, err = time.monotonic(), float("inf")
-        while time.monotonic() - t0 < timeout:
+        """Wait until the effort-controlled arm is within `tol` rad of q (integral term) or `timeout` s of SIM time;
+        -> max error (rad)."""
+        from .sim_wait import wait_sim
+        err = [float("inf")]
+
+        def close():
             m = self.arm_q()
             if m is not None:
-                err = float(np.max(np.abs(np.asarray(m) - np.asarray(q, float))))
-                if err < tol:
-                    break
-            time.sleep(0.1)
-        return err
+                err[0] = float(np.max(np.abs(np.asarray(m) - np.asarray(q, float))))
+            return err[0] < tol
+        wait_sim(close, self.sim_now, timeout, poll=0.1)
+        return err[0]
 
     def _scene_clients(self):
         if not hasattr(self, "_aps"):
