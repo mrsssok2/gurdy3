@@ -75,8 +75,10 @@ class TurnResult:
 class Agent:
     def __init__(self, layer: ToolLayer, llm: LLM, safety: SafetyChecker | None = None,
                  executor: MissionExecutor | None = None, alerts: AlertManager | None = None, clock: AnswerClock | None = None,
-                 vln=None):
+                 vln=None, vlm=None):
         self.layer, self.llm = layer, llm
+        self.vlm = vlm                  # brain.vlm.tool.DescribeView or None (default OFF: scene questions go to the planner as before)
+        self.vlm_last = None            # last describe_view record (tests / evaluation)
         self.vln = vln                  # brain.vln.planner.VLNPlanner or None (default OFF: navigation text goes to the planner as before)
         self.vln_last = None            # last VLN run (VLNResult) for tests / evaluation
         self.safety = safety or SafetyChecker(layer)
@@ -503,6 +505,8 @@ class Agent:
             return fr
         if self.gate.pending is None and (inc := self._incident_route(text)) is not None:
             return inc
+        if self.gate.pending is None and (vq := self._vlm_route(text)) is not None:
+            return vq
         if is_stop_why(text) and (why := self._stop_explanation()):
             return {"reply_parts": [why], "next": "finish", "verdicts": [{"outcome": "none", "rule": "stop_explanation"}]}
         if is_unsafe_request(text):
@@ -594,6 +598,21 @@ class Agent:
         reply = res.reply if not plan.notes or not res.ok else plan.notes[0] + " " + res.reply
         return {"reply_parts": [reply], "next": "finish", "verdicts": verdict, "has_query": False,
                 "calls": [{"tool": "go_to", "args": {"point": {"x": w["x"], "y": w["y"]}}} for w in plan.waypoints]}
+
+    # ---- scene questions (VLM, brain/vlm): routed without the planner; the reply is built from checked facts only
+    def _vlm_route(self, text: str) -> dict | None:
+        if self.vlm is None:
+            return None
+        try:
+            rec = self.vlm(text)
+        except Exception as e:                                # noqa: BLE001  (a VLM bug must not take the agent down)
+            self.errors.append(f"vlm route failed: {e}")
+            return {"reply_parts": ["I couldn't look at that right now."], "next": "finish", "verdicts": [{"outcome": "none", "rule": "vlm_error"}]}
+        if not rec.get("routed"):
+            return None
+        self.vlm_last = rec
+        return {"reply_parts": [rec["reply"]], "next": "finish", "verdicts": [{"outcome": "none", "rule": f"vlm_{rec['status']}"}],
+                "has_query": False}
 
     # ---- incident questions (temporal memory): routed without the planner, answered from the graph, grounded
     def _incident_route(self, text: str) -> dict | None:
