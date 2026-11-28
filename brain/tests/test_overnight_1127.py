@@ -1,6 +1,7 @@
 """scripts/overnight_1127.sh control flow in DRY_RUN (stubs: no Docker / Gazebo), its redaction, and the target plan."""
 import json
 import math
+import re
 import os
 import subprocess
 from pathlib import Path
@@ -99,7 +100,7 @@ def test_yolo_block_runs_all_stages_with_the_v3_training_budget(tmp_path):
     st = yolo_calls(out)
     assert [x["stage"] for x in st] == ["render", "train", "eval", "report"] and all(x["rc"] == "0" for x in st)
     assert st[1]["train_time_h"] == "2.1"                                  # capped at what det_v3_s trained
-    assert "Runtime detector default after the block: `det_v3_s.onnx` (unchanged)" in md
+    assert re.search(r"Runtime detector default after the block: `det_v[0-9a-z_]+\.onnx` \(unchanged\)", md)
     assert "**Acceptance, side by side" in md and "estimate d) YOLO v3.1" in log
     assert (out / "yolo/det_v31_s_results.csv").exists()
     no_token_anywhere(out)

@@ -181,6 +181,7 @@ if [ $SMOKE = 0 ]; then
   python3 scripts/walk_variance_report.py "$OUT/walk" --out "$OUT/walk/report.md" >/dev/null 2>>"$LOG" || log "walk report failed"
   event block_end block=walk
 fi
+detector_default() { grep -oE '^DEFAULT_MODEL = "[^"]+"' ros2_ws/src/gurdy_perception/gurdy_perception/detector_node.py | cut -d'"' -f2; }
 # ---------------------------------------------------------------- d) YOLO v3.1: render -> train -> eval -> v3 vs v3.1
 : "${YOLO_DOCS:=docs/results}" "${YOLO_DATA:=datasets}" "${YOLO_RUNS:=vision/runs}"
 declare -F run_yolo_stage >/dev/null || run_yolo_stage() {   # run_yolo_stage STAGE -> exit code of scripts/p9b_v31_night.sh STAGE
@@ -192,6 +193,7 @@ yolo_stage() {   # yolo_stage STAGE -> 0 ok; logs + timing in $OUT/yolo
   log "d) $1 rc=$rc after $(( ($(date +%s) - t0) / 60 )) min"; return $rc; }
 if [ $SMOKE = 0 ]; then
   event block_start block=yolo
+  DEFAULT_BEFORE=$(detector_default)              # the block must leave the runtime detector as it found it
   if ! fits $(( D_RENDER_S + D_TRAIN_MIN_S + D_TRAIN_OVH_S + D_EVAL_S + D_END_S )); then
     event block_skip block=yolo reason="deadline" at=render; log "d) skipped: render + 1 h training + eval do not fit before the deadline"
   else
@@ -220,8 +222,8 @@ if [ $SMOKE = 0 ]; then
   done
   [ -f "$YOLO_RUNS/det_v31_s/results.csv" ] && cp "$YOLO_RUNS/det_v31_s/results.csv" "$OUT/yolo/det_v31_s_results.csv"
   [ -d "$RAW/yolo" ] && save_logs "$RAW/yolo" "$OUT/yolo/logs"
-  default=$(grep -oE '^DEFAULT_MODEL = "[^"]+"' ros2_ws/src/gurdy_perception/gurdy_perception/detector_node.py | cut -d'"' -f2)
-  record "$OUT/yolo/runtime_detector.jsonl" default_model="$default"
+  default=$(detector_default)
+  record "$OUT/yolo/runtime_detector.jsonl" default_model="$default" default_before="$DEFAULT_BEFORE"
   log "d) runtime detector default: $default (not switched)"
   event block_end block=yolo
 fi

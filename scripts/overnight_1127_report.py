@@ -157,7 +157,8 @@ def main():
         rd = rows(Y / "runtime_detector.jsonl")
         if rd:
             L += [f"Runtime detector default after the block: `{rd[-1]['default_model']}`"
-                  + (" (unchanged)" if rd[-1]["default_model"] == "det_v3_s.onnx" else " (CHANGED: check!)"), ""]
+                  + (" (unchanged)" if rd[-1]["default_model"] == rd[-1].get("default_before", "det_v3_s.onnx")   # 2026-11-27 run: no
+                     else " (CHANGED: check!)"), ""]                                              # 'before' -> v3 then
 
     # ---------------- what failed and why
     L += ["## Blocks, skips and failures", "", "| event | details |", "|---|---|"]
