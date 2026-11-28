@@ -333,3 +333,50 @@ that marks objects in the camera cone as seen):
 * The walk is blocking: the agent answers only the e-stop while walking.
 
 **Stop here (user, 2026-11-27):** no more new features until the Gazebo tests catch up.
+
+## 13. Named rooms, keyword fallback, constrained JSON, reachability (2026-11-28, branch `phase10-vln`; host tests only)
+
+Target instruction: **"go to the kitchen, past the chair, stop near the red barrel"** → rooms + semantic-map landmarks →
+waypoints with the σ-aware clearance → honest replies. Nothing ran in ROS / Gazebo or against Ollama (CPU only).
+
+### 13.1 What changed
+
+| piece | change |
+|---|---|
+| Room names | places file: `room D: {rect: [...], kind: room, names: [kitchen]}`. `VLNWorld.names` (`room_names()`); RosBackend keeps `names` on load and save; mock: `world.room_names`. `canon_room("the kitchen")` → room D. Replies say "room D (the kitchen)"; "avoid the kitchen" / "stay out of the kitchen" work. **No world has names yet**: `maps/lab4.places.yaml` is unchanged (decide which room is which before a run). |
+| "near X" | = `stop` at X (prompt rule + keyword "stop by / near / at"). "Stop near X" falls back to the free side of a ring round X (nearest to the approach) when the straight stand-off is blocked. |
+| Keyword fallback | `brain/vln/keyword.py`: text → the SAME JSON → the SAME validator. Used when the model is down, returns bad JSON, or its plan is rejected; alone with `VLNPlanner(False)` (`run_text --vln` without `--ollama`, `brain.agent.cli --vln --vln-keyword`). Returns None (normal planner) when unsure: an unknown noun, "before" / "after X" (order reversal), a route that does not end anywhere, or any object / room word it could not place (never drops one). `Plan.source` = llm / keyword. |
+| Constrained JSON | `vln_json_schema()` = the plan grammar as JSON schema, sent as Ollama `format` (grammar-constrained decoding; `schema=False` → plain `"json"`). Every DEV reference plan fits it (test). The validator still does all the checks a schema cannot. |
+| Validator | NEW reject `DROPPED`: an object / room the user named (outside the avoid phrases) is missing from the plan — the model silently leaving out "past the chair" is a different walk (→ keyword fallback). NEW answer `UNKNOWN_LANDMARK` before any model call: a word in a landmark position that is no class, room name or known place ("past the sofa"). |
+| Clearance | Points now also keep `0.4 + margin + 3σ` from **their own landmark** (before: only from walls and other objects; with the ROS default σ 0.10 m a 0.6 m stand-off could really be 0.3 m). Room entry point = the free point closest to the centre (the centre itself was used unchecked: a chair next to room D's centre made the leg unreachable). |
+| Reachability | Executor pre-flight: `path_check(point)` for every waypoint, with the avoid zones and the user's no-go zones in place, BEFORE moving → `UNREACHABLE`: "I can't reach X from here: a no-go zone is in the way. I haven't moved." A block appearing later stays an honest LEG_FAILED. No door into a room: "I don't know a way from room A into room D on this map" (was "... without going through ." with an empty avoid list). |
+
+### 13.2 Tests and numbers (DEV, NOT held-out; `docs/heldout/` not opened)
+
+`brain/tests/test_vln_route.py` (30): the target instruction end to end on the mock (keyword, LLM valid, LLM inventing a
+landmark, LLM dropping the avoid; GT: chair passed within 1.2 m, stop in room D ≤ 1.2 m from the barrel), commas or not,
+avoid by name, never-seen chair, "sofa", two chairs → "Which one?" (+ resolved by "in the kitchen"), room E, user zones
+closing both kitchen doors (refused before moving, user zones kept), a doorway closing mid-walk, room without a door,
+clearance for σ 0 / 0.04 / 0.10 (σ 0.15 everywhere → honest NO_FREE_SPOT), keyword rules, schema, RosBackend + FakePort
+(names load / save, the walk, unreachable).
+
+| run | result |
+|---|---|
+| DEV plan level, oracle (no fallback) | 46 / 46 |
+| DEV plan level, keyword only | 46 / 46 — **tuned on this set** (I fixed "first ... then" / "afterwards" after seeing q02 / q03 fail), so not a clean measure |
+| DEV mock end to end, oracle / keyword | 46 / 46 each: SR 1.0, SPL 0.993, 0 false claims, 0 avoid violations, answers 11 / 11 |
+| brain suite | see the commit; keyword baseline v1 58.0 % (unchanged); safety gate PASS; web OK |
+
+### 13.3 Left before a Gazebo run
+
+1. **Room names in a real places file** (which lab4 room is "the kitchen"?) — a user decision; plus a chair in the world
+   (lab4 has none: "past the chair" is LANDMARK_NOT_FOUND there, correctly).
+2. **Ollama, never run**: `python3 -m brain.eval.vln_dev --model gurdy-sft-400 [--no-fallback]` (GPU, under the lock).
+   Unknown: whether gurdy-sft-400 follows the prompt at all, and whether Ollama's schema `format` with nested `anyOf`
+   works on this version (fallback: `schema=False`).
+3. **Blind suite** written by the user (the DEV set is mine and now tuned against).
+4. **ROS-only behaviour the FakePort cannot show**: `path_check` per waypoint = one Nav2 `compute_path` each (+ detour
+   tries): measure the pre-flight time; door waypoints exactly on 1 m doorway centres inside the 0.55 m inflation; door
+   detection on a noisy `/map`; landmark re-observation with the real detector (`last_seen`, sim time); temporary zones
+   are backend-side only (Nav2 keepout filter still not used).
+5. A Gazebo VLN runner (fresh stack per episode, GT trajectory, `metrics.py`), as in section 9 step 3.

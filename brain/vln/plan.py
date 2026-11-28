@@ -14,9 +14,9 @@ Model output:
   REF    = {"class": <class>, "color": <colour>?, "in_room": "room C"?}
 
 validate(raw, text, world) -> Plan (ok) | Plan with an error:
-  rejected (the model is not trusted; `None` reply -> the normal planner handles the text):
-    BAD_JSON, BAD_SCHEMA, NOT_NAV (kind none), UNSAID (a class / colour / room the user did not say), AVOID_DROPPED (the
-    user said "avoid room B" and the plan does not), AVOID_ADDED
+  rejected (the model is not trusted; `None` reply -> the keyword fallback, then the normal planner):
+    BAD_JSON, BAD_SCHEMA, NOT_NAV (kind none), UNSAID (a class / colour / room the user did not say), DROPPED (an object /
+    room the user named is not in the plan), AVOID_DROPPED (the user said "avoid room B" and the plan does not), AVOID_ADDED
   answered (a reply for the user, nothing moves):
     LANDMARK_NOT_FOUND, AMBIGUOUS (with the options), UNKNOWN_ROOM, IMPOSSIBLE (goal / landmark in an avoided room, no
     route around), NO_FREE_SPOT (a relation point inside a wall / object)
@@ -51,10 +51,23 @@ PASS_RING = (0.6, 0.8, 1.0)  # m: "go past X" = a free point this close round X 
 STOP_STANDOFF = 0.6          # m: "go to X" stops this far in front of it
 PASS_CHECK = 1.2             # m: progress check: the path must come this close to a landmark it passes
 GOAL_RADIUS = 0.5            # m: success radius of a point goal (Nav2 tolerance 0.12 + margin)
-AVOID_RE = re.compile(r"\b(?:avoid(?:ing)?|stay(?:ing)? out of|keep(?:ing)? out of|never (?:go|enter|walk)(?: into| through| in)?|"
-                      r"without (?:going|passing|walking) (?:through|into|in)|not (?:through|via|into)|"
-                      r"(?:don't|do not|dont) (?:go|walk|pass|enter|cross)(?: through| into| in| via)?|skip(?:ping)?|bypass(?:ing)?)\s+"
-                      r"((?:room\s+[a-z]\b(?:\s*(?:,|and|or|nor)\s*)?)+)", re.I)
+_AVOID_VERB = (r"\b(?:avoid(?:ing)?|stay(?:ing)? out of|keep(?:ing)? out of|never (?:go|enter|walk)(?: into| through| in)?|"
+               r"without (?:going|passing|walking) (?:through|into|in)|not (?:through|via|into)|"
+               r"(?:don't|do not|dont) (?:go|walk|pass|enter|cross)(?: through| into| in| via)?|skip(?:ping)?|bypass(?:ing)?)\s+")
+
+
+def _room_word_re(names=()) -> str:
+    """'room X' or one of the map's spoken room names ('the kitchen'), as a regex alternative."""
+    alts = [r"room\s+[a-z]\b"] + [r"(?:the\s+)?" + re.escape(n) + r"\b" for n in sorted(names, key=len, reverse=True)]
+    return "(?:" + "|".join(alts) + ")"
+
+
+def avoid_re(names=()):
+    r = _room_word_re(names)
+    return re.compile(_AVOID_VERB + rf"((?:{r}(?:\s*(?:,|and|or|nor)\s*)?)+)", re.I)
+
+
+AVOID_RE = avoid_re()
 
 
 # ------------------------------------------------------------------ the user's words
@@ -81,14 +94,24 @@ def mentions(text: str) -> list[dict]:
     return out
 
 
-def rooms_said(text: str) -> list[str]:
-    return [f"room {m.upper()}" for m in re.findall(r"\broom\s+([a-z])\b", text.lower())]
+def _room_words(s: str, names: dict) -> list[str]:
+    """'room X' (any letter, even one the map does not have) and the spoken room names, in order of appearance."""
+    pat = r"\broom\s+([a-z])\b" + "".join(rf"|\b({re.escape(n)})\b" for n in sorted(names, key=len, reverse=True))
+    out = []
+    for m in re.finditer(pat, s.lower()):
+        out.append(f"room {m.group(1).upper()}" if m.group(1) else names[next(g for g in m.groups()[1:] if g)])
+    return out
 
 
-def avoid_said(text: str) -> set[str]:
+def rooms_said(text: str, world=None) -> list[str]:
+    return _room_words(text, getattr(world, "names", None) or {})
+
+
+def avoid_said(text: str, world=None) -> set[str]:
+    names = getattr(world, "names", None) or {}
     out = set()
-    for m in AVOID_RE.finditer(text):
-        out |= {f"room {x.upper()}" for x in re.findall(r"room\s+([a-z])\b", m.group(1).lower())}
+    for m in avoid_re(names).finditer(text):
+        out |= set(_room_words(m.group(1), names))
     return out
 
 
@@ -107,6 +130,7 @@ class Plan:
     length_m: float = 0.0
     summary: str = ""
     notes: list = field(default_factory=list)
+    source: str = ""                       # "llm" | "keyword": which parser produced the JSON (set by VLNPlanner)
     goal_landmark: dict | None = None      # "the room with the red barrel": the object that defines the goal room (re-observed)
 
     @property
@@ -178,13 +202,7 @@ def schema_ok(d) -> bool:
 
 # ------------------------------------------------------------------ the validator
 def _canon_room(name, world):
-    if not isinstance(name, str):
-        return None
-    v = name.strip().lower()
-    for r in world.rooms:
-        if r.lower() == v or r.lower() == f"room {v}":
-            return r
-    return None
+    return world.canon_room(name)
 
 
 def _refs(d):
@@ -214,7 +232,7 @@ def describe_ref(r) -> str:
 
 
 def _obj_label(o, world):
-    return f"the {o['color'] + ' ' if o.get('color') else ''}{o['class'].replace('_', ' ')} in {world.room_of(o['x'], o['y'])}"
+    return f"the {o['color'] + ' ' if o.get('color') else ''}{o['class'].replace('_', ' ')} in {world.room_label(world.room_of(o['x'], o['y']))}"
 
 
 def ground(ref, world):
@@ -249,11 +267,28 @@ def _relation_point(rel, objs, prev, world):
     ignore = {o["id"] for o in objs}
     sig = [o.get("sigma", 0.0) for o in objs]
     ref = math.hypot(*sig) / 2 if rel == "between" else sig[0]          # the midpoint of two noisy points
-    clear = 0.4 + world.margin + (world.sigma_k * ref if rel == "between" else 0.0)
     for x, y in cands:
-        if world.free(x, y, ignore=ignore, ref_sigma=ref) and all(math.hypot(x - o["x"], y - o["y"]) >= clear for o in objs):
+        if world.free(x, y, ignore=ignore, ref_sigma=ref) and all(math.hypot(x - o["x"], y - o["y"]) >= landmark_clearance(o, world) for o in objs):
             return x, y
     return None
+
+
+def room_point(room, world) -> list:
+    """'Into room D': the free point closest to the room centre (the centre itself may be occupied: a chair next to it), as a
+    one-element list; [] if the room has no free spot."""
+    cx, cy = world.centre(room)
+    pts = [(cx, cy)] + [(cx + r * math.cos(t), cy + r * math.sin(t)) for r in (0.3, 0.5, 0.75, 1.0, 1.25)
+                        for t in [2 * math.pi * i / 12 for i in range(12)]]
+    for x, y in pts:
+        if world.room_of(x, y) == room and world.free(x, y):
+            return [(x, y)]
+    return []
+
+
+def landmark_clearance(o, world) -> float:
+    """How far a stop / pass / relation point must be from the landmark it is computed from: the object margin plus the
+    world's margin plus sigma_k x the landmark's own position sigma (it may really be that much closer)."""
+    return 0.4 + world.margin + world.sigma_k * o.get("sigma", 0.0)
 
 
 def validate(raw, text: str, world: VLNWorld) -> Plan:
@@ -277,13 +312,23 @@ def validate(raw, text: str, world: VLNWorld) -> Plan:
             cols = {s.get("color") for s in m if s.get("color")}
             if len(cols) == 1 and len(m) == 1:
                 r["color"] = cols.pop()
-    typed_rooms = set(rooms_said(text))
+    typed_rooms = set(rooms_said(text, world))
     for name in _rooms_in(d):
-        if f"room {name.strip().split()[-1].upper()}" not in typed_rooms:
+        c = _canon_room(name, world)
+        if c is None:                                     # 'room E' the user said -> answered below; any other word -> not ours
+            if not re.fullmatch(r"\s*room\s+[a-z]\s*", name.lower()) or f"room {name.strip().split()[-1].upper()}" not in typed_rooms:
+                return _reject("UNSAID", f"room {name}")
+        elif c not in typed_rooms:
             return _reject("UNSAID", f"room {name}")
+    # ---- and every thing the user named must be in the plan (a dropped "past the chair" is a silently different walk)
+    outside = avoid_re(world.names).sub(" ", text)
+    if len(list(_refs(d))) < len(mentions(outside)):
+        return _reject("DROPPED", "object")
+    if len(list(_rooms_in(d))) < len(rooms_said(outside, world)):
+        return _reject("DROPPED", "room")
     for name in typed_rooms | set(_rooms_in(d)):
         if _canon_room(name, world) is None:
-            return _answer("UNKNOWN_ROOM", f"There is no {name} on this map. The rooms are {', '.join(sorted(world.rooms))}.")
+            return _answer("UNKNOWN_ROOM", f"There is no {name} on this map. The rooms are {world.rooms_text()}.")
     for s in d["steps"]:
         t = s["target"]
         if "room" in t:
@@ -293,8 +338,8 @@ def validate(raw, text: str, world: VLNWorld) -> Plan:
             r["in_room"] = _canon_room(r["in_room"], world)
     avoid = {_canon_room(a, world) for a in d.get("avoid", [])}
     if None in avoid:
-        return _answer("UNKNOWN_ROOM", f"There is no such room on this map. The rooms are {', '.join(sorted(world.rooms))}.")
-    want = avoid_said(text)
+        return _answer("UNKNOWN_ROOM", f"There is no such room on this map. The rooms are {world.rooms_text()}.")
+    want = {_canon_room(a, world) or a for a in avoid_said(text, world)}
     if want - avoid:
         return _reject("AVOID_DROPPED", ", ".join(sorted(want - avoid)))
     if avoid - want:
@@ -306,7 +351,7 @@ def validate(raw, text: str, world: VLNWorld) -> Plan:
     for s in d["steps"]:
         t, a = s["target"], s["action"]
         if "room" in t:
-            steps.append((a, "room", t["room"], t["room"], [], None))
+            steps.append((a, "room", t["room"], world.room_label(t["room"]), [], None))
             continue
         if "room_with" in t:
             m = ground(t["room_with"], world)
@@ -314,8 +359,8 @@ def validate(raw, text: str, world: VLNWorld) -> Plan:
                 return _not_found(t["room_with"])
             rooms = sorted({world.room_of(o["x"], o["y"]) for o in m})
             if len(rooms) > 1:
-                return _answer("AMBIGUOUS", f"I know {describe_ref(t['room_with'])} in more than one room: {' and '.join(rooms)}. Which room?", rooms)
-            steps.append((a, "room", rooms[0], f"{rooms[0]} (with {describe_ref(t['room_with'])})", [m[0]], None))
+                return _answer("AMBIGUOUS", f"I know {describe_ref(t['room_with'])} in more than one room: {' and '.join(map(world.room_label, rooms))}. Which room?", rooms)
+            steps.append((a, "room", rooms[0], f"{world.room_label(rooms[0])} (with {describe_ref(t['room_with'])})", [m[0]], None))
             continue
         objs = []
         for ref in ([t["object"]] if "object" in t else t["of"]):
@@ -331,7 +376,7 @@ def validate(raw, text: str, world: VLNWorld) -> Plan:
         steps.append((a, "point", world.room_of(objs[0]["x"], objs[0]["y"]), label, objs, rel))
     for a, kind, room, label, objs, rel in steps:
         if room in avoid:
-            return _answer("IMPOSSIBLE", f"You asked me to avoid {room}, but {label} is in {room}.")
+            return _answer("IMPOSSIBLE", f"You asked me to avoid {world.room_label(room)}, but {label} is in {world.room_label(room)}.")
     def _anchor(st):
         if st[1] == "room":
             return world.centre(st[2])
@@ -340,7 +385,7 @@ def validate(raw, text: str, world: VLNWorld) -> Plan:
     anchors = [_anchor(st) for st in steps]
     wps, rooms_seq, notes = [], [start_room], []
     if start_room in avoid:
-        notes.append(f"I'm in {start_room} now; I'll leave it the shortest way.")
+        notes.append(f"I'm in {world.room_label(start_room)} now; I'll leave it the shortest way.")
     cur, pos, length = start_room, (rx, ry), 0.0
     for k, (a, kind, room, label, objs, rel) in enumerate(steps):
         nxt = anchors[k + 1] if k + 1 < len(steps) else None
@@ -355,7 +400,7 @@ def validate(raw, text: str, world: VLNWorld) -> Plan:
             pts = [world.doors[dn] for dn in doors]
             entry = pts[-1] if pts else pos               # the robot comes into the room from here
             if kind == "room":
-                cand = [world.centre(room)]
+                cand = room_point(room, world)
             elif rel is not None:
                 rp = _relation_point(rel, objs, entry, world)
                 cand = [rp] if rp else []
@@ -366,9 +411,15 @@ def validate(raw, text: str, world: VLNWorld) -> Plan:
                     raw = [(L["x"] + kk * math.cos(t_), L["y"] + kk * math.sin(t_)) for kk in (0.6, 0.8, 1.0)
                            for t_ in [2 * math.pi * i / 16 for i in range(16)]]
                 else:
-                    raw = [(L["x"] - ux * kk, L["y"] - uy * kk) for kk in (STOP_STANDOFF, 0.5, 0.8)]
-                cand = [(x, y) for x, y in raw if world.free(x, y, ignore={L["id"]}, ref_sigma=L.get("sigma", 0.0))
-                        and world.room_of(x, y) == room]
+                    raw = [(L["x"] - ux * kk, L["y"] - uy * kk) for kk in (STOP_STANDOFF, 0.5, 0.8, 1.0)]
+                ok_ = lambda x, y: (world.free(x, y, ignore={L["id"]}, ref_sigma=L.get("sigma", 0.0)) and world.room_of(x, y) == room   # noqa: E731
+                                    and math.hypot(x - L["x"], y - L["y"]) >= landmark_clearance(L, world))
+                cand = [(x, y) for x, y in raw if ok_(x, y)]
+                if a != "pass" and not cand:          # "stop near X" needs no particular side: the free side nearest the approach
+                    ring = [(L["x"] + kk * math.cos(t_), L["y"] + kk * math.sin(t_)) for kk in (STOP_STANDOFF, 0.8, 1.0)
+                            for t_ in [2 * math.pi * i / 16 for i in range(16)]]
+                    ring = sorted((q for q in ring if ok_(*q)), key=lambda q: (round(math.dist(q, (L["x"], L["y"])), 2), math.dist(q, entry)))
+                    cand = ring[:1]
             for c in cand:
                 seq = [pos, *pts, c]
                 ln = sum(math.dist(p, q) for p, q in zip(seq, seq[1:])) + (math.dist(c, nxt) if nxt else 0.0)
@@ -376,7 +427,9 @@ def validate(raw, text: str, world: VLNWorld) -> Plan:
                     best = (ln, rooms, doors, pts, c)
         if best is None:
             if not world.room_routes(cur, room, avoid):
-                return _answer("IMPOSSIBLE", f"I can't reach {room} without going through {' or '.join(sorted(avoid))}.")
+                if avoid:
+                    return _answer("IMPOSSIBLE", f"I can't reach {world.room_label(room)} without going through {' or '.join(map(world.room_label, sorted(avoid)))}.")
+                return _answer("IMPOSSIBLE", f"I don't know a way from {world.room_label(cur)} into {world.room_label(room)} on this map.")
             where = label if rel else f"{'beside' if a == 'pass' else 'next to'} {label}"
             return _answer("NO_FREE_SPOT", f"There is no free spot {where} where I fit.")
         _, rooms, doors, pts, c = best
@@ -397,7 +450,8 @@ def validate(raw, text: str, world: VLNWorld) -> Plan:
     checks = [{"type": "pass_near", "landmark": w["landmark"], "within_m": PASS_CHECK} for w in wps if w["kind"] == "pass" and "landmark" in w]
     checks += [{"type": "room_order", "rooms": rooms_seq}, {"type": "never_in", "rooms": sorted(avoid)}]
     summary = "; ".join(("go past " if w["kind"] == "pass" else "through " if w["kind"] == "door" else
-                         "into " if w["kind"] == "enter" else "stop at ") + w["label"] for w in wps)
+                         "into " if w["kind"] == "enter" else
+                         "stop " if w["label"].split(" ", 1)[0] in ("left", "right", "next", "behind", "in", "between") else "stop at ") + w["label"] for w in wps)
     gl = steps[-1][4][0] if steps[-1][1] == "room" and steps[-1][4] else None
     return Plan(True, waypoints=wps, goal=goal, rooms=rooms_seq, avoid=sorted(avoid), checks=checks, length_m=round(length, 2),
                 summary=summary, notes=notes, goal_landmark=_lm(gl, world) if gl else None)

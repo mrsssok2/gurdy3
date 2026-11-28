@@ -31,7 +31,7 @@ def main() -> None:
                     help="a web page allowed to use this server from a browser (CORS + WebSocket Origin), e.g. https://mrsssok2.github.io; repeatable; 'none' = only the "
                          "server's own pages. Default: env GURDY_ALLOWED_ORIGINS or https://mrsssok2.github.io. Never a wildcard; the token is still required.")
     ap.add_argument("--ollama", default=None, help="model name; needs OLLAMA_URL")
-    ap.add_argument("--vln", action="store_true", help="VLN instructions (brain/vln: plan by the --ollama model, validated, walked with "
+    ap.add_argument("--vln", action="store_true", help="VLN instructions (brain/vln: plan by the --ollama model (else the keyword parser alone) + keyword fallback, validated, walked with "
                     "temporary no-go zones and progress checks). Needs a places file with room rectangles. Default off")
     ap.add_argument("--fetch", action="store_true", help="Phase 9h: fetch commands on the real arm (needs the stack with arm:=true "
                     "object3d:=true; brain/ros/fetch_robot.py). Default off: fetch phrases go to the planner as before")
@@ -90,8 +90,8 @@ def main() -> None:
     vln = None
     if a.vln:
         from ..vln.planner import VLNPlanner
-        vln = VLNPlanner(model=a.ollama or None)
-        print(f"VLN: ON (plan model {vln.llm.model})")
+        vln = VLNPlanner(model=a.ollama) if a.ollama else VLNPlanner(False)       # no LLM on this stack: the keyword parser alone
+        print(f"VLN: ON (plan model {vln.llm.model} + keyword fallback)" if vln.llm else "VLN: ON (keyword parser, no model)")
     agent = Agent(ToolLayer(be), llm, vln=vln)
     from .chat_ui import Chat
     chat = Chat(agent, be.known_places, prompt="> ")

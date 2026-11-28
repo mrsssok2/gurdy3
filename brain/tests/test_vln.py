@@ -189,9 +189,15 @@ def test_planner_prefilter_failure_and_reject():
     pl = VLNPlanner(f)
     assert pl.plan("what is in room B?", W) is None and f.n == 0           # a question: no model call
     assert pl.plan("go to room B", W).ok and f.n == 1
-    assert VLNPlanner(Fake(OSError("down"))).plan("go to room B", W) is None
-    bad = VLNPlanner(Fake(json.dumps(GO(S("enter", room="room C")))))
+    assert VLNPlanner(Fake(OSError("down")), fallback=False).plan("go to room B", W) is None
+    bad = VLNPlanner(Fake(json.dumps(GO(S("enter", room="room C")))), fallback=False)
     assert bad.plan("go to room B", W) is None and bad.rejected == 1       # the model named another room
+    down = VLNPlanner(Fake(OSError("down")))                                  # with the keyword fallback (default)
+    p = down.plan("go to room B", W)
+    assert p.ok and p.source == "keyword" and p.rooms == ["room A", "room B"] and down.failures == 1
+    bad = VLNPlanner(Fake(json.dumps(GO(S("enter", room="room C")))))
+    p = bad.plan("go to room B", W)
+    assert p.ok and p.source == "keyword" and p.rooms[-1] == "room B" and bad.rejected == 1
     ans = VLNPlanner(Fake(json.dumps(GO(S("stop", object=R("traffic_cone")))))).plan("go to the cone", W)
     assert ans is not None and ans.answered and "Which one?" in ans.reply
 

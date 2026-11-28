@@ -144,7 +144,9 @@ def test_blocked_leg_is_an_honest_failure():
     from brain.mock.world import Rect
     be.add_obstacle(Rect(1.95, -1.3, 2.05, -0.1))                   # close the A-B doorway
     r = ag.say("go to room B, don't go through room C")
-    assert not ag.vln_last.ok and ag.vln_last.code in ("LEG_FAILED", "LEG_REFUSED") and "I'm in room B" not in r.reply
+    # the pre-move path check sees it (2026-11-28): refused before moving, not halfway (a mid-walk block: test_vln_route.py)
+    assert not ag.vln_last.ok and ag.vln_last.code == "UNREACHABLE" and "I'm in room B" not in r.reply
+    assert "haven't moved" in r.reply and math.hypot(be.x, be.y) < 1e-6
     assert be.zones == []
 
 

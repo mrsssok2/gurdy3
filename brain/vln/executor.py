@@ -95,6 +95,9 @@ class VLNExecutor:
                     self.deferred.add(r)
                 else:
                     self.b.add_temp_zone(world.rooms[r], self.tag, f"{r} (avoid, this walk only)")
+            pre = self._preflight(plan)
+            if pre is not None:
+                return pre
             replans = 0
             while True:
                 res = self._walk(plan, world)
@@ -118,6 +121,22 @@ class VLNExecutor:
                 res.alerts = list(self.alerts)
                 if self.alerts:
                     res.reply += " Also: " + " ".join(dict.fromkeys(self.alerts))
+
+    def _preflight(self, plan):
+        """Before moving: every waypoint must be reachable from here (with the avoid zones and the user's no-go zones in place).
+        A point no path reaches from here is not reached via another leg either (same map), so an unreachable waypoint
+        refuses the whole walk honestly instead of failing halfway. Backends without path_check: no check (legs report)."""
+        pc = getattr(self.b, "path_check", None)
+        if not callable(pc):
+            return None
+        for wp in plan.waypoints:
+            r = pc(point={"x": wp["x"], "y": wp["y"]})
+            if not r.ok or r.data.get("reachable") is not False:
+                continue                                  # an error (no pose ...) is not a "no": the leg itself will tell
+            why = "a no-go zone is in the way" if r.data.get("crosses_no_go") or r.data.get("blocked_by") == "no-go zone" \
+                else "I can't find a free path there"
+            return VLNResult(False, "UNREACHABLE", f"I can't reach {wp['label']} from here: {why}. I haven't moved.")
+        return None
 
     def _stop_reply(self, why):
         x, y, _ = self._pose()
