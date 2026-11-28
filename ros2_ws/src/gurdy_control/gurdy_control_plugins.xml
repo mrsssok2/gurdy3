@@ -3,4 +3,8 @@
          base_class_type="controller_interface::ControllerInterface">
     <description>Joint PD on the effort interface: tau = kp*(q_ref - q) - kd*qdot, clipped.</description>
   </class>
+  <class name="gurdy_control/CoupledGripperController" type="gurdy_control::CoupledGripperController"
+         base_class_type="controller_interface::ControllerInterface">
+    <description>Two gripper fingers as one rack: mean effort + spring-damper on the finger difference (no mimic joints in Gazebo).</description>
+  </class>
 </library>

@@ -39,6 +39,14 @@ pd_gains:
   arm_wrist_pitch: {p: 6.0,  i: 6.0,  d: 0.015, i_clamp: 0.18}
   arm_wrist_roll:  {p: 1.0,  i: 1.0,  d: 0.0,   i_clamp: 0.18}
 
+# Gripper (2026-11-28): the real gripper is ONE SG90 driving a rack, so both fingers always move symmetrically. Gazebo /
+# gz_ros2_control here have no mimic joints, so gurdy_control/CoupledGripperController couples them: one effort for the
+# rack (mean of the command) + a spring-damper on the finger difference. Bounds at the 500 Hz controller rate for the
+# difference coordinate (effective mass m_finger / 2 = 2.5 g): 2*kp*dt^2/m <= 0.25 -> kp <= 156 N/m, 2*kd*dt/m <= 0.5 ->
+# kd <= 0.62 N s/m; used ~3/4 of each. A sideways force F on the pair slides it s = F / (2 kp) (1 N -> 4 mm). null = the old independent
+# fingers (effort_controllers/JointGroupEffortController).
+gripper_coupling: {kp: 120.0, kd: 0.4, effort_limit: 10.0}
+
 links:
   # yaw joint at the top of the base; shoulder axis `shoulder_h` above the yaw joint
   turret:    {size: [0.040, 0.054, 0.040], mass: 0.065, shoulder_h: 0.025}   # shoulder servo (MG996R) + bracket

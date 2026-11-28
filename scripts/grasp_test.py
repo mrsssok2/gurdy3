@@ -453,12 +453,18 @@ def _grasp_and_lift(rig, obj, a, rec, est, yaw_b, rest, t0):
     lift_z, hold_z = [], []
     done = threading.Event()
 
+    fingers_lift = []                                              # (t, left, right) in mm, every 50 ms through lift + hold
+
     def sampler(dst):
         while not done.is_set():
             p = rig.poses.get(name)
             if p:
                 dst.append(p[2])
+            f = rig.fingers()
+            if f is not None:
+                fingers_lift.append((round(rig.now() - t_lift0, 2), round(f[0] * 1000, 1), round(f[1] * 1000, 1)))
             time.sleep(0.05)
+    t_lift0 = rig.now()
     th = threading.Thread(target=sampler, args=(lift_z,), daemon=True)
     th.start()
     rig.move_direct(plan.lift, 2.5)
@@ -479,6 +485,11 @@ def _grasp_and_lift(rig, obj, a, rec, est, yaw_b, rest, t0):
                      fingers_hold=rec["fingers_hold"], cls=cls)
     rec.update(res.to_dict())
     rec["time_s"] = round(tt() - t0, 2)
+    if fingers_lift:
+        d = [abs(a_ - b_) for _, a_, b_ in fingers_lift]
+        rec["fingers_lift"] = {"samples_mm": fingers_lift, "max_diff_mm": round(max(d), 1),
+                               "min_mm": min(min(a_, b_) for _, a_, b_ in fingers_lift),
+                               "max_mm": max(max(a_, b_) for _, a_, b_ in fingers_lift)}
     rec["z_samples"] = {"rest": rest[2], "lift": [round(z, 4) for z in lift_z[::2]], "hold": [round(z, 4) for z in hold_z[::4]]}
     # 7. put it back down, open, fold
     rig.move_direct(plan.grasp, 2.0)

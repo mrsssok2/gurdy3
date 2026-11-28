@@ -59,6 +59,14 @@ def arm_controllers(ctrl: dict, arm_cfg: dict | None = None) -> dict:
     for k, v in extra.items():
         if k != "controller_manager":
             out[k] = v
+    gc = (arm_cfg or {}).get("gripper_coupling")
+    if gc:       # one servo + rack: both fingers coupled (gurdy_control/CoupledGripperController); null = independent fingers
+        cm = out["controller_manager"]["ros__parameters"]
+        cm["gripper_controller"] = {"type": "gurdy_control/CoupledGripperController"}
+        joints = out["gripper_controller"]["ros__parameters"]["joints"]
+        out["gripper_controller"] = {"ros__parameters": {"joints": list(joints), "coupling_kp": float(gc["kp"]),
+                                                         "coupling_kd": float(gc["kd"]),
+                                                         "effort_limit": float(gc["effort_limit"])}}
     if (arm_cfg or {}).get("control", "position") == "effort":
         p = dict(out["arm_controller"]["ros__parameters"])
         p["command_interfaces"] = ["effort"]

@@ -12,7 +12,7 @@ foreach(dep ${DEPS})
   find_package(${dep} REQUIRED)
 endforeach()
 
-add_library(gurdy_control SHARED src/joint_pd_controller.cpp)
+add_library(gurdy_control SHARED src/joint_pd_controller.cpp src/coupled_gripper_controller.cpp)
 ament_target_dependencies(gurdy_control ${DEPS})
 pluginlib_export_plugin_description_file(controller_interface gurdy_control_plugins.xml)
 
