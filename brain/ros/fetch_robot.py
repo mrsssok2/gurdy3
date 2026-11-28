@@ -524,9 +524,17 @@ class RosFetchRobot:
         self._wait(0.5)
         v = self._wrist_view_retry()
         if v is None or self._rest is None:
+            self._standing_why = "no wrist frame" if v is None else "rest spot unknown"
             return None
         r = 0.5 * max(self.A.PICKABLE[cls].get("size", (0.06, 0.06))[:2]) if "size" in self.A.PICKABLE[cls] else self.A.PICKABLE[cls]["radius"]
-        return WY.standing_points(*v, self._base(self._rest), r + 0.01)
+        sv = getattr(self, "_servo", None)            # floor fitted by the servo before the grasp (base frame; robot not moved)
+        floor = sv.obs.floor if sv is not None and sv.obs is not None and getattr(sv.obs, "floor", None) else None
+        n, why = WY.standing_check(*v, self._base(self._rest), r + 0.01, floor=floor)
+        if n is None and floor is not None:           # e.g. the known floor plane is off: try the in-view fit too
+            n, why2 = WY.standing_check(*v, self._base(self._rest), r + 0.01)
+            why = why2 if n is not None else f"{why}; in-view fit: {why2}"
+        self._standing_why = why
+        return n
 
     def verify_grasp(self, name):
         p = self._plan
@@ -552,9 +560,15 @@ class RosFetchRobot:
         # frame -> keep the gripper closed, fold, and report that the hold cannot be confirmed (no release, no re-grasp)
         if f is None or (fingers_ok and standing is None):
             self.verify_code = "UNCONFIRMED"
-            self.verify_why = "I couldn't read my gripper" if f is None else "my wrist camera gave me no picture to check"
+            sw = getattr(self, "_standing_why", "")
+            self.verify_why = ("I couldn't read my gripper" if f is None else
+                               "my wrist camera gave me no picture to check" if sw == "no wrist frame" else
+                               "my wrist camera couldn't see the spot where it stood")
+            if self._att is not None:
+                self._att["standing_why"] = sw
             self.carrying = name
-            self._end_attempt("unconfirmed", "fingers unknown" if f is None else "no wrist frame for the lift check")
+            self._end_attempt("unconfirmed", "fingers unknown" if f is None else
+                              f"lift check not possible: {getattr(self, '_standing_why', '') or 'no wrist frame'}")
             self.fold_arm()
             return False
         why = ("fingers fully closed: nothing between them" if f is not None and min(f) <= FINGER_CLOSED else

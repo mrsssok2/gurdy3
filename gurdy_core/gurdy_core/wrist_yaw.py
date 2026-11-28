@@ -173,21 +173,38 @@ def estimate_yaw(depth, K, T_base_opt, cls: str, xy_hint=None, prm: YawParams | 
                        "top face cut by the image border" if partial else "")
 
 
-def standing_points(depth, K, T_base_opt, xy_base, radius: float, band=(0.005, 0.025), prm: YawParams | None = None) -> int | None:
-    """Points of something STANDING on the floor at base-frame `xy_base` (height band just above the fitted floor, within
-    `radius`). A lifted object (bottom > 2.5 cm up) or an empty spot gives ~0; None when there is no floor fit. Used to
-    verify a grasp from the view pose: the object must no longer stand where it was."""
+def standing_check(depth, K, T_base_opt, xy_base, radius: float, band=(0.005, 0.025), prm: YawParams | None = None,
+                   floor=None, min_visible: int = 20) -> tuple:
+    """(points of something STANDING on the floor at base-frame `xy_base` (height band just above the floor, within
+    `radius`) or None, why). A lifted object (bottom > 2.5 cm up) or an empty spot gives ~0.
+    floor: a known plane (n, d) in base_link (e.g. the servo's fit before the grasp: the robot has not moved since); without
+    it the floor is fitted in this view. None (UNKNOWN, never 'gone') when the spot is not visible: fewer than `min_visible`
+    points of the floor or of an object there -- e.g. the held object fills the wrist camera's view (2026-11-28 smoke: the
+    in-view floor fit failed behind a held can; with a known floor a hidden spot would otherwise read 0 = 'lifted')."""
     prm = prm or YawParams()
     lp = LO.LowObstacleParams(stride=prm.stride, min_range=prm.near, max_range=prm.far, floor_band=0.08)
     p_opt, _ = LO.depth_to_points(depth, K, lp)
     if len(p_opt) < 50:
-        return None
+        return None, f"only {len(p_opt)} valid depth points (view blocked / too close)"
     pts = LO.apply_T(T_base_opt, p_opt)
-    n, d, fitted, _ = LO.fit_floor(pts, lp)
-    if not fitted:
-        return None
+    if floor is not None:
+        n, d = np.asarray(floor[0], float), float(floor[1])
+    else:
+        n, d, fitted, _ = LO.fit_floor(pts, lp)
+        if not fitted:
+            return None, f"no floor fit in this view ({len(p_opt)} points)"
     T_fb = _floor_T(n, d)
     f = LO.apply_T(T_fb, pts)
     c = LO.apply_T(T_fb, np.array([[xy_base[0], xy_base[1], 0.0]]))[0, :2]
-    m = (f[:, 2] >= band[0]) & (f[:, 2] <= band[1]) & (np.hypot(f[:, 0] - c[0], f[:, 1] - c[1]) <= radius)
-    return int(m.sum())
+    near = np.hypot(f[:, 0] - c[0], f[:, 1] - c[1]) <= radius
+    visible = near & (f[:, 2] >= -0.01) & (f[:, 2] <= band[1])
+    if visible.sum() < min_visible:
+        return None, f"spot not visible ({int(visible.sum())} floor / object points within {radius:.2f} m)"
+    m = near & (f[:, 2] >= band[0]) & (f[:, 2] <= band[1])
+    return int(m.sum()), ""
+
+
+def standing_points(depth, K, T_base_opt, xy_base, radius: float, band=(0.005, 0.025), prm: YawParams | None = None,
+                    floor=None) -> int | None:
+    """standing_check without the reason (None = unknown: no floor / spot not visible)."""
+    return standing_check(depth, K, T_base_opt, xy_base, radius, band, prm, floor)[0]
