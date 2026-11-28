@@ -54,7 +54,7 @@ def inside(u, v, b):
     return b[0] - PAD <= u <= b[2] + PAD and b[1] - PAD <= v <= b[3] + PAD
 
 
-def evaluate_split(det, data: Path, split: str, limit: int = 0) -> dict:
+def evaluate_split(det, data: Path, split: str, limit: int = 0, only=None) -> dict:
     stats = defaultdict(lambda: defaultdict(int))
     metas = sorted((data / "meta" / split).glob("*.json"))
     if limit:
@@ -67,7 +67,7 @@ def evaluate_split(det, data: Path, split: str, limit: int = 0) -> dict:
         img = data / "images" / split / (mf.stem + ".png")
         if not img.exists():
             continue
-        gts = [g for g in m["gt"] if g["cls"] in SMALL_CLASSES and 0 <= g["uv"][0] < W and 0 <= g["uv"][1] < H and g["p_cam"][2] > 0.07]
+        gts = [g for g in m["gt"] if g["cls"] in (only or SMALL_CLASSES) and 0 <= g["uv"][0] < W and 0 <= g["uv"][1] < H and g["p_cam"][2] > 0.07]
         if not gts:
             continue
         dets = det(np.array(Image.open(img).convert("RGB")))
@@ -121,12 +121,14 @@ def main():
     ap.add_argument("--providers", default="auto")
     ap.add_argument("--limit", type=int, default=0)
     ap.add_argument("--out", default="")
+    ap.add_argument("--only", nargs="*", default=None, help="count only these small classes (default: all)")
     a = ap.parse_args()
     from gurdy_core.vision.detector import OnnxDetector
     det = OnnxDetector(a.model, a.providers, conf=a.conf, names=CLASSES_V3)
-    lines = [f"Recall by distance, small classes, model `{a.model}`, split {a.split}, conf {a.conf} (vision/recall_by_distance.py)", ""]
+    what = ", ".join(a.only) if a.only else "small classes"
+    lines = [f"Recall by distance, {what}, model `{a.model}`, split {a.split}, conf {a.conf} (vision/recall_by_distance.py)", ""]
     for d in a.data:
-        lines += table(f"{d} ({a.split})", evaluate_split(det, Path(d), a.split, a.limit))
+        lines += table(f"{d} ({a.split})", evaluate_split(det, Path(d), a.split, a.limit, a.only))
     txt = "\n".join(lines)
     print(txt)
     if a.out:
