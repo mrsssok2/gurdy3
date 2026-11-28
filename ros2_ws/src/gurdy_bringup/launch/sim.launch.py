@@ -79,6 +79,7 @@ def generate_launch_description():
                       parameters=[{"model": LaunchConfiguration("detector_model"), "use_sim_time": False,
                                    "target_frame": LaunchConfiguration("target_frame"),
                                    "log_path": LaunchConfiguration("detector_log"),
+                                   "ttl": PythonExpression(["float(", LaunchConfiguration("detector_ttl"), ")"]),
                                    "position_method": PythonExpression(["'object3d' if '", LaunchConfiguration("object3d"),
                                                                         "' == 'true' else 'pixel'"])}])
     rec_dir = LaunchConfiguration("costmap_record_dir")     # Phase 8a cause 2: costmap + pose at each planner failure
@@ -103,6 +104,8 @@ def generate_launch_description():
            DeclareLaunchArgument("perception", default_value="false", description="Phase 4: detector + semantic map (camera on)"),
            DeclareLaunchArgument("detector_model", default_value="", description="ONNX in models/detector/ (default det_v31_s.onnx; rollback det_v3_s.onnx / det_v2_s.onnx)"),
            DeclareLaunchArgument("detector_log", default_value="", description="JSON-lines log of every detector sighting"),
+           DeclareLaunchArgument("detector_ttl", default_value="30.0",
+                                 description="s an unconfirmed detector track is kept after its last sighting (was 10)"),
            DeclareLaunchArgument("object3d", default_value="false",
                                  description="Phase 8c: detector positions from all box depth pixels + floor fit + shape fit (default: Phase 4 pixel method)"),
            DeclareLaunchArgument("target_frame", default_value="map", description="frame of the semantic map (odom without SLAM)"),

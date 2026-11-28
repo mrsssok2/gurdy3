@@ -75,7 +75,11 @@ class DetectorNode(Node):
         P = self.declare_parameter
         P("model", ""); P("providers", "auto"); P("conf", 0.40); P("iou", 0.5)
         P("target_frame", "map"); P("max_range", 4.0); P("min_range", 0.25); P("max_rate_hz", 5.0)
-        P("min_hits", 8); P("ttl", 10.0); P("edge_margin", 3.0); P("tf_timeout", 0.2)
+        P("min_hits", 8); P("edge_margin", 3.0); P("tf_timeout", 0.2)
+        # ttl: an UNCONFIRMED track is forgotten this long (sim s) after its last sighting; confirmed tracks stay. 30 s (was
+        # 10, 2026-11-28): a small object seen in two short scan passes (6 + 5 sightings, 29 s apart) never reached 8 hits;
+        # replay of the day's fetch logs: 30 s confirms it with no extra false track (vision/replay_fetch_sightings.py)
+        P("ttl", 30.0)
         P("truncated_weight", 0.25)      # position weight of edge-truncated sightings (1 = like a full box, 0 = skip them)
         P("min_span", 2.0); P("min_mean_score", 0.6); P("max_scatter", 0.5)   # track confirmation (semantic_map.py)
         P("dominance_ratio", 4.0); P("dominance_radius", 0.35)   # a sparse track on top of a >= 4x better seen one is a class confusion
