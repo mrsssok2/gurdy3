@@ -67,7 +67,10 @@ class RclpyArmPort:
             self.js.update(dict(zip(m.name, m.position)))
 
     def _depth(self, m):
-        self.depth = (time.monotonic(), np.frombuffer(m.data, dtype=np.float32).reshape(m.height, m.width).copy())
+        now = time.monotonic()
+        self.depth = (now, np.frombuffer(m.data, dtype=np.float32).reshape(m.height, m.width).copy())
+        self.n_depth = getattr(self, "n_depth", 0) + 1                      # diagnostics (wrist_view returning None)
+        self.depth_seen = (getattr(self, "depth_seen", []) + [(now, m.header.stamp.sec + m.header.stamp.nanosec * 1e-9)])[-20:]
 
     @staticmethod
     def _done(fut, timeout):
@@ -148,11 +151,18 @@ class RclpyArmPort:
             q = self.arm_q()
             if d and d[0] > t0 and self.K and q is not None:
                 self.last_view_why = None
+                self.view_stats = getattr(self, "view_stats", []) + [(True, round(d[0] - t0, 2), n_trig)]
                 return d[1], self.K, self.A.T_base_wrist_optical(self.ARM, q)
         d = self.depth
-        self.last_view_why = (f"{n_trig} triggers; last depth frame "
-                              f"{'never' if not d else f'{t0 - d[0]:.1f} s before the request'}"
+        seen = getattr(self, "depth_seen", [])
+        during = [st for wt, st in seen if wt > t0]
+        self.last_view_why = (f"{n_trig} triggers; {len(during)} depth msgs during the request"
+                              f"{f' (stamps {during[0]:.2f}..{during[-1]:.2f})' if during else ''}; "
+                              f"{getattr(self, 'n_depth', 0)} depth msgs since start; last one "
+                              f"{'never' if not d else f'{t0 - d[0]:.1f} s wall before the request'}"
+                              f"{f', stamp {seen[-1][1]:.2f}' if seen else ''}"
                               f"{'; no camera_info' if not self.K else ''}{'; no arm joint states' if self.arm_q() is None else ''}")
+        self.view_stats = getattr(self, "view_stats", []) + [(False, round(time.monotonic() - t0, 2), n_trig)]
         return None
 
     def settle(self, q, tol=0.003, timeout=3.0):
