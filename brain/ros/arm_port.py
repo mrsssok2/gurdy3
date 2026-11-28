@@ -16,6 +16,7 @@ class ArmPort(Protocol):
     def move_arm(self, qs: list, seconds: float, use_moveit: bool = False) -> bool: ...   # one goal (qs = [q]) or waypoints; blocks
     def gripper(self, effort: float) -> None: ...                     # effort per finger, N (+ = open, - = close/squeeze)
     def fingers(self) -> tuple[float, float] | None: ...              # finger joint positions (m, opening per finger)
+    def efforts(self) -> dict | None: ...                               # arm joint efforts (N m), averaged ~0.5 s; None = unknown
     def wrist_view(self) -> tuple | None: ...                         # trigger + fresh frame: (depth (H, W) float32, K, T_base_opt) or None
     def set_speed_limit(self, mps: float | None) -> None: ...         # Nav2 controller speed limit (None = no limit)
     def wait(self, seconds: float) -> None: ...                       # let time pass (wall sleep on the real robot)

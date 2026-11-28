@@ -92,7 +92,7 @@ def test_failed_grip_is_detected_by_verify_and_retried(fault):
     r = s.handle("bring me the blue can")
     assert "couldn't get a grip" in r and "3 attempts" in r and "Here you are" not in r
     v = [x["verify"] for x in rob.log if "verify" in x]
-    assert len(v) == 3 and not any(x["fingers_ok"] and (x["standing_points"] or 0) < 15 for x in v)
+    assert len(v) == 3 and not any(x["hold"] == "HOLDING" for x in v)
     assert rob.carrying is None
 
 

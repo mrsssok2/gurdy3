@@ -35,23 +35,31 @@ def no_frame_while_holding(arm, after=None):
     return n
 
 
-def test_no_wrist_frame_at_verify_keeps_holding_and_says_so():
+def test_no_wrist_frame_does_not_matter_when_gripper_and_payload_agree():
+    """The wrist view is only a secondary check now: fingers at the width + the arm feeling the weight confirm the hold."""
     s, rob, arm, fp = rig()
     opens = track_opens(arm)
-    n = no_frame_while_holding(arm)
-    t0 = fp.now()
+    no_frame_while_holding(arm)
     r = s.handle("pick up the blue can")
-    assert "I can't confirm I'm holding it" in r and "no picture" in r
-    assert arm.held is not None and arm.held["name"] == "blue_can" and rob.carrying is not None
-    assert opens == []                                                  # never opened while holding
-    assert not ground(r, set(), True)                                   # no success claim
-    assert n["k"] >= rob.cfg.view_tries and fp.now() - t0 >= rob.cfg.view_window_s
-    assert any("no frame after" in str(x.get("wrist_view", "")) for x in rob.log)
+    assert r.startswith("I picked up the blue can")
     att = rob.attempts[-1]
-    assert att["outcome"] == "unconfirmed" and att["standing_points"] is None
+    assert att["outcome"] == "success" and att["hold"]["code"] == "HOLDING" and att["standing_points"] is None
+    assert opens == []
 
 
-def test_frame_after_a_retry_confirms_the_pick():
+def test_no_effort_reading_keeps_holding_and_says_so():
+    """Payload unmeasurable (no joint efforts) and no wrist frame: holding cannot be confirmed -> keep closed, no claim."""
+    s, rob, arm, fp = rig({"no_effort": True})
+    opens = track_opens(arm)
+    no_frame_while_holding(arm)
+    r = s.handle("pick up the blue can")
+    assert "I can't confirm I'm holding it" in r and "couldn't measure the weight" in r
+    assert arm.held is not None and rob.carrying is not None and opens == []
+    assert not ground(r, set(), True)
+    assert rob.attempts[-1]["outcome"] == "unconfirmed"
+
+
+def test_frame_after_a_retry_is_used_as_the_secondary_check():
     s, rob, arm, fp = rig()
     no_frame_while_holding(arm, after=2)                                 # first 2 requests fail, the 3rd works
     r = s.handle("pick up the blue can")
@@ -59,8 +67,8 @@ def test_frame_after_a_retry_confirms_the_pick():
     assert any(x.get("wrist_view") == "frame after 3 requests" for x in rob.log)
 
 
-def test_bring_me_with_no_verify_frame_does_not_carry_on_or_claim():
-    s, rob, arm, fp = rig()
+def test_bring_me_without_effort_does_not_carry_on_or_claim():
+    s, rob, arm, fp = rig({"no_effort": True})
     opens = track_opens(arm)
     no_frame_while_holding(arm)
     r = s.handle("bring me the blue can")

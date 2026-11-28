@@ -141,6 +141,20 @@ class FakeArmPort:
     def fingers(self):
         return self.finger
 
+    def efforts(self):
+        """Static arm efforts from the arm model (as the effort-controlled arm holds them), with the HELD object's mass.
+        Faults: no_effort (bool) -> None; phantom_weight {names}: the arm feels that object although it is not held."""
+        if self.faults.get("no_effort"):
+            return None
+        from ..fetch.catalog import PICKABLE
+        mass = lambda o: PICKABLE.get(o.get("class"), (0.05,))[0]          # noqa: E731
+        m = mass(self.held) if self.held is not None else 0.0
+        if not m:
+            ph = [o for o in self.objs if o["name"] in self.faults.get("phantom_weight", set())]
+            m = mass(ph[0]) if ph else 0.0
+        t = A.joint_torques(self.a, np.asarray(self.q, float), m)
+        return {j: round(float(t.get(j, 0.0)), 4) for j in A.ARM_JOINTS}
+
     def wrist_view(self):
         Tw = self._T_world_base() @ A.T_base_wrist_optical(self.a, self.q)
         solids = [s for o in self.objs if o is not self.held for s in _solids(o)]

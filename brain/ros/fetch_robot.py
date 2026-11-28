@@ -537,44 +537,51 @@ class RosFetchRobot:
         return n
 
     def verify_grasp(self, name):
+        """Primary hold check = GRIPPER + PAYLOAD (gurdy_core.hold_check): fingers stalled at the object's width through the
+        lift AND the arm's joint efforts showing the object's weight. Both -> holding; a measured 'nothing there' -> missed
+        (open, re-grasp); disagreement or missing data -> keep the gripper closed, fold, and say it cannot be confirmed.
+        Fingers fully closed is never 'holding'. Secondary: the wrist view of the old spot, only when that spot is visible
+        (the held object usually hides it); it can only VETO a hold (object still standing there), never create one."""
+        from gurdy_core import hold_check as HC
         p = self._plan
         if p is None:
             return False
         o = self._objects[name]
         self.verify_code = None
         self._move_arm(p.lift, 2.5)
-        self._wait(1.0)
+        if hasattr(self.arm, "settle"):
+            self.arm.settle(p.lift[-1], timeout=2.0)
+        self._wait(1.0)                                # the arm's integral term takes up the weight
         f = self._fingers_retry()
-        half = CAT[o.cls][1] / 2 if o.cls in CAT else 0.03
-        fingers_ok = f is not None and min(f) > FINGER_CLOSED and max(f) < half + 0.012
-        standing = self._standing_at_rest(o.cls) if fingers_ok else None
-        gone = standing is not None and standing < 15
-        self.log.append({"t": round(self.now(), 1), "verify": {"fingers": f, "fingers_ok": fingers_ok, "standing_points": standing}})
+        eff = self.arm.efforts() if hasattr(self.arm, "efforts") else None
+        q = self.arm.arm_q()
+        mass, width = (CAT[o.cls][0], CAT[o.cls][1]) if o.cls in CAT else (0.05, 0.06)
+        f_closed = self._att.get("fingers_closed") if self._att is not None else None
+        hv = HC.hold_verdict(self.ARM, q, eff, f_closed, f, width, mass)
+        standing = None
+        if hv.fingers != "closed":                     # secondary check, only where it can see
+            standing = self._standing_at_rest(o.cls)
+            if hv.holding and standing is not None and standing >= 15:
+                hv = HC.HoldVerdict(None, "DISAGREE", hv.fingers, hv.payload, hv.ratio,
+                                    "the arm feels its weight but my wrist camera still sees it standing where it was")
+        rec = {"fingers": f, "efforts": eff, "payload_ratio": hv.ratio, "hold": hv.code, "standing_points": standing,
+               "standing_why": getattr(self, "_standing_why", "") if standing is None and hv.fingers != "closed" else ""}
+        self.log.append({"t": round(self.now(), 1), "verify": rec})
         if self._att is not None:
-            self._att.update(fingers_lifted=f, fingers_ok=fingers_ok, standing_points=standing)
-        if fingers_ok and gone:
+            self._att.update(fingers_lifted=f, fingers_ok=hv.fingers == "width", efforts_lift=eff, payload_ratio=hv.ratio,
+                             hold=hv.to_dict(), standing_points=standing, standing_why=rec["standing_why"])
+        if hv.holding:
             self.carrying = name
             self._end_attempt("success")
             return True
-        # MISSING DATA IS NEVER A NEGATIVE RESULT: fingers unknown, or fingers say "holding" but the wrist camera gave no
-        # frame -> keep the gripper closed, fold, and report that the hold cannot be confirmed (no release, no re-grasp)
-        if f is None or (fingers_ok and standing is None):
+        if hv.holding is None:                         # disagreement / missing data: never a release, never a claim
             self.verify_code = "UNCONFIRMED"
-            sw = getattr(self, "_standing_why", "")
-            self.verify_why = ("I couldn't read my gripper" if f is None else
-                               "my wrist camera gave me no picture to check" if sw == "no wrist frame" else
-                               "my wrist camera couldn't see the spot where it stood")
-            if self._att is not None:
-                self._att["standing_why"] = sw
+            self.verify_why = hv.why
             self.carrying = name
-            self._end_attempt("unconfirmed", "fingers unknown" if f is None else
-                              f"lift check not possible: {getattr(self, '_standing_why', '') or 'no wrist frame'}")
+            self._end_attempt("unconfirmed", hv.why)
             self.fold_arm()
             return False
-        why = ("fingers fully closed: nothing between them" if f is not None and min(f) <= FINGER_CLOSED else
-               "fingers wider than the object" if f is not None and not fingers_ok else
-               "fingers unknown" if f is None else "something still stands at the old spot (not lifted)")
-        self._end_attempt("missed" if not fingers_ok else "not_lifted", why)
+        self._end_attempt("missed", hv.why)             # measured: nothing in the gripper -> open, back off, re-grasp
         self.arm.gripper(+GRIP_EFFORT)
         self._wait(0.5)
         self._move_arm([p.pre], 1.5)

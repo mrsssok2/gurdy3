@@ -65,6 +65,9 @@ class RclpyArmPort:
     def _js(self, m):
         with self._lock:
             self.js.update(dict(zip(m.name, m.position)))
+            if len(m.effort) == len(m.name):
+                self.eff = getattr(self, "eff", {})
+                self.eff.update(dict(zip(m.name, m.effort)))
 
     def _depth(self, m):
         now = time.monotonic()
@@ -132,6 +135,20 @@ class RclpyArmPort:
 
     def gripper(self, effort):
         self.grip.publish(self.F64(data=[float(effort), float(effort)]))
+
+    def efforts(self):
+        """Arm joint efforts (N m) averaged over ~0.5 s (as scripts/grasp_test.py); None when the joints publish no effort."""
+        acc = []
+        for _ in range(10):
+            time.sleep(0.05)
+            with self._lock:
+                e = dict(getattr(self, "eff", {}))
+            if all(j in e for j in self.A.ARM_JOINTS):
+                acc.append([e[j] for j in self.A.ARM_JOINTS])
+        if len(acc) < 3:
+            return None
+        m = np.mean(np.array(acc), axis=0)
+        return {j: round(float(v), 4) for j, v in zip(self.A.ARM_JOINTS, m)}
 
     def fingers(self):
         with self._lock:
