@@ -12,7 +12,7 @@ CLAIMS = {
     "placed": re.compile(r"\b(put (it|the [\w ]+?) (down )?(in|at)|placed|left (it|the [\w ]+?) in|delivered)\b", re.I),
     "handed_over": re.compile(r"\b(here you are|here it is|here's your|here is your|handed|you have it|you've got it)\b", re.I),
 }
-NEG = re.compile(r"\b(not|n't|couldn't|could not|failed|never|didn't|unable)\b", re.I)
+NEG = re.compile(r"\b(not|n't|couldn't|could not|can't|cannot|can not|don't|won't|isn't|wasn't|failed|never|didn't|unable)\b", re.I)
 
 
 def ground(reply: str, confirmed: set, holding: bool) -> list[str]:
@@ -61,6 +61,14 @@ def outcome_reply(out, objects, handover_text: str = "Here you are: {what}.") ->
         return f"I dropped {what} on the way. It's on the floor in {out.where}. Shall I try to pick it up again?"
     if code == "NOT_TAKEN":
         return f"You didn't take {what}, so I'm still holding it. Tell me where it should go, or say 'hand it to me' again."
+    if code == "GRASP_UNCONFIRMED":
+        why = f" ({out.detail})" if out.detail else ""
+        return (f"I closed my gripper on {what} and lifted it, but I can't confirm I'm holding it{why}. "
+                "I'm keeping my gripper closed: say 'put it down' or 'try again'.")
+    if code == "HOLD_UNCONFIRMED":
+        return f"I can't confirm I'm holding {what} (I couldn't read my gripper), so I didn't let go."
+    if code == "RELEASE_UNCONFIRMED":
+        return f"I couldn't check that my gripper opened, so I closed it again. I can't confirm I'm holding {what}."
     if code == "NOT_STATIONARY":
         return f"I couldn't stand still to hand over {what}, so I didn't let go: I'm still holding it."
     if code == "NOT_RELEASED":

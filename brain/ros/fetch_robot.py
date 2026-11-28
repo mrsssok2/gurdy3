@@ -73,6 +73,9 @@ class FetchConfig:
     # carry back to the REQUESTER (saved place 'me' / 'user' / 'requester', else the robot pose when the command came, else
     # home), present at the hand-over pose, open the gripper only when the body is stationary, and claim delivery only when
     # the state (fingers held it until the release, open after) and, with ground truth, the object's GT pose confirm it
+    view_tries: int = 3               # wrist frames: at least this many requests (each <= 3 s wall in RclpyArmPort) ...
+    view_window_s: float = 8.0        # ... and keep asking until this much SIM time passed (slow RTF: wall != sim)
+    view_wall_cap_s: float = 60.0     # never wait longer than this wall time (a paused sim must not hang the fetch)
     bring_me: bool = False
     still_mps: float = 0.01         # stationary: |v| below this ...
     still_s: float = 1.0            # ... for this long (sim s) before the gripper opens
@@ -476,13 +479,42 @@ class RosFetchRobot:
         a["fingers_closed"] = self.arm.fingers()
         return True
 
+    def _wrist_view_retry(self):
+        """A fresh wrist frame, asked for again until it comes: >= cfg.view_tries requests AND cfg.view_window_s of SIM time
+        (2026-11-28 smoke: one 3 s wall window missed the frame and the held can was released), wall cap cfg.view_wall_cap_s.
+        -> view or None (= no data: the caller must treat it as UNKNOWN, never as a negative result)."""
+        import time
+        t_sim, t_wall, n = self.now(), time.monotonic(), 0
+        while True:
+            v = self.arm.wrist_view()
+            n += 1
+            if v is not None:
+                if n > 1:
+                    self.log.append({"t": round(self.now(), 1), "wrist_view": f"frame after {n} requests"})
+                return v
+            if (n >= self.cfg.view_tries and self.now() - t_sim >= self.cfg.view_window_s) or \
+                    time.monotonic() - t_wall >= self.cfg.view_wall_cap_s:
+                self.log.append({"t": round(self.now(), 1), "wrist_view": f"no frame after {n} requests, "
+                                 f"{self.now() - t_sim:.1f} s sim"})
+                return None
+            self._wait(0.5)
+
+    def _fingers_retry(self, n=3):
+        """Finger positions, re-read up to n times (None = unknown, never 'empty')."""
+        for _ in range(n):
+            f = self.arm.fingers()
+            if f is not None and all(math.isfinite(v) for v in f):
+                return f
+            self._wait(0.3)
+        return None
+
     def _standing_at_rest(self, cls) -> int | None:
         """Points of something still STANDING where the object was, seen from the class view pose."""
         from gurdy_core import wrist_yaw as WY
         from gurdy_core.visual_servo import VIEW_POSE
         self._move_arm([self.ARM.poses[VIEW_POSE[cls]]], 2.0)
         self._wait(0.5)
-        v = self.arm.wrist_view()
+        v = self._wrist_view_retry()
         if v is None or self._rest is None:
             return None
         r = 0.5 * max(self.A.PICKABLE[cls].get("size", (0.06, 0.06))[:2]) if "size" in self.A.PICKABLE[cls] else self.A.PICKABLE[cls]["radius"]
@@ -493,9 +525,10 @@ class RosFetchRobot:
         if p is None:
             return False
         o = self._objects[name]
+        self.verify_code = None
         self._move_arm(p.lift, 2.5)
         self._wait(1.0)
-        f = self.arm.fingers()
+        f = self._fingers_retry()
         half = CAT[o.cls][1] / 2 if o.cls in CAT else 0.03
         fingers_ok = f is not None and min(f) > FINGER_CLOSED and max(f) < half + 0.012
         standing = self._standing_at_rest(o.cls) if fingers_ok else None
@@ -507,6 +540,15 @@ class RosFetchRobot:
             self.carrying = name
             self._end_attempt("success")
             return True
+        # MISSING DATA IS NEVER A NEGATIVE RESULT: fingers unknown, or fingers say "holding" but the wrist camera gave no
+        # frame -> keep the gripper closed, fold, and report that the hold cannot be confirmed (no release, no re-grasp)
+        if f is None or (fingers_ok and standing is None):
+            self.verify_code = "UNCONFIRMED"
+            self.verify_why = "I couldn't read my gripper" if f is None else "my wrist camera gave me no picture to check"
+            self.carrying = name
+            self._end_attempt("unconfirmed", "fingers unknown" if f is None else "no wrist frame for the lift check")
+            self.fold_arm()
+            return False
         why = ("fingers fully closed: nothing between them" if f is not None and min(f) <= FINGER_CLOSED else
                "fingers wider than the object" if f is not None and not fingers_ok else
                "fingers unknown" if f is None else "something still stands at the old spot (not lifted)")
@@ -578,6 +620,12 @@ class RosFetchRobot:
         r = self.truth.nearest(self._objects[self.carrying].cls, gc)
         return None if r is None else (r[1], r[2], gc)
 
+    def _gt_has_data(self) -> bool:
+        """Ground truth currently has fresh poses for the carried object's class (else a None from nearest() = no data)."""
+        o = self._objects.get(self.carrying) if self.carrying else None
+        fresh = getattr(self.truth, "has_data", None)
+        return bool(o is not None and self.truth is not None and (fresh(o.cls) if fresh else True))
+
     def _gc_base(self):
         q = self.arm.arm_q()
         return self.A.fk(self.ARM, np.asarray(q if q is not None else self.ARM.poses["folded"], float))["Gc"]
@@ -588,6 +636,8 @@ class RosFetchRobot:
         if not (self.cfg.bring_me and self.truth is not None and self.carrying):
             return False
         g = self._gt_obj()
+        if g is None and not self._gt_has_data():
+            return False                      # no ground-truth data (stale / missing poses): unknown, never "dropped"
         far = g is None or math.hypot(g[0] - g[2][0], g[1] - g[2][1]) > self.cfg.gt_held_m
         self._gt_far = (getattr(self, "_gt_far", 0) + 1) if far else 0
         return self._gt_far >= 2
@@ -620,6 +670,7 @@ class RosFetchRobot:
         On False, `handover_code` says why: DROPPED (lost before the release), NOT_STATIONARY / NOT_RELEASED (still holding),
         DELIVERY_UNCONFIRMED (opened, but the state / GT does not show the object at the release point)."""
         self.handover_code = None
+        self.verify_code = None               # verify_grasp: "UNCONFIRMED" = holding (fingers) but not confirmed: kept
         x, y, _ = self.p.pose()
         ux, uy = self.user
         self._turn_to(math.atan2(uy - y, ux - x) + math.pi)        # the arm is at the back: back towards the user
@@ -628,11 +679,19 @@ class RosFetchRobot:
             return False
         self._move_arm([self.handover_pose()], 3.0, big=True)
         self._wait(0.5)
-        f_before = self.arm.fingers()
+        f_before = self._fingers_retry()
         g_before = self._gt_obj()
-        held_state = f_before is not None and min(f_before) > FINGER_CLOSED
-        held_gt = g_before is None if self.truth is None else \
-            math.hypot(g_before[0] - g_before[2][0], g_before[1] - g_before[2][1]) <= self.cfg.gt_held_m
+        if f_before is None:                  # unknown: not "lost", and opening blind could drop it -> keep holding
+            self.fold_arm()
+            self.handover_code = "HOLD_UNCONFIRMED"
+            self.log.append({"t": round(self.now(), 1), "deliver": "fingers unknown: kept holding"})
+            return False
+        held_state = min(f_before) > FINGER_CLOSED
+        if self.truth is None or (g_before is None and not self._gt_has_data()):
+            held_gt = True                    # no ground truth (real robot) or no GT data now: decide on the state alone
+        else:
+            held_gt = g_before is not None and \
+                math.hypot(g_before[0] - g_before[2][0], g_before[1] - g_before[2][1]) <= self.cfg.gt_held_m
         if not held_state or not held_gt:
             self.fold_arm()
             self._lost_on_the_way(f"at the hand-over pose (fingers {f_before}, gt {g_before})")
@@ -646,13 +705,14 @@ class RosFetchRobot:
         name, o = self.carrying, self._objects.get(self.carrying)
         self.arm.gripper(+GRIP_EFFORT)                               # open: only now, standing still
         self._wait(1.0)
-        f_after = self.arm.fingers()
-        # open = clearly wider than while holding (a jammed gripper still reads the object's width, which is > FINGER_CLOSED)
+        f_after = self._fingers_retry()
+        # open = clearly wider than while holding (a jammed gripper still reads the object's width, which is > FINGER_CLOSED);
+        # unknown fingers after the open command = not shown open -> treated like a jam (close again, keep it, say so)
         opened = f_after is not None and min(f_after) > min(f_before) + 0.003
         rec = {"t": round(self.now(), 1), "deliver": "released", "fingers_before": f_before, "fingers_after": f_after,
                "release_xy": [round(v, 3) for v in release_xy]}
         if not opened:
-            self.handover_code = "NOT_RELEASED"
+            self.handover_code = "NOT_RELEASED" if f_after is not None else "RELEASE_UNCONFIRMED"
             self.log.append({**rec, "deliver": "gripper did not open"})
             self.arm.gripper(-GRIP_EFFORT)
             self.fold_arm()

@@ -62,6 +62,10 @@ class GzTruth:
                 best = (d, m, v[0], v[1])
         return None if best is None else best[1:]
 
+    def has_data(self, cls: str, max_age: float = 2.0) -> bool:
+        """True when at least one model of `cls` has a fresh pose (so a None from nearest() means 'not there', not 'no data')."""
+        return any(self.get(m, max_age) is not None for m in self.models.get(cls, []))
+
     def robot(self):
         v = self.get(ROBOT_MODEL)
         return None if v is None else v[:2]

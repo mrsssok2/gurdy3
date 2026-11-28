@@ -81,6 +81,11 @@ class FetchMachine:
             ok = self._log(out, "GRASP", self.r.grasp(name), f"attempt {attempt + 1}")
             if ok and self._log(out, "VERIFY_GRASP", self.r.verify_grasp(name)):
                 break
+            if getattr(self.r, "verify_code", None) == "UNCONFIRMED":
+                # missing data is never a negative result: the robot keeps the gripper closed, no re-grasp, no release
+                out.status, out.code, out.where = "holding", "GRASP_UNCONFIRMED", room_of(*self.r.robot)
+                out.detail = getattr(self.r, "verify_why", "")
+                return out
             ok = False
             out.regrasps += 1
         if not ok:
@@ -136,7 +141,7 @@ class FetchMachine:
 
     def fetch(self, name: str, mode: str, room: str | None = None) -> Outcome:
         out = self.pick(name)
-        if out.status != "holding":
+        if out.status != "holding" or out.code:         # e.g. GRASP_UNCONFIRMED: stop here, holding, nothing claimed
             return out
         log, conf, rg = out.log, set(out.confirmed), out.regrasps
         res = self.deliver(mode, room)
