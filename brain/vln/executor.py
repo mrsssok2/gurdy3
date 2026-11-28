@@ -141,7 +141,7 @@ class VLNExecutor:
     def _stop_reply(self, why):
         x, y, _ = self._pose()
         room = self.world_fn().room_of(x, y)
-        return f"I stopped ({why}). I'm in {room}." if room else f"I stopped ({why})."
+        return f"I stopped ({why}). I'm in {self.world_fn().room_label(room)}." if room else f"I stopped ({why})."
 
     def _walk(self, plan, world):
         """All legs; None when every leg finished as planned, else the failure VLNResult."""
@@ -177,13 +177,13 @@ class VLNExecutor:
                     if room in plan.avoid and room != self.start_room:
                         mine_cancel = True
                         self.b.stop()
-                        return VLNResult(False, "NEVER_IN", f"I stopped: I was in {room}, which you asked me to avoid.")
+                        return VLNResult(False, "NEVER_IN", f"I stopped: I was in {world.room_label(room)}, which you asked me to avoid.")
                     if pointer + 1 < len(plan.rooms) and room == plan.rooms[pointer + 1]:
                         pointer += 1
                     else:
                         mine_cancel = True
                         self.b.stop()
-                        return VLNResult(False, "WRONG_ROOM", f"I ended up in {room} instead of {plan.rooms[pointer + 1] if pointer + 1 < len(plan.rooms) else plan.rooms[pointer]}.")
+                        return VLNResult(False, "WRONG_ROOM", f"I ended up in {world.room_label(room)} instead of {world.room_label(plan.rooms[pointer + 1] if pointer + 1 < len(plan.rooms) else plan.rooms[pointer])}.")
                 if wp.get("landmark") and wp["kind"] == "pass":
                     L = wp["landmark"]
                     min_d = min(min_d, math.hypot(x - L["x"], y - L["y"]))
@@ -214,7 +214,7 @@ class VLNExecutor:
         x, y, _ = self._pose()
         g = plan.goal
         if not in_goal(x, y, g, world):
-            far = f"{math.hypot(x - g['x'], y - g['y']):.1f} m from the spot" if g["kind"] == "point" else f"in {world.room_of(x, y)}"
+            far = f"{math.hypot(x - g['x'], y - g['y']):.1f} m from the spot" if g["kind"] == "point" else f"in {world.room_label(world.room_of(x, y))}"
             return VLNResult(False, "NOT_AT_GOAL", f"I stopped {far}, not where you asked.")
         last = plan.waypoints[-1]
         L = last.get("landmark") or self._room_landmark(plan)
@@ -234,7 +234,7 @@ class VLNExecutor:
                 seen, moved = self._confirm_landmark(L, self.last_leg_t0)
             name = L.get("label") or f"the {L['class'].replace('_', ' ')}"
             if not seen:
-                return VLNResult(False, "LANDMARK_NOT_CONFIRMED", f"I'm in {world.room_of(*self._pose()[:2])}, but I couldn't see {name} "
+                return VLNResult(False, "LANDMARK_NOT_CONFIRMED", f"I'm in {world.room_label(world.room_of(*self._pose()[:2]))}, but I couldn't see {name} "
                                                                   "where I remembered it, so I can't say I'm there.")
             if moved is not None and moved > REOBSERVE_M:
                 return VLNResult(False, "LANDMARK_MOVED", f"{name[0].upper() + name[1:]} isn't where I remembered it: I see it "
@@ -242,7 +242,7 @@ class VLNExecutor:
         claims = [{"type": "arrived"}]
         room = world.room_of(*self._pose()[:2])
         if g["kind"] == "room":
-            reply = f"I'm in {g['room']}."
+            reply = f"I'm in {world.room_label(g['room'])}."
             claims.append({"type": "in_room", "room": g["room"]})
         else:
             reply = f"I'm {'at ' if last['kind'] == 'stop' and not _is_relation(last['label']) else ''}{last['label']}."

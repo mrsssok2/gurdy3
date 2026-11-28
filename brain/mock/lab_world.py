@@ -119,4 +119,5 @@ def gazebo_lab4() -> World:
     pad = 0.2
     w = World(bounds=Rect(x0 - pad, y0 - pad, x1 + pad, y1 + pad), rooms=rooms, walls=walls, objects=objects, places=places, map_id=spec.get("map_id", "lab4"))
     w.doors = {k: (float(v[0]), float(v[1])) for k, v in gt["doors"].items()}     # doorway centres (VLN routing: brain/vln/world.py)
+    w.room_names = {str(n).lower(): k for k, v in spec["places"].items() if "rect" in v for n in v.get("names") or []}   # spoken names (VLN)
     return w

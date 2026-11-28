@@ -194,7 +194,7 @@ def test_room_without_a_door_is_impossible_without_mentioning_avoid():
     w = VLNWorld.lab4(names={"kitchen": "room D"})
     w.doors = {k: v for k, v in w.doors.items() if "D" not in k}
     p = validate(K.parse("go to the kitchen", w), "go to the kitchen", w)
-    assert p.error == "IMPOSSIBLE" and p.reply == "I don't know a way from room A into room D (the kitchen) on this map."
+    assert p.error == "IMPOSSIBLE" and p.reply == "I don't know a way from room A (the hallway) into room D (the kitchen) on this map."
 
 
 def test_walk_blocked_half_way_is_an_honest_failure():
@@ -332,7 +332,7 @@ def _ros(tmp_path):
 def test_room_names_from_the_places_file_survive_load_and_save(tmp_path):
     be, fp = _ros(tmp_path)
     w = VLNWorld.from_backend(be)
-    assert w.names == {"kitchen": "room D"} and w.canon_room("the kitchen") == "room D"
+    assert w.names == {"hallway": "room A", "office": "room B", "living room": "room C", "kitchen": "room D"} and w.canon_room("the kitchen") == "room D"
     be._save_places()
     again = yaml.safe_load((tmp_path / "places.yaml").read_text())
     assert again["places"]["room D"]["names"] == ["kitchen"]
@@ -358,3 +358,36 @@ def test_ros_unreachable_goal_refused_before_moving(tmp_path):
     r = ag.say(CMD)
     assert ag.vln_last.code == "UNREACHABLE" and r.reply.endswith("I haven't moved.") and "I'm at" not in r.reply
     assert math.hypot(fp.x, fp.y) < 1e-6 and not any(z.get("temporary") for z in be.zones)
+
+
+# ------------------------------------------------------------------ the demo names in maps/lab4.places.yaml (2026-11-28)
+@pytest.mark.parametrize("text,rooms", [
+    ("go to the kitchen", ["room A", "room B", "room D"]),
+    ("go to the office", ["room A", "room B"]),
+    ("go to the living room", ["room A", "room C"]),                   # a two-word name with "room" in it
+    ("go to the living room, then the kitchen", ["room A", "room C", "room D"]),
+    ("go to the kitchen but stay out of the office", ["room A", "room C", "room D"]),
+    ("go through the living room to the red barrel", ["room A", "room C", "room D"]),
+    ("go to room D but avoid room B", ["room A", "room C", "room D"]),   # letters (the blind suite) work as before
+])
+def test_lab4_demo_names(text, rooms):
+    w = VLNWorld.lab4()
+    assert w.names == {"hallway": "room A", "office": "room B", "living room": "room C", "kitchen": "room D"}
+    p = VLNPlanner(False).plan(text, w)
+    assert p is not None and p.ok and p.rooms == rooms, (text, p and (p.error, p.reply))
+
+
+def test_names_never_count_as_extra_room_letters():
+    w = VLNWorld.lab4()
+    from brain.vln.plan import rooms_said
+    assert rooms_said("go to the living room and then room D", w) == ["room C", "room D"]
+    assert rooms_said("the room with the red barrel", w) == []
+    assert K.unknown_landmark("go past the red box into the living room", w, w.places) is None
+
+
+def test_mock_lab4_has_the_names_and_says_them():
+    from brain.mock import gazebo_lab4
+    assert gazebo_lab4().room_names["living room"] == "room C"
+    ag, be = lab(names=gazebo_lab4().room_names)
+    r = ag.say("go to the office")
+    assert r.reply == "I'm in room B (the office)." and ag.vln_last.ok

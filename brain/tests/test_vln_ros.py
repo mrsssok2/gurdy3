@@ -191,7 +191,7 @@ def test_executor_walk_with_avoid_on_ros_backend():
     raw = json.dumps(GO(S("enter", room="room D"), avoid=["room B"]))
     plan = validate(raw, "go to room D but avoid room B", w)
     res = VLNExecutor(be, lambda: VLNWorld.from_backend(be)).run(plan, raw, "go to room D but avoid room B")
-    assert res.ok and res.reply == "I'm in room D." and res.rooms_visited == ["room A", "room C", "room D"]
+    assert res.ok and res.reply == "I'm in room D (the kitchen)." and res.rooms_visited == ["room A", "room C", "room D"]
     assert seen == [(2.0, -2.0, 6.0, 2.0)] and not any(z.get("temporary") for z in be.zones)
     assert not any(2.0 < x < 6.0 and -2.0 < y < 2.0 for _, x, y in res.trajectory)
 
@@ -205,7 +205,7 @@ def agent_on_ros(vln=True):
 def test_agent_walk_with_reobservation_on_ros_backend():
     ag, be, fp = agent_on_ros()
     r = ag.say("go to the red barrel")
-    assert r.reply == "I'm at the red barrel in room D." and ag.vln_last.ok
+    assert r.reply == "I'm at the red barrel in room D (the kitchen)." and ag.vln_last.ok
     assert ag.vln_last.rooms_visited[-1] == "room D"
 
 

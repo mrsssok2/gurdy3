@@ -369,8 +369,10 @@ clearance for σ 0 / 0.04 / 0.10 (σ 0.15 everywhere → honest NO_FREE_SPOT), k
 
 ### 13.3 Left before a Gazebo run
 
-1. **Room names in a real places file** (which lab4 room is "the kitchen"?) — a user decision; plus a chair in the world
-   (lab4 has none: "past the chair" is LANDMARK_NOT_FOUND there, correctly).
+1. ~~Room names~~ DONE (user, 2026-11-28): lab4 / lab4_fetch room A = hallway, B = office, C = living room, D = kitchen
+   (`scripts/gen_world_lab4.py` ROOM_NAMES -> both places files; the mock lab4 reads them). Names are for demos only: the
+   blind suite uses letters, and letters work unchanged. Still missing: a chair in the world (lab4 has none: "past the
+   chair" is LANDMARK_NOT_FOUND there, correctly).
 2. **Ollama, never run**: `python3 -m brain.eval.vln_dev --model gurdy-sft-400 [--no-fallback]` (GPU, under the lock).
    Unknown: whether gurdy-sft-400 follows the prompt at all, and whether Ollama's schema `format` with nested `anyOf`
    works on this version (fallback: `schema=False`).

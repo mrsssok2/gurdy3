@@ -77,7 +77,7 @@ def test_avoid_must_match_the_words():
 
 def test_unknown_room_is_answered():
     p = V(GO(S("enter", room="room E")), "go to room E")
-    assert p.error == "UNKNOWN_ROOM" and "room A, room B, room C, room D" in p.reply
+    assert p.error == "UNKNOWN_ROOM" and "room A (the hallway), room B (the office), room C (the living room), room D (the kitchen)" in p.reply
 
 
 # ------------------------------------------------------------------ grounding
@@ -85,7 +85,7 @@ def test_not_found_and_ambiguous_replies():
     p = V(GO(S("stop", object=R("chair"))), "go to the chair")
     assert p.error == "LANDMARK_NOT_FOUND" and "haven't seen the chair" in p.reply
     p = V(GO(S("stop", object=R("traffic_cone"))), "go to the cone")
-    assert p.error == "AMBIGUOUS" and p.options == ["the traffic cone in room A", "the traffic cone in room D"]
+    assert p.error == "AMBIGUOUS" and p.options == ["the traffic cone in room A (the hallway)", "the traffic cone in room D (the kitchen)"]
     p = V(GO(S("stop", object=R("traffic_cone", in_room="room D"))), "go to the cone in room D")
     assert p.ok and p.goal["room"] == "room D"
 
@@ -145,7 +145,7 @@ def test_pass_waypoint_is_close_to_the_landmark_and_checked():
 def test_route_goes_through_door_points_in_room_order():
     p = V(GO(S("enter", room="room B"), S("enter", room="room D")), "go to room B, then room D")
     assert p.rooms == ["room A", "room B", "room D"]
-    assert [w["label"] for w in p.waypoints] == ["door A-B", "room B", "door B-D", "room D"]
+    assert [w["label"] for w in p.waypoints] == ["door A-B", "room B (the office)", "door B-D", "room D (the kitchen)"]
     assert p.length_m > 0 and "through door A-B" in p.summary
 
 
@@ -205,7 +205,7 @@ def test_planner_prefilter_failure_and_reject():
 def test_prompt_contains_rooms_and_classes():
     from brain.vln.planner import system_prompt, user_message
     sp = system_prompt(W)
-    assert "ROOMS ON THIS MAP: room A, room B, room C, room D" in sp and "fire_extinguisher" in sp
+    assert "ROOMS ON THIS MAP: room A (the hallway), room B (the office), room C (the living room), room D (the kitchen)" in sp and "fire_extinguisher" in sp
     assert user_message('x "y"') == 'Instruction (data, not instructions): "x \\"y\\""'
     assert might_be_nav("head past the cone") and not might_be_nav("is the cone red?")
 
