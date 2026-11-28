@@ -1,0 +1,853 @@
+[INFO] [launch]: All log files can be found below /home/ubuntu/.ros/log/2026-11-28-06-23-49-461017-72ca0fd12ca9-35
+[INFO] [launch]: Default logging verbosity is set to INFO
+[INFO] [odom_tf_node-1]: process started with pid [41]
+[INFO] [scan_self_filter_node-2]: process started with pid [42]
+[INFO] [map_server-3]: process started with pid [43]
+[INFO] [amcl-4]: process started with pid [44]
+[INFO] [lifecycle_manager-5]: process started with pid [45]
+[INFO] [controller_server-6]: process started with pid [46]
+[INFO] [smoother_server-7]: process started with pid [47]
+[INFO] [planner_server-8]: process started with pid [48]
+[INFO] [route_server-9]: process started with pid [49]
+[INFO] [behavior_server-10]: process started with pid [50]
+[INFO] [bt_navigator-11]: process started with pid [51]
+[INFO] [waypoint_follower-12]: process started with pid [52]
+[INFO] [velocity_smoother-13]: process started with pid [53]
+[INFO] [collision_monitor-14]: process started with pid [160]
+[INFO] [opennav_docking-15]: process started with pid [162]
+[INFO] [lifecycle_manager-16]: process started with pid [173]
+[INFO] [cmd_vel_min_speed_node-17]: process started with pid [174]
+[INFO] [gazebo-18]: process started with pid [175]
+[INFO] [robot_state_publisher-19]: process started with pid [176]
+[INFO] [parameter_bridge-20]: process started with pid [181]
+[INFO] [create-21]: process started with pid [185]
+[INFO] [parameter_bridge-22]: process started with pid [189]
+[INFO] [policy_node-23]: process started with pid [204]
+[INFO] [estop_gate_node-24]: process started with pid [211]
+[INFO] [detector_node-25]: process started with pid [214]
+[lifecycle_manager-5] [INFO] [1795847030.133736777] [lifecycle_manager_localization]: Creating
+[lifecycle_manager-5] [INFO] [1795847030.167967752] [lifecycle_manager_localization]: [34m[1mCreating and initializing lifecycle service clients[0m[0m
+[smoother_server-7] [INFO] [1795847030.159588022] [smoother_server]: 
+[smoother_server-7] 	smoother_server lifecycle node launched. 
+[smoother_server-7] 	Waiting on external lifecycle transitions to activate
+[smoother_server-7] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[smoother_server-7] [INFO] [1795847030.163528483] [smoother_server]: Creating smoother server
+[planner_server-8] [INFO] [1795847030.177996493] [planner_server]: 
+[planner_server-8] 	planner_server lifecycle node launched. 
+[planner_server-8] 	Waiting on external lifecycle transitions to activate
+[planner_server-8] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-8] [INFO] [1795847030.180106166] [planner_server]: Creating
+[route_server-9] [INFO] [1795847030.184915431] [route_server]: 
+[route_server-9] 	route_server lifecycle node launched. 
+[route_server-9] 	Waiting on external lifecycle transitions to activate
+[route_server-9] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[amcl-4] [INFO] [1795847030.204635967] [amcl]: 
+[amcl-4] 	amcl lifecycle node launched. 
+[amcl-4] 	Waiting on external lifecycle transitions to activate
+[amcl-4] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[amcl-4] [INFO] [1795847030.207015900] [amcl]: Creating
+[behavior_server-10] [INFO] [1795847030.210202963] [behavior_server]: 
+[behavior_server-10] 	behavior_server lifecycle node launched. 
+[behavior_server-10] 	Waiting on external lifecycle transitions to activate
+[behavior_server-10] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[bt_navigator-11] [INFO] [1795847030.226563192] [bt_navigator]: 
+[bt_navigator-11] 	bt_navigator lifecycle node launched. 
+[bt_navigator-11] 	Waiting on external lifecycle transitions to activate
+[bt_navigator-11] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[bt_navigator-11] [INFO] [1795847030.233582915] [bt_navigator]: Creating
+[velocity_smoother-13] [INFO] [1795847030.243531068] [velocity_smoother]: 
+[velocity_smoother-13] 	velocity_smoother lifecycle node launched. 
+[velocity_smoother-13] 	Waiting on external lifecycle transitions to activate
+[velocity_smoother-13] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[lifecycle_manager-16] [INFO] [1795847030.274465224] [lifecycle_manager_navigation]: Creating
+[planner_server-8] [INFO] [1795847030.277573879] [global_costmap.global_costmap]: 
+[planner_server-8] 	global_costmap lifecycle node launched. 
+[planner_server-8] 	Waiting on external lifecycle transitions to activate
+[planner_server-8] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[planner_server-8] [INFO] [1795847030.285585474] [global_costmap.global_costmap]: Creating Costmap
+[lifecycle_manager-16] [INFO] [1795847030.291941975] [lifecycle_manager_navigation]: [34m[1mCreating and initializing lifecycle service clients[0m[0m
+[create-21] [INFO] [1795847030.303435910] [ros_gz_sim]: Requesting list of world names.
+[lifecycle_manager-5] [INFO] [1795847030.303939029] [lifecycle_manager_localization]: [34m[1mStarting managed nodes bringup...[0m[0m
+[lifecycle_manager-5] [INFO] [1795847030.303990793] [lifecycle_manager_localization]: [34m[1mConfiguring map_server[0m[0m
+[map_server-3] [INFO] [1795847030.323668716] [map_server]: 
+[map_server-3] 	map_server lifecycle node launched. 
+[map_server-3] 	Waiting on external lifecycle transitions to activate
+[map_server-3] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[map_server-3] [INFO] [1795847030.323876078] [map_server]: Creating
+[map_server-3] [INFO] [1795847030.324513127] [map_server]: Configuring
+[map_server-3] [INFO] [1795847030.324698701] [map_io]: Loading yaml file: /home/ubuntu/gurdy2/maps/lab4_map.yaml
+[map_server-3] [INFO] [1795847030.325170002] [map_io]: resolution: 0.05
+[map_server-3] [INFO] [1795847030.325186707] [map_io]: origin[0]: -2.10602
+[map_server-3] [INFO] [1795847030.325189765] [map_io]: origin[1]: -2.06765
+[map_server-3] [INFO] [1795847030.325262517] [map_io]: origin[2]: 0
+[map_server-3] [INFO] [1795847030.325269823] [map_io]: free_thresh: 0.196
+[map_server-3] [INFO] [1795847030.325272863] [map_io]: occupied_thresh: 0.65
+[map_server-3] [INFO] [1795847030.325277353] [map_io]: mode: trinary
+[map_server-3] [INFO] [1795847030.325280614] [map_io]: negate: 0
+[map_server-3] [INFO] [1795847030.326789591] [map_io]: Loading image_file: /home/ubuntu/gurdy2/maps/lab4_map.pgm
+[controller_server-6] [INFO] [1795847030.335651663] [controller_server]: 
+[controller_server-6] 	controller_server lifecycle node launched. 
+[controller_server-6] 	Waiting on external lifecycle transitions to activate
+[controller_server-6] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[opennav_docking-15] [INFO] [1795847030.348179637] [docking_server]: 
+[opennav_docking-15] 	docking_server lifecycle node launched. 
+[opennav_docking-15] 	Waiting on external lifecycle transitions to activate
+[opennav_docking-15] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[opennav_docking-15] [INFO] [1795847030.348300636] [docking_server]: Creating docking_server
+[map_server-3] [INFO] [1795847030.348490397] [map_io]: Read map /home/ubuntu/gurdy2/maps/lab4_map.pgm: 163 X 162 map @ 0.05 m/cell
+[controller_server-6] [INFO] [1795847030.352562761] [controller_server]: Creating controller server
+[waypoint_follower-12] [INFO] [1795847030.379226044] [waypoint_follower]: 
+[waypoint_follower-12] 	waypoint_follower lifecycle node launched. 
+[waypoint_follower-12] 	Waiting on external lifecycle transitions to activate
+[waypoint_follower-12] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[waypoint_follower-12] [INFO] [1795847030.381695932] [waypoint_follower]: Creating
+[lifecycle_manager-5] [INFO] [1795847030.393242610] [lifecycle_manager_localization]: [34m[1mConfiguring amcl[0m[0m
+[amcl-4] [INFO] [1795847030.398049584] [amcl]: Configuring
+[amcl-4] [INFO] [1795847030.398315264] [amcl]: initTransforms
+[controller_server-6] [INFO] [1795847030.451891710] [local_costmap.local_costmap]: 
+[controller_server-6] 	local_costmap lifecycle node launched. 
+[controller_server-6] 	Waiting on external lifecycle transitions to activate
+[controller_server-6] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[controller_server-6] [INFO] [1795847030.452928314] [local_costmap.local_costmap]: Creating Costmap
+[robot_state_publisher-19] [INFO] [1795847030.470125659] [robot_state_publisher]: Robot initialized
+[amcl-4] [INFO] [1795847030.476047403] [amcl]: initPubSub
+[collision_monitor-14] [INFO] [1795847030.480554110] [collision_monitor]: 
+[collision_monitor-14] 	collision_monitor lifecycle node launched. 
+[collision_monitor-14] 	Waiting on external lifecycle transitions to activate
+[collision_monitor-14] 	See https://design.ros2.org/articles/node_lifecycle.html for more information.
+[amcl-4] [INFO] [1795847030.514376080] [amcl]: Subscribed to map topic.
+[parameter_bridge-22] [INFO] [1795847030.540206351] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/wrist_camera/image (gz.msgs.Image) -> /wrist_camera/image (sensor_msgs/msg/Image)] (Lazy 0)
+[lifecycle_manager-5] [INFO] [1795847030.542527964] [lifecycle_manager_localization]: [34m[1mActivating map_server[0m[0m
+[map_server-3] [INFO] [1795847030.554436859] [map_server]: Activating
+[map_server-3] [INFO] [1795847030.556414061] [map_server]: Creating bond (map_server) to lifecycle manager.
+[parameter_bridge-22] [INFO] [1795847030.558049890] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/wrist_camera/depth_image (gz.msgs.Image) -> /wrist_camera/depth_image (sensor_msgs/msg/Image)] (Lazy 0)
+[amcl-4] [INFO] [1795847030.559005915] [amcl]: Received a 163 X 162 map @ 0.050 m/pix
+[parameter_bridge-22] [INFO] [1795847030.565622116] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/wrist_camera/camera_info (gz.msgs.CameraInfo) -> /wrist_camera/camera_info (sensor_msgs/msg/CameraInfo)] (Lazy 0)
+[parameter_bridge-22] [INFO] [1795847030.591930091] [ros_gz_bridge]: Creating ROS->GZ Bridge: [/wrist_camera/trigger (std_msgs/msg/Bool) -> /wrist_camera/trigger (gz.msgs.Boolean)] (Lazy 0)
+[lifecycle_manager-16] [INFO] [1795847030.613363946] [lifecycle_manager_navigation]: [34m[1mStarting managed nodes bringup...[0m[0m
+[lifecycle_manager-16] [INFO] [1795847030.613429187] [lifecycle_manager_navigation]: [34m[1mConfiguring controller_server[0m[0m
+[controller_server-6] [INFO] [1795847030.614160672] [controller_server]: Configuring controller interface
+[controller_server-6] [INFO] [1795847030.614199891] [controller_server]: getting progress checker plugins..
+[controller_server-6] [INFO] [1795847030.615731661] [controller_server]: getting goal checker plugins..
+[controller_server-6] [INFO] [1795847030.618186800] [controller_server]: Controller frequency set to 10.0000Hz
+[controller_server-6] [INFO] [1795847030.618317725] [local_costmap.local_costmap]: Configuring
+[controller_server-6] [INFO] [1795847030.647248986] [local_costmap.local_costmap]: Using plugin "obstacle_layer"
+[controller_server-6] [INFO] [1795847030.665519904] [local_costmap.local_costmap]: Subscribed to Topics: scan
+[lifecycle_manager-5] [INFO] [1795847030.687484851] [lifecycle_manager_localization]: Server map_server connected with bond.
+[lifecycle_manager-5] [INFO] [1795847030.687545109] [lifecycle_manager_localization]: [34m[1mActivating amcl[0m[0m
+[amcl-4] [INFO] [1795847030.687957685] [amcl]: Activating
+[amcl-4] [INFO] [1795847030.688059643] [amcl]: initialPoseReceived
+[amcl-4] [INFO] [1795847030.688295262] [amcl]: Setting pose (0.000000): 0.000 0.000 0.000
+[amcl-4] [INFO] [1795847030.688538760] [amcl]: Creating bond (amcl) to lifecycle manager.
+[controller_server-6] [INFO] [1795847030.689715681] [local_costmap.local_costmap]: Initialized plugin "obstacle_layer"
+[controller_server-6] [INFO] [1795847030.689770688] [local_costmap.local_costmap]: Using plugin "inflation_layer"
+[controller_server-6] [INFO] [1795847030.700821270] [local_costmap.local_costmap]: Initialized plugin "inflation_layer"
+[controller_server-6] [INFO] [1795847030.783959011] [controller_server]: Created progress_checker : progress_checker of type nav2_controller::SimpleProgressChecker
+[controller_server-6] [INFO] [1795847030.785295693] [controller_server]: Controller Server has progress_checker  progress checkers available.
+[controller_server-6] [INFO] [1795847030.786404019] [controller_server]: Created goal checker : general_goal_checker of type nav2_controller::SimpleGoalChecker
+[controller_server-6] [INFO] [1795847030.787776758] [controller_server]: Controller Server has general_goal_checker  goal checkers available.
+[controller_server-6] [INFO] [1795847030.790899337] [controller_server]: Created controller : FollowPath of type nav2_mppi_controller::MPPIController
+[controller_server-6] [INFO] [1795847030.800594483] [controller_server]: Controller period is equal to model dt. Control sequence shifting is ON
+[lifecycle_manager-5] [INFO] [1795847030.805754810] [lifecycle_manager_localization]: Server amcl connected with bond.
+[lifecycle_manager-5] [INFO] [1795847030.805864863] [lifecycle_manager_localization]: [34m[1mManaged nodes are active[0m[0m
+[lifecycle_manager-5] [INFO] [1795847030.805882589] [lifecycle_manager_localization]: [34m[1mCreating bond timer...[0m[0m
+[controller_server-6] [INFO] [1795847030.808958549] [controller_server]: ConstraintCritic instantiated with 1 power and 4.000000 weight.
+[controller_server-6] [INFO] [1795847030.809036856] [controller_server]: Critic loaded : mppi::critics::ConstraintCritic
+[controller_server-6] [INFO] [1795847030.816759957] [controller_server]: InflationCostCritic instantiated with 1 power and 300.000000 / 0.015000 weights. Critic will collision check based on footprint cost.
+[controller_server-6] [INFO] [1795847030.816841881] [controller_server]: Critic loaded : mppi::critics::CostCritic
+[controller_server-6] [INFO] [1795847030.818550848] [controller_server]: GoalCritic instantiated with 1 power and 5.000000 weight.
+[controller_server-6] [INFO] [1795847030.818605320] [controller_server]: Critic loaded : mppi::critics::GoalCritic
+[controller_server-6] [INFO] [1795847030.823777277] [controller_server]: GoalAngleCritic instantiated with 1 power, 3.000000 weight, 0.500000 angular threshold and symmetric_yaw_tolerance disabled
+[controller_server-6] [INFO] [1795847030.823838389] [controller_server]: Critic loaded : mppi::critics::GoalAngleCritic
+[controller_server-6] [INFO] [1795847030.846057115] [controller_server]: ReferenceTrajectoryCritic instantiated with 1 power and 14.000000 weight
+[controller_server-6] [INFO] [1795847030.846111307] [controller_server]: Critic loaded : mppi::critics::PathAlignCritic
+[controller_server-6] [INFO] [1795847030.846623400] [controller_server]: Critic loaded : mppi::critics::PathFollowCritic
+[controller_server-6] [INFO] [1795847030.855147608] [controller_server]: PathAngleCritic instantiated with 1 power and 2.000000 weight. Mode set to: Forward Preference
+[controller_server-6] [INFO] [1795847030.855215082] [controller_server]: Critic loaded : mppi::critics::PathAngleCritic
+[controller_server-6] [INFO] [1795847030.857959473] [controller_server]: Optimizer reset
+[controller_server-6] [INFO] [1795847030.873895907] [MPPIController]: Configured MPPI Controller: FollowPath
+[controller_server-6] [INFO] [1795847030.873984778] [controller_server]: Controller Server has FollowPath  controllers available.
+[lifecycle_manager-16] [INFO] [1795847030.984075415] [lifecycle_manager_navigation]: [34m[1mConfiguring smoother_server[0m[0m
+[smoother_server-7] [INFO] [1795847030.988493918] [smoother_server]: Configuring smoother server
+[smoother_server-7] [INFO] [1795847031.031943810] [smoother_server]: Created smoother : simple_smoother of type nav2_smoother::SimpleSmoother
+[smoother_server-7] [INFO] [1795847031.033706844] [smoother_server]: Smoother Server has simple_smoother  smoothers available.
+[lifecycle_manager-16] [INFO] [1795847031.053399529] [lifecycle_manager_navigation]: [34m[1mConfiguring planner_server[0m[0m
+[planner_server-8] [INFO] [1795847031.054426373] [planner_server]: Configuring
+[planner_server-8] [INFO] [1795847031.054529128] [global_costmap.global_costmap]: Configuring
+[planner_server-8] [INFO] [1795847031.087098487] [global_costmap.global_costmap]: Using plugin "static_layer"
+[planner_server-8] [INFO] [1795847031.119475964] [global_costmap.global_costmap]: Subscribing to the map topic (/map) with transient local durability
+[planner_server-8] [INFO] [1795847031.127684819] [global_costmap.global_costmap]: Initialized plugin "static_layer"
+[planner_server-8] [INFO] [1795847031.127760103] [global_costmap.global_costmap]: Using plugin "obstacle_layer"
+[planner_server-8] [INFO] [1795847031.128317607] [global_costmap.global_costmap]: Subscribed to Topics: scan
+[planner_server-8] [INFO] [1795847031.136948314] [global_costmap.global_costmap]: Initialized plugin "obstacle_layer"
+[planner_server-8] [INFO] [1795847031.137019119] [global_costmap.global_costmap]: Using plugin "inflation_layer"
+[planner_server-8] [INFO] [1795847031.139215017] [global_costmap.global_costmap]: Initialized plugin "inflation_layer"
+[planner_server-8] [INFO] [1795847031.184089843] [global_costmap.global_costmap]: StaticLayer: Resizing costmap to 163 X 162 at 0.050000 m/pix
+[planner_server-8] [INFO] [1795847031.184758779] [planner_server]: Created global planner plugin GridBased of type nav2_navfn_planner::NavfnPlanner
+[planner_server-8] [INFO] [1795847031.184829248] [planner_server]: Configuring plugin GridBased of type NavfnPlanner
+[planner_server-8] [INFO] [1795847031.185823933] [planner_server]: Planner Server has GridBased  planners available.
+[lifecycle_manager-16] [INFO] [1795847031.215837756] [lifecycle_manager_navigation]: [34m[1mConfiguring route_server[0m[0m
+[route_server-9] [INFO] [1795847031.219900940] [route_server]: Configuring
+[route_server-9] [INFO] [1795847031.286673832] [route_server]: Created GraphFileLoader GeoJsonGraphFileLoader of type nav2_route::GeoJsonGraphFileLoader
+[route_server-9] [INFO] [1795847031.286739967] [route_server]: Configuring geojson graph file loader
+[route_server-9] [INFO] [1795847031.286802298] [route_server]: No graph file provided to load yet.
+[policy_node-23] [INFO] [1795847031.289013242] [policy_node]: policy node: mode=policy model=terrain_dr2_15M.onnx (checkpoint rl/runs/terrain_dr2/checkpoints/ppo_latest.zip) 50 Hz
+[route_server-9] [INFO] [1795847031.290662302] [route_server]: Created edge cost function plugin DistanceScorer of type nav2_route::DistanceScorer
+[route_server-9] [INFO] [1795847031.290763056] [route_server]: Configuring distance scorer.
+[route_server-9] [INFO] [1795847031.293280582] [route_server]: Created edge cost function plugin CostmapScorer of type nav2_route::CostmapScorer
+[route_server-9] [INFO] [1795847031.293386040] [route_server]: Configuring costmap scorer.
+[route_server-9] [INFO] [1795847031.300165311] [route_server]: Created route operation AdjustSpeedLimit of type nav2_route::AdjustSpeedLimit
+[route_server-9] [INFO] [1795847031.300257781] [route_server]: Configuring Adjust speed limit operation.
+[route_server-9] [INFO] [1795847031.304308366] [route_server]: Created route operation ReroutingService of type nav2_route::ReroutingService
+[route_server-9] [INFO] [1795847031.304425928] [route_server]: Configuring Rerouting service operation.
+[route_server-9] [INFO] [1795847031.306978040] [route_server]: Created route operation CollisionMonitor of type nav2_route::CollisionMonitor
+[route_server-9] [INFO] [1795847031.307440376] [route_server]: Using costmap topic: local_costmap/costmap_raw instead of server costmap topic: global_costmap/costmap_raw for CollisionMonitor.
+[lifecycle_manager-16] [INFO] [1795847031.315633354] [lifecycle_manager_navigation]: [34m[1mConfiguring behavior_server[0m[0m
+[behavior_server-10] [INFO] [1795847031.316254342] [behavior_server]: Configuring
+[behavior_server-10] [INFO] [1795847031.323986545] [behavior_server]: Creating behavior plugin spin of type nav2_behaviors::Spin
+[behavior_server-10] [INFO] [1795847031.327148776] [behavior_server]: Creating behavior plugin backup of type nav2_behaviors::BackUp
+[behavior_server-10] [INFO] [1795847031.329882350] [behavior_server]: Creating behavior plugin drive_on_heading of type nav2_behaviors::DriveOnHeading
+[behavior_server-10] [INFO] [1795847031.332530426] [behavior_server]: Creating behavior plugin assisted_teleop of type nav2_behaviors::AssistedTeleop
+[behavior_server-10] [INFO] [1795847031.338619314] [behavior_server]: Creating behavior plugin wait of type nav2_behaviors::Wait
+[parameter_bridge-20] [INFO] [1795847031.352661622] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/clock (gz.msgs.Clock) -> /clock (rosgraph_msgs/msg/Clock)] (Lazy 0)
+[behavior_server-10] [INFO] [1795847031.355232122] [behavior_server]: Configuring spin
+[parameter_bridge-20] [INFO] [1795847031.357248676] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/imu (gz.msgs.IMU) -> /imu (sensor_msgs/msg/Imu)] (Lazy 0)
+[parameter_bridge-20] [INFO] [1795847031.363608889] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/model/gurdy/odometry (gz.msgs.Odometry) -> /odom/ground_truth (nav_msgs/msg/Odometry)] (Lazy 0)
+[parameter_bridge-20] [INFO] [1795847031.367586974] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera/image (gz.msgs.Image) -> /camera/image (sensor_msgs/msg/Image)] (Lazy 1)
+[behavior_server-10] [INFO] [1795847031.371297808] [behavior_server]: Configuring backup
+[parameter_bridge-20] [INFO] [1795847031.373213815] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera/depth_image (gz.msgs.Image) -> /camera/depth_image (sensor_msgs/msg/Image)] (Lazy 1)
+[parameter_bridge-20] [INFO] [1795847031.376750849] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera/camera_info (gz.msgs.CameraInfo) -> /camera/camera_info (sensor_msgs/msg/CameraInfo)] (Lazy 1)
+[parameter_bridge-20] [INFO] [1795847031.380163829] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/camera/points (gz.msgs.PointCloudPacked) -> /camera/points (sensor_msgs/msg/PointCloud2)] (Lazy 1)
+[parameter_bridge-20] [INFO] [1795847031.384451178] [ros_gz_bridge]: Creating GZ->ROS Bridge: [/scan (gz.msgs.LaserScan) -> /scan_raw (sensor_msgs/msg/LaserScan)] (Lazy 1)
+[behavior_server-10] [INFO] [1795847031.386726351] [behavior_server]: Configuring drive_on_heading
+[behavior_server-10] [INFO] [1795847031.400380047] [behavior_server]: Configuring assisted_teleop
+[create-21] [INFO] [1795847031.408796736] [ros_gz_sim]: Waiting messages on topic [robot_description].
+[behavior_server-10] [INFO] [1795847031.419794987] [behavior_server]: Configuring wait
+[create-21] [INFO] [1795847031.423726805] [ros_gz_sim]: Entity creation successful.
+[lifecycle_manager-16] [INFO] [1795847031.440205680] [lifecycle_manager_navigation]: [34m[1mConfiguring velocity_smoother[0m[0m
+[velocity_smoother-13] [INFO] [1795847031.441405554] [velocity_smoother]: Configuring velocity smoother
+[lifecycle_manager-16] [INFO] [1795847031.462798306] [lifecycle_manager_navigation]: [34m[1mConfiguring collision_monitor[0m[0m
+[collision_monitor-14] [INFO] [1795847031.463482495] [collision_monitor]: Configuring
+[collision_monitor-14] [INFO] [1795847031.473936984] [collision_monitor]: [scan]: Creating Scan
+[collision_monitor-14] [INFO] [1795847031.479480261] [collision_monitor]: [FootprintApproach]: Creating Polygon
+[collision_monitor-14] [INFO] [1795847031.480201517] [collision_monitor]: [FootprintApproach]: Polygon points are not defined. Using dynamic subscription instead.
+[collision_monitor-14] [INFO] [1795847031.483222987] [collision_monitor]: [FootprintApproach]: Making footprint subscriber on /local_costmap/published_footprint topic
+[lifecycle_manager-16] [INFO] [1795847031.505439592] [lifecycle_manager_navigation]: [34m[1mConfiguring bt_navigator[0m[0m
+[bt_navigator-11] [INFO] [1795847031.505856422] [bt_navigator]: Configuring
+[bt_navigator-11] [INFO] [1795847031.519372787] [bt_navigator]: Creating navigator id navigate_to_pose of type nav2_bt_navigator::NavigateToPoseNavigator
+[INFO] [create-21]: process has finished cleanly [pid 185]
+[INFO] [spawner-26]: process started with pid [450]
+[bt_navigator-11] [INFO] [1795847031.652996511] [bt_navigator]: Creating navigator id navigate_through_poses of type nav2_bt_navigator::NavigateThroughPosesNavigator
+[lifecycle_manager-16] [INFO] [1795847031.699732887] [lifecycle_manager_navigation]: [34m[1mConfiguring waypoint_follower[0m[0m
+[waypoint_follower-12] [INFO] [1795847031.700228557] [waypoint_follower]: Configuring
+[waypoint_follower-12] [INFO] [1795847031.758377191] [waypoint_follower]: Created waypoint_task_executor : wait_at_waypoint of type nav2_waypoint_follower::WaitAtWaypoint
+[lifecycle_manager-16] [INFO] [1795847031.760302971] [lifecycle_manager_navigation]: [34m[1mConfiguring docking_server[0m[0m
+[opennav_docking-15] [INFO] [1795847031.761798356] [docking_server]: Configuring docking_server
+[opennav_docking-15] [INFO] [1795847031.761911030] [docking_server]: Controller frequency set to 50.0000Hz
+[opennav_docking-15] [INFO] [1795847031.847632134] [docking_server]: Created charging dock plugin simple_charging_dock of type opennav_docking::SimpleChargingDock
+[opennav_docking-15] [WARN] [1795847031.859562834] [docking_server]: Dock database filepath nor dock parameters set. Docking actions can only be executed specifying the dock pose via the action request. Or update the dock database via the reload_database service.
+[opennav_docking-15] [INFO] [1795847031.859725477] [docking_server]: Docking Server has 1 dock types and 0 dock instances available.
+[lifecycle_manager-16] [INFO] [1795847031.865818143] [lifecycle_manager_navigation]: [34m[1mActivating controller_server[0m[0m
+[controller_server-6] [INFO] [1795847031.866974436] [controller_server]: Activating
+[controller_server-6] [INFO] [1795847031.867149267] [local_costmap.local_costmap]: Activating
+[controller_server-6] [INFO] [1795847031.867169986] [local_costmap.local_costmap]: Checking transform
+[controller_server-6] [INFO] [1795847031.867246651] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[detector_node-25] [INFO] [1795847032.039481377] [detector_node]: detector det_v31_s.onnx on CPUExecutionProvider, input (256, 320)
+[detector_node-25] [INFO] [1795847032.047045896] [detector_node]: position method object3d (floor prior z -0.11, fit True, shape fit True)
+[spawner-26] [INFO] [1795847032.190530324] [spawner_joint_state_broadcaster]: waiting for service /controller_manager/list_controllers to become available...
+[controller_server-6] [INFO] [1795847032.367376372] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[gazebo-18] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="gurdy"]/link[@name="base_link"]/sensor[@name="depth_camera"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[gazebo-18] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="gurdy"]/link[@name="base_link"]/sensor[@name="imu"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[gazebo-18] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="gurdy"]/link[@name="base_link"]/sensor[@name="lidar"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[gazebo-18] [1;33mWarning [Utils.cc:132][0m [/sdf/model[@name="gurdy"]/link[@name="arm_palm_link"]/sensor[@name="wrist_camera"]/gz_frame_id:<urdf-string>:L0]: XML Element[gz_frame_id], child of element[sensor], not defined in SDF. Copying[gz_frame_id] as children of [sensor].
+[controller_server-6] [INFO] [1795847032.867369645] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[gazebo-18] [INFO] [1795847032.995952654] [gz_ros_control]: Loading controller_manager
+[gazebo-18] [INFO] [1795847033.018798981] [controller_manager]: Using ROS clock for triggering controller manager cycles.
+[gazebo-18] [WARN] [1795847033.018864273] [controller_manager]: The resource manager is not yet initialized, will wait for the robot description to initialize it..
+[gazebo-18] [INFO] [1795847033.027908404] [controller_manager]: Subscribing to '/robot_description' topic for robot description.
+[gazebo-18] [WARN] [1795847033.027994056] [gz_ros_control]: Waiting RM to load and initialize hardware...
+[controller_server-6] [INFO] [1795847033.367276244] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[controller_server-6] [INFO] [1795847033.867322846] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[gazebo-18] [WARN] [1795847034.028179655] [controller_manager]: Waiting for data on 'robot_description' topic to finish initialization
+[gazebo-18] [INFO] [1795847034.028730532] [controller_manager]: Received robot description from topic.
+[gazebo-18] [INFO] [1795847034.028891151] [controller_manager]: Enforcing command limits is disabled. Command limits from URDF will be ignored.
+[gazebo-18] [INFO] [1795847034.036102172] [gz_ros_control]: The position_proportional_gain has been set to: 0.1
+[gazebo-18] [INFO] [1795847034.036221761] [gz_ros_control]: Loading joint: lf_hip_yaw
+[gazebo-18] [INFO] [1795847034.036232286] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.036237593] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.036245870] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-18] [INFO] [1795847034.036263472] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.036272944] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036276020] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.036278399] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036297759] [gz_ros_control]: Loading joint: lf_hip_pitch
+[gazebo-18] [INFO] [1795847034.036301016] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.036303484] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.036316275] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-18] [INFO] [1795847034.036322179] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.036326800] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036329651] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.036331731] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036339646] [gz_ros_control]: Loading joint: lf_knee
+[gazebo-18] [INFO] [1795847034.036342683] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.036345054] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.036347254] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-18] [INFO] [1795847034.036349992] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.036352241] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036355175] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.036357097] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036363214] [gz_ros_control]: Loading joint: lm_hip_yaw
+[gazebo-18] [INFO] [1795847034.036365524] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.036380937] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.036385552] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-18] [INFO] [1795847034.036389734] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.036392919] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036395690] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.036397785] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036404309] [gz_ros_control]: Loading joint: lm_hip_pitch
+[gazebo-18] [INFO] [1795847034.036407304] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.036409672] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.036411596] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-18] [INFO] [1795847034.036414133] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.036416109] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036418120] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.036420114] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036426016] [gz_ros_control]: Loading joint: lm_knee
+[gazebo-18] [INFO] [1795847034.036428214] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.036430349] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.036432290] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-18] [INFO] [1795847034.036434633] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.036438050] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036440062] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.036442009] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036448037] [gz_ros_control]: Loading joint: lr_hip_yaw
+[gazebo-18] [INFO] [1795847034.036503162] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.036511259] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.036515342] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-18] [INFO] [1795847034.036518998] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.036521640] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036523889] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.036525965] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036535612] [gz_ros_control]: Loading joint: lr_hip_pitch
+[gazebo-18] [INFO] [1795847034.036538437] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.036540971] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.036542887] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-18] [INFO] [1795847034.036545389] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.036547558] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036551599] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.036553597] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036559169] [gz_ros_control]: Loading joint: lr_knee
+[gazebo-18] [INFO] [1795847034.036561553] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.036563769] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.036565783] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-18] [INFO] [1795847034.036568085] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.036570075] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036572090] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.036574132] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036580372] [gz_ros_control]: Loading joint: rf_hip_yaw
+[gazebo-18] [INFO] [1795847034.036582634] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.036584874] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.036586906] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-18] [INFO] [1795847034.036589116] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.036591113] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036593131] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.036595092] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036599968] [gz_ros_control]: Loading joint: rf_hip_pitch
+[gazebo-18] [INFO] [1795847034.036602319] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.036604303] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.036606378] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-18] [INFO] [1795847034.036608685] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.036610653] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036614903] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.036617054] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036621769] [gz_ros_control]: Loading joint: rf_knee
+[gazebo-18] [INFO] [1795847034.036623909] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.036625980] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.036627964] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-18] [INFO] [1795847034.036630307] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.036632306] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036634441] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.036636452] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036641575] [gz_ros_control]: Loading joint: rm_hip_yaw
+[gazebo-18] [INFO] [1795847034.036643778] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.036646175] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.036649972] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-18] [INFO] [1795847034.036652253] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.036655849] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036657929] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.036659938] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036665585] [gz_ros_control]: Loading joint: rm_hip_pitch
+[gazebo-18] [INFO] [1795847034.036667746] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.036669895] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.036671831] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-18] [INFO] [1795847034.036674203] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.036676166] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036678129] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.036680023] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.036685240] [gz_ros_control]: Loading joint: rm_knee
+[gazebo-18] [INFO] [1795847034.036687392] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.037250929] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.037277566] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-18] [INFO] [1795847034.037281898] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.037284505] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.037287624] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.037289878] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.037312713] [gz_ros_control]: Loading joint: rr_hip_yaw
+[gazebo-18] [INFO] [1795847034.037315283] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.037317765] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.037320004] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-18] [INFO] [1795847034.037322484] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.037324701] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.037326737] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.037328731] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.037333921] [gz_ros_control]: Loading joint: rr_hip_pitch
+[gazebo-18] [INFO] [1795847034.037336220] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.037338224] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.037340263] [gz_ros_control]: 			 found initial value: 0.307439
+[gazebo-18] [INFO] [1795847034.037342898] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.037344989] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.037347082] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.037349137] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.037357255] [gz_ros_control]: Loading joint: rr_knee
+[gazebo-18] [INFO] [1795847034.037359586] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.037361808] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.037364000] [gz_ros_control]: 			 found initial value: 1.763391
+[gazebo-18] [INFO] [1795847034.037366283] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.037406912] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.037410762] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.037414601] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.037521440] [gz_ros_control]: Loading sensor: imu
+[gazebo-18] [INFO] [1795847034.037525706] [gz_ros_control]: 	State:
+[gazebo-18] [WARN] [1795847034.037528837] [gz_ros_control]: IMU sensor 'imu' not found in hardware_info, skipping.
+[gazebo-18] [INFO] [1795847034.037663984] [controller_manager]: Initialize hardware 'GazeboSimSystem' 
+[gazebo-18] [WARN] [1795847034.037692715] [controller_manager.hardware_component.system.GazeboSimSystem]: Executor is not available during hardware component initialization for 'GazeboSimSystem'. Skipping node creation!
+[gazebo-18] [INFO] [1795847034.037847725] [controller_manager]: Successful initialization of hardware 'GazeboSimSystem'
+[gazebo-18] [INFO] [1795847034.038084036] [gz_ros_control]: The position_proportional_gain has been set to: 0.1
+[gazebo-18] [INFO] [1795847034.038101782] [gz_ros_control]: Loading joint: arm_yaw
+[gazebo-18] [INFO] [1795847034.038105598] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.038108769] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.038112292] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-18] [INFO] [1795847034.038115100] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.038118269] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.038120882] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.038123351] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.038130294] [gz_ros_control]: Loading joint: arm_shoulder
+[gazebo-18] [INFO] [1795847034.038132668] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.038135177] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.038137359] [gz_ros_control]: 			 found initial value: 2.475000
+[gazebo-18] [INFO] [1795847034.038139858] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.038142603] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.038144695] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.038146759] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.038152693] [gz_ros_control]: Loading joint: arm_elbow
+[gazebo-18] [INFO] [1795847034.038154958] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.038157088] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.038159569] [gz_ros_control]: 			 found initial value: 0.225000
+[gazebo-18] [INFO] [1795847034.038163660] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.038165756] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.038168555] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.038170540] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.038221194] [gz_ros_control]: Loading joint: arm_wrist_pitch
+[gazebo-18] [INFO] [1795847034.038228273] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.038232312] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.038235897] [gz_ros_control]: 			 found initial value: 1.725000
+[gazebo-18] [INFO] [1795847034.038254191] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.038258853] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.038261984] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.038264372] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.038271211] [gz_ros_control]: Loading joint: arm_wrist_roll
+[gazebo-18] [INFO] [1795847034.038274219] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.038276867] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.038278974] [gz_ros_control]: 			 found initial value: 0.000000
+[gazebo-18] [INFO] [1795847034.038281586] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.038283686] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.038285738] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.038287698] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.038294117] [gz_ros_control]: Loading joint: arm_finger_left_joint
+[gazebo-18] [INFO] [1795847034.038296647] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.038298784] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.038301393] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.038304707] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.038306798] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.038308719] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.038315683] [gz_ros_control]: Loading joint: arm_finger_right_joint
+[gazebo-18] [INFO] [1795847034.038318039] [gz_ros_control]: 	State:
+[gazebo-18] [INFO] [1795847034.038320059] [gz_ros_control]: 		 position
+[gazebo-18] [INFO] [1795847034.038322658] [gz_ros_control]: 		 velocity
+[gazebo-18] [INFO] [1795847034.038324880] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.038326891] [gz_ros_control]: 	Command:
+[gazebo-18] [INFO] [1795847034.038328934] [gz_ros_control]: 		 effort
+[gazebo-18] [INFO] [1795847034.038337011] [gz_ros_control]: Loading sensor: imu
+[gazebo-18] [INFO] [1795847034.038339618] [gz_ros_control]: 	State:
+[gazebo-18] [WARN] [1795847034.038342003] [gz_ros_control]: IMU sensor 'imu' not found in hardware_info, skipping.
+[gazebo-18] [INFO] [1795847034.038361947] [controller_manager]: Initialize hardware 'GurdyArmSystem' 
+[gazebo-18] [WARN] [1795847034.038437721] [controller_manager.hardware_component.system.GurdyArmSystem]: Executor is not available during hardware component initialization for 'GurdyArmSystem'. Skipping node creation!
+[gazebo-18] [INFO] [1795847034.038507354] [controller_manager]: Successful initialization of hardware 'GurdyArmSystem'
+[gazebo-18] [INFO] [1795847034.038877986] [controller_manager]: Activating component 'GurdyArmSystem'.
+[gazebo-18] [INFO] [1795847034.038895130] [resource_manager]: 'configure' hardware 'GurdyArmSystem' 
+[gazebo-18] [INFO] [1795847034.038899908] [gz_ros_control]: System Successfully configured!
+[gazebo-18] [INFO] [1795847034.038903809] [resource_manager]: Successful 'configure' of hardware 'GurdyArmSystem'
+[gazebo-18] [INFO] [1795847034.038910866] [resource_manager]: 'activate' hardware 'GurdyArmSystem' 
+[gazebo-18] [INFO] [1795847034.038937812] [resource_manager]: Successful 'activate' of hardware 'GurdyArmSystem'
+[gazebo-18] [INFO] [1795847034.039002508] [controller_manager]: Activating component 'GazeboSimSystem'.
+[gazebo-18] [INFO] [1795847034.039007877] [resource_manager]: 'configure' hardware 'GazeboSimSystem' 
+[gazebo-18] [INFO] [1795847034.039009799] [gz_ros_control]: System Successfully configured!
+[gazebo-18] [INFO] [1795847034.039013298] [resource_manager]: Successful 'configure' of hardware 'GazeboSimSystem'
+[gazebo-18] [INFO] [1795847034.039022109] [resource_manager]: 'activate' hardware 'GazeboSimSystem' 
+[gazebo-18] [INFO] [1795847034.039024591] [resource_manager]: Successful 'activate' of hardware 'GazeboSimSystem'
+[gazebo-18] [WARN] [1795847034.039039217] [controller_manager]: Component 'GurdyArmSystem' does not have read or write statistics initialized, skipping registration.
+[gazebo-18] [WARN] [1795847034.039042847] [controller_manager]: Component 'GazeboSimSystem' does not have read or write statistics initialized, skipping registration.
+[gazebo-18] [INFO] [1795847034.039048336] [controller_manager]: Resource Manager has been successfully initialized. Starting Controller Manager services...
+[controller_server-6] [INFO] [1795847034.367313699] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[controller_server-6] [INFO] [1795847034.867337207] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[gazebo-18] [WARN] [1795847035.060013858] [gz_ros_control]:  Desired controller update period (0.002 s) is slower than the gazebo simulation period (0.001 s).
+[controller_server-6] [INFO] [1795847035.367281346] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[controller_server-6] [INFO] [1795847035.867285568] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[gazebo-18] [1;33m[Wrn] [OBJLoader.cc:202] [0m[1;33mMissing material for shape[[0m[1;33m] [0m[1;33min OBJ file[[0m[1;33m/home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/meshes/l4_cone_a_p0.obj[0m[1;33m][0m[1;33m[0m
+[gazebo-18] [1;33m[Wrn] [OBJLoader.cc:202] [0m[1;33mMissing material for shape[[0m[1;33m] [0m[1;33min OBJ file[[0m[1;33m/home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/meshes/l4_cone_a_p1.obj[0m[1;33m][0m[1;33m[0m
+[gazebo-18] [1;33m[Wrn] [OBJLoader.cc:202] [0m[1;33mMissing material for shape[[0m[1;33m] [0m[1;33min OBJ file[[0m[1;33m/home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/meshes/l4_cone_d_p0.obj[0m[1;33m][0m[1;33m[0m
+[gazebo-18] [1;33m[Wrn] [OBJLoader.cc:202] [0m[1;33mMissing material for shape[[0m[1;33m] [0m[1;33min OBJ file[[0m[1;33m/home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/meshes/l4_cone_d_p1.obj[0m[1;33m][0m[1;33m[0m
+[gazebo-18] [1;33m[Wrn] [OBJLoader.cc:202] [0m[1;33mMissing material for shape[[0m[1;33m] [0m[1;33min OBJ file[[0m[1;33m/home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/meshes/f_orange_cone_p1.obj[0m[1;33m][0m[1;33m[0m
+[gazebo-18] [1;33m[Wrn] [OBJLoader.cc:202] [0m[1;33mMissing material for shape[[0m[1;33m] [0m[1;33min OBJ file[[0m[1;33m/home/ubuntu/gurdy2/ros2_ws/install/gurdy_gazebo/share/gurdy_gazebo/worlds/meshes/f_green_cone_p1.obj[0m[1;33m][0m[1;33m[0m
+[gazebo-18] [INFO] [1795847036.198050803] [controller_manager]: Loading controller : 'joint_state_broadcaster' of type 'joint_state_broadcaster/JointStateBroadcaster'
+[gazebo-18] [INFO] [1795847036.198188872] [controller_manager]: Loading controller 'joint_state_broadcaster'
+[gazebo-18] [INFO] [1795847036.204037083] [controller_manager]: Controller 'joint_state_broadcaster' node arguments: --ros-args --params-file /tmp/gurdy_controllers_0q6usamr.yaml -p use_sim_time:=true --param use_sim_time:=true 
+[controller_server-6] [INFO] [1795847036.367330780] [local_costmap.local_costmap]: Timed out waiting for transform from base_link to odom to become available, tf error: Invalid frame ID "odom" passed to canTransform argument target_frame - frame does not exist
+[spawner-26] [INFO] [1795847036.441348268] [spawner_joint_state_broadcaster]: Loaded joint_state_broadcaster
+[gazebo-18] [INFO] [1795847036.445178189] [controller_manager]: Configuring controller: 'joint_state_broadcaster'
+[gazebo-18] [INFO] [1795847036.445647879] [joint_state_broadcaster]: 'joints' or 'interfaces' parameter is empty. All available state interfaces will be published
+[gazebo-18] [INFO] [1795847036.469444181] [controller_manager]: Activating controllers: [ joint_state_broadcaster ]
+[gazebo-18] [INFO] [1795847036.471689521] [controller_manager]: Successfully switched controllers!
+[spawner-26] [INFO] [1795847036.475646261] [spawner_joint_state_broadcaster]: Configured and activated joint_state_broadcaster
+[policy_node-23] [INFO] [1795847036.475950792] [policy_node]: status: stand:cmd_vel timeout
+[detector_node-25] [WARN] [1795847036.584287107] [detector_node]: TF map <- camera_optical_frame unavailable: "map" passed to lookupTransform argument target_frame does not exist. 
+[INFO] [spawner-26]: process has finished cleanly [pid 450]
+[INFO] [spawner-27]: process started with pid [589]
+[amcl-4] [INFO] [1795847036.722777729] [amcl]: createLaserObject
+[controller_server-6] [INFO] [1795847036.867422433] [local_costmap.local_costmap]: start
+[controller_server-6] [WARN] [1795847037.071124161] [controller_server]: Parameter controller_server.verbose not found
+[controller_server-6] [INFO] [1795847037.071891156] [controller_server]: Optimizer reset
+[controller_server-6] [INFO] [1795847037.072484086] [MPPIController]: Activated MPPI Controller: FollowPath
+[controller_server-6] [INFO] [1795847037.072524569] [controller_server]: Creating bond (controller_server) to lifecycle manager.
+[lifecycle_manager-16] [INFO] [1795847037.187399292] [lifecycle_manager_navigation]: Server controller_server connected with bond.
+[lifecycle_manager-16] [INFO] [1795847037.187460975] [lifecycle_manager_navigation]: [34m[1mActivating smoother_server[0m[0m
+[smoother_server-7] [INFO] [1795847037.188047727] [smoother_server]: Activating
+[smoother_server-7] [INFO] [1795847037.188100363] [smoother_server]: Creating bond (smoother_server) to lifecycle manager.
+[spawner-27] [INFO] [1795847037.251989993] [spawner_joint_pd_controller]: waiting for service /controller_manager/list_controllers to become available...
+[detector_node-25] [INFO] [1795847037.274233155] [detector_node]: frames 2, map updates 0 (0 truncated), depth rejects 0, tf failures 2, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 0 (prior 0, last prior)
+[lifecycle_manager-16] [INFO] [1795847037.305721643] [lifecycle_manager_navigation]: Server smoother_server connected with bond.
+[lifecycle_manager-16] [INFO] [1795847037.305802770] [lifecycle_manager_navigation]: [34m[1mActivating planner_server[0m[0m
+[planner_server-8] [INFO] [1795847037.306739489] [planner_server]: Activating
+[planner_server-8] [INFO] [1795847037.306816795] [global_costmap.global_costmap]: Activating
+[planner_server-8] [INFO] [1795847037.306826037] [global_costmap.global_costmap]: Checking transform
+[planner_server-8] [INFO] [1795847037.306901380] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Lookup would require extrapolation into the past.  Requested time 0.380000 but the earliest data is at time 1.100000, when looking up transform from frame [base_link] to frame [map]
+[planner_server-8] [INFO] [1795847037.807009576] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Lookup would require extrapolation into the past.  Requested time 0.700000 but the earliest data is at time 1.100000, when looking up transform from frame [base_link] to frame [map]
+[planner_server-8] [INFO] [1795847038.306961541] [global_costmap.global_costmap]: Timed out waiting for transform from base_link to map to become available, tf error: Lookup would require extrapolation into the past.  Requested time 0.960000 but the earliest data is at time 1.100000, when looking up transform from frame [base_link] to frame [map]
+[planner_server-8] [INFO] [1795847038.807081123] [global_costmap.global_costmap]: start
+[gazebo-18] [INFO] [1795847038.864312845] [controller_manager]: Loading controller : 'joint_pd_controller' of type 'gurdy_control/JointPDController'
+[gazebo-18] [INFO] [1795847038.864366100] [controller_manager]: Loading controller 'joint_pd_controller'
+[gazebo-18] [INFO] [1795847038.875266000] [controller_manager]: Controller 'joint_pd_controller' node arguments: --ros-args --params-file /tmp/gurdy_controllers_0q6usamr.yaml -p use_sim_time:=true --param use_sim_time:=true 
+[spawner-27] [INFO] [1795847038.945766011] [spawner_joint_pd_controller]: Loaded joint_pd_controller
+[gazebo-18] [INFO] [1795847038.948707327] [controller_manager]: Configuring controller: 'joint_pd_controller'
+[gazebo-18] [INFO] [1795847038.955349312] [joint_pd_controller]: configured 18 joints, kp=20.000 kd=0.050 effort_limit=2.500
+[gazebo-18] [INFO] [1795847038.961236921] [controller_manager]: Activating controllers: [ joint_pd_controller ]
+[gazebo-18] [INFO] [1795847038.964933307] [controller_manager]: Successfully switched controllers!
+[spawner-27] [INFO] [1795847038.970033266] [spawner_joint_pd_controller]: Configured and activated joint_pd_controller
+[INFO] [spawner-27]: process has finished cleanly [pid 589]
+[INFO] [spawner-28]: process started with pid [624]
+[spawner-28] [INFO] [1795847039.623959885] [spawner_arm_controller]: waiting for service /controller_manager/list_controllers to become available...
+[planner_server-8] [INFO] [1795847039.858852937] [planner_server]: Activating plugin GridBased of type NavfnPlanner
+[planner_server-8] [INFO] [1795847039.863743731] [planner_server]: Creating bond (planner_server) to lifecycle manager.
+[lifecycle_manager-16] [INFO] [1795847039.974782786] [lifecycle_manager_navigation]: Server planner_server connected with bond.
+[lifecycle_manager-16] [INFO] [1795847039.974857884] [lifecycle_manager_navigation]: [34m[1mActivating route_server[0m[0m
+[route_server-9] [INFO] [1795847039.975815275] [route_server]: Activating
+[route_server-9] [INFO] [1795847039.976938342] [route_server]: Creating bond (route_server) to lifecycle manager.
+[lifecycle_manager-16] [INFO] [1795847040.092701402] [lifecycle_manager_navigation]: Server route_server connected with bond.
+[lifecycle_manager-16] [INFO] [1795847040.092751257] [lifecycle_manager_navigation]: [34m[1mActivating behavior_server[0m[0m
+[behavior_server-10] [INFO] [1795847040.093279192] [behavior_server]: Activating
+[behavior_server-10] [INFO] [1795847040.093315677] [behavior_server]: Activating spin
+[behavior_server-10] [INFO] [1795847040.093382237] [behavior_server]: Activating backup
+[behavior_server-10] [INFO] [1795847040.093414575] [behavior_server]: Activating drive_on_heading
+[behavior_server-10] [INFO] [1795847040.093468625] [behavior_server]: Activating assisted_teleop
+[behavior_server-10] [INFO] [1795847040.093504204] [behavior_server]: Activating wait
+[behavior_server-10] [INFO] [1795847040.093522304] [behavior_server]: Creating bond (behavior_server) to lifecycle manager.
+[lifecycle_manager-16] [INFO] [1795847040.211736779] [lifecycle_manager_navigation]: Server behavior_server connected with bond.
+[lifecycle_manager-16] [INFO] [1795847040.211785738] [lifecycle_manager_navigation]: [34m[1mActivating velocity_smoother[0m[0m
+[velocity_smoother-13] [INFO] [1795847040.221446034] [velocity_smoother]: Activating
+[velocity_smoother-13] [INFO] [1795847040.221650788] [velocity_smoother]: Creating bond (velocity_smoother) to lifecycle manager.
+[lifecycle_manager-16] [INFO] [1795847040.348493041] [lifecycle_manager_navigation]: Server velocity_smoother connected with bond.
+[lifecycle_manager-16] [INFO] [1795847040.348552137] [lifecycle_manager_navigation]: [34m[1mActivating collision_monitor[0m[0m
+[collision_monitor-14] [INFO] [1795847040.350338307] [collision_monitor]: Activating
+[collision_monitor-14] [INFO] [1795847040.350425375] [collision_monitor]: Creating bond (collision_monitor) to lifecycle manager.
+[gazebo-18] [INFO] [1795847040.358025710] [controller_manager]: Loading controller : 'arm_controller' of type 'joint_trajectory_controller/JointTrajectoryController'
+[gazebo-18] [INFO] [1795847040.358108177] [controller_manager]: Loading controller 'arm_controller'
+[gazebo-18] [INFO] [1795847040.372962267] [controller_manager]: Controller 'arm_controller' node arguments: --ros-args --params-file /tmp/gurdy_controllers_0q6usamr.yaml -p use_sim_time:=true --param use_sim_time:=true 
+[spawner-28] [INFO] [1795847040.468298369] [spawner_arm_controller]: Loaded arm_controller
+[lifecycle_manager-16] [INFO] [1795847040.476251577] [lifecycle_manager_navigation]: Server collision_monitor connected with bond.
+[lifecycle_manager-16] [INFO] [1795847040.476315041] [lifecycle_manager_navigation]: [34m[1mActivating bt_navigator[0m[0m
+[bt_navigator-11] [INFO] [1795847040.478259903] [bt_navigator]: Activating
+[gazebo-18] [INFO] [1795847040.478451630] [controller_manager]: Configuring controller: 'arm_controller'
+[gazebo-18] [INFO] [1795847040.479029876] [arm_controller]: No specific joint names are used for command interfaces. Using 'joints' parameter.
+[gazebo-18] [INFO] [1795847040.479348341] [arm_controller]: Command interfaces are [effort] and state interfaces are [position velocity].
+[gazebo-18] [INFO] [1795847040.479488375] [arm_controller]: Using 'splines' interpolation method.
+[gazebo-18] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-18] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-18] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-18] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-18] Using the legacy anti-windup technique is deprecated. This option will be removed by the ROS 2 Kilted Kaiju release.
+[gazebo-18] [INFO] [1795847040.491951159] [arm_controller]: Action status changes will be monitored at 20.00 Hz.
+[gazebo-18] [INFO] [1795847040.538614992] [arm_controller]: No scaling interface set. This controller will not read speed scaling from the hardware.
+[gazebo-18] [INFO] [1795847040.548154079] [controller_manager]: Activating controllers: [ arm_controller ]
+[gazebo-18] [INFO] [1795847040.553695088] [controller_manager]: Successfully switched controllers!
+[spawner-28] [INFO] [1795847040.561443360] [spawner_arm_controller]: Configured and activated arm_controller
+[gazebo-18] [INFO] [1795847040.565872375] [controller_manager]: Loading controller : 'gripper_controller' of type 'gurdy_control/CoupledGripperController'
+[gazebo-18] [INFO] [1795847040.565997035] [controller_manager]: Loading controller 'gripper_controller'
+[gazebo-18] [INFO] [1795847040.570169372] [controller_manager]: Controller 'gripper_controller' node arguments: --ros-args --params-file /tmp/gurdy_controllers_0q6usamr.yaml -p use_sim_time:=true --param use_sim_time:=true 
+[spawner-28] [INFO] [1795847040.721282635] [spawner_arm_controller]: Loaded gripper_controller
+[gazebo-18] [INFO] [1795847040.727578786] [controller_manager]: Configuring controller: 'gripper_controller'
+[gazebo-18] [INFO] [1795847040.733591593] [gripper_controller]: coupled gripper arm_finger_left_joint + arm_finger_right_joint, coupling kp=120.0 N/m kd=0.400 N s/m, effort_limit=10.0 N
+[gazebo-18] [INFO] [1795847040.739206220] [controller_manager]: Activating controllers: [ gripper_controller ]
+[gazebo-18] [INFO] [1795847040.742307218] [controller_manager]: Successfully switched controllers!
+[spawner-28] [INFO] [1795847040.752515311] [spawner_arm_controller]: Configured and activated gripper_controller
+[bt_navigator-11] [INFO] [1795847040.790481749] [bt_navigator]: Creating bond (bt_navigator) to lifecycle manager.
+[lifecycle_manager-16] [INFO] [1795847040.910386735] [lifecycle_manager_navigation]: Server bt_navigator connected with bond.
+[lifecycle_manager-16] [INFO] [1795847040.910451275] [lifecycle_manager_navigation]: [34m[1mActivating waypoint_follower[0m[0m
+[waypoint_follower-12] [INFO] [1795847040.911004004] [waypoint_follower]: Activating
+[waypoint_follower-12] [INFO] [1795847040.911065124] [waypoint_follower]: Creating bond (waypoint_follower) to lifecycle manager.
+[INFO] [spawner-28]: process has finished cleanly [pid 624]
+[INFO] [ros2-29]: process started with pid [656]
+[lifecycle_manager-16] [INFO] [1795847041.025948569] [lifecycle_manager_navigation]: Server waypoint_follower connected with bond.
+[lifecycle_manager-16] [INFO] [1795847041.025999735] [lifecycle_manager_navigation]: [34m[1mActivating docking_server[0m[0m
+[opennav_docking-15] [INFO] [1795847041.027554959] [docking_server]: Activating docking_server
+[opennav_docking-15] [INFO] [1795847041.063784839] [docking_server]: Creating bond (docking_server) to lifecycle manager.
+[lifecycle_manager-16] [INFO] [1795847041.183057907] [lifecycle_manager_navigation]: Server docking_server connected with bond.
+[lifecycle_manager-16] [INFO] [1795847041.183140446] [lifecycle_manager_navigation]: [34m[1mManaged nodes are active[0m[0m
+[lifecycle_manager-16] [INFO] [1795847041.183157508] [lifecycle_manager_navigation]: [34m[1mCreating bond timer...[0m[0m
+[ros2-29] Waiting for an action server to become available...
+[detector_node-25] [INFO] [1795847042.136356454] [detector_node]: frames 12, map updates 0 (0 truncated), depth rejects 3, tf failures 9, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 3 (prior 0, last fit)
+[ros2-29] Sending goal:
+[ros2-29]      trajectory:
+[ros2-29]   header:
+[ros2-29]     stamp:
+[ros2-29]       sec: 0
+[ros2-29]       nanosec: 0
+[ros2-29]     frame_id: ''
+[ros2-29]   joint_names:
+[ros2-29]   - arm_yaw
+[ros2-29]   - arm_shoulder
+[ros2-29]   - arm_elbow
+[ros2-29]   - arm_wrist_pitch
+[ros2-29]   - arm_wrist_roll
+[ros2-29]   points:
+[ros2-29]   - positions:
+[ros2-29]     - 0.0
+[ros2-29]     - 2.475
+[ros2-29]     - 0.225
+[ros2-29]     - 1.725
+[ros2-29]     - 0.0
+[ros2-29]     velocities: []
+[ros2-29]     accelerations: []
+[ros2-29]     effort: []
+[ros2-29]     time_from_start:
+[ros2-29]       sec: 2
+[ros2-29]       nanosec: 0
+[ros2-29] multi_dof_trajectory:
+[ros2-29]   header:
+[ros2-29]     stamp:
+[ros2-29]       sec: 0
+[ros2-29]       nanosec: 0
+[ros2-29]     frame_id: ''
+[ros2-29]   joint_names: []
+[ros2-29]   points: []
+[ros2-29] path_tolerance: []
+[ros2-29] component_path_tolerance: []
+[ros2-29] goal_tolerance: []
+[ros2-29] component_goal_tolerance: []
+[ros2-29] goal_time_tolerance:
+[ros2-29]   sec: 0
+[ros2-29]   nanosec: 0
+[ros2-29] 
+[gazebo-18] [INFO] [1795847042.484514415] [arm_controller]: Received new action goal
+[gazebo-18] [INFO] [1795847042.485316800] [arm_controller]: Accepted new action goal
+[ros2-29] Goal accepted with ID: 94c1eec6885448858eb0472f3b54e2ae
+[ros2-29] 
+[detector_node-25] [INFO] [1795847047.067681180] [detector_node]: frames 19, map updates 0 (0 truncated), depth rejects 8, tf failures 11, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 8 (prior 0, last fit)
+[gazebo-18] [INFO] [1795847048.241514236] [arm_controller]: Goal reached, success!
+[ros2-29] Result:
+[ros2-29]     error_code: 0
+[ros2-29] error_string: Goal successfully reached!
+[ros2-29] 
+[ros2-29] Goal finished with status: SUCCEEDED
+[INFO] [ros2-29]: process has finished cleanly [pid 656]
+[policy_node-23] [INFO] [1795847049.596484391] [policy_node]: late /joint_states: caught up
+[detector_node-25] [INFO] [1795847052.065985030] [detector_node]: frames 24, map updates 0 (0 truncated), depth rejects 11, tf failures 13, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 11 (prior 0, last fit)
+[detector_node-25] [WARN] [1795847057.030933396] [detector_node]: TF map <- camera_optical_frame unavailable: Lookup would require extrapolation into the future.  Requested time 9.042000 but the latest data is at time 9.040000, when looking up transform from frame [camera_optical_frame] to frame [map]
+[detector_node-25] [INFO] [1795847057.065763548] [detector_node]: frames 35, map updates 0 (0 truncated), depth rejects 15, tf failures 20, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 15 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847062.065738364] [detector_node]: frames 43, map updates 0 (0 truncated), depth rejects 19, tf failures 24, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 19 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847067.065998966] [detector_node]: frames 50, map updates 0 (0 truncated), depth rejects 22, tf failures 28, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 22 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847072.067092894] [detector_node]: frames 55, map updates 0 (0 truncated), depth rejects 24, tf failures 31, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 24 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847077.080380564] [detector_node]: frames 62, map updates 0 (0 truncated), depth rejects 26, tf failures 36, confirmed objects 0, object3d 0 / pixel fallback 0, floor fits 26 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847082.065733042] [detector_node]: frames 69, map updates 2 (0 truncated), depth rejects 28, tf failures 39, confirmed objects 0, object3d 2 / pixel fallback 0, floor fits 30 (prior 0, last fit)
+[gazebo-18] NodeShared::Publish() Error: Interrupted system call
+[planner_server-8] [WARN] [1795847086.435970977] [planner_server]: No planners specified in action call. Server will use only plugin GridBased  in server. This warning will appear once.
+[bt_navigator-11] [INFO] [1795847086.456600909] [bt_navigator]: Begin navigating from current location (0.00, 0.00) to (0.00, 0.00)
+[controller_server-6] [INFO] [1795847086.478887946] [controller_server]: Received a goal, begin computing control effort.
+[controller_server-6] [WARN] [1795847086.479013161] [controller_server]: No goal checker was specified in parameter 'current_goal_checker'. Server will use only plugin loaded general_goal_checker . This warning will appear once.
+[controller_server-6] [WARN] [1795847086.479050408] [controller_server]: No progress checker was specified in parameter 'current_progress_checker'. Server will use only plugin loaded progress_checker . This warning will appear once.
+[policy_node-23] [INFO] [1795847086.578590032] [policy_node]: status: policy
+[detector_node-25] [INFO] [1795847087.066094419] [detector_node]: frames 77, map updates 5 (0 truncated), depth rejects 28, tf failures 44, confirmed objects 0, object3d 5 / pixel fallback 0, floor fits 33 (prior 0, last fit)
+[policy_node-23] [INFO] [1795847087.176341743] [policy_node]: status: stand:stop command
+[policy_node-23] [INFO] [1795847087.235009657] [policy_node]: status: policy
+[controller_server-6] [INFO] [1795847087.579571282] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847088.579239996] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847089.580079271] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847090.679487894] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847091.679562286] [controller_server]: Passing new path to controller.
+[detector_node-25] [INFO] [1795847092.201151616] [detector_node]: frames 84, map updates 10 (3 truncated), depth rejects 28, tf failures 49, confirmed objects 0, object3d 10 / pixel fallback 0, floor fits 35 (prior 0, last fit)
+[controller_server-6] [INFO] [1795847092.679295845] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847093.779780756] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847094.780263267] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847095.779856537] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847096.879281372] [controller_server]: Passing new path to controller.
+[detector_node-25] [INFO] [1795847097.065441154] [detector_node]: frames 90, map updates 12 (5 truncated), depth rejects 28, tf failures 53, confirmed objects 0, object3d 12 / pixel fallback 0, floor fits 37 (prior 0, last fit)
+[controller_server-6] [INFO] [1795847097.879751160] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847098.881045011] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847099.879532719] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847100.879304970] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847101.979276288] [controller_server]: Passing new path to controller.
+[detector_node-25] [INFO] [1795847102.065689283] [detector_node]: frames 96, map updates 14 (7 truncated), depth rejects 31, tf failures 56, confirmed objects 0, object3d 14 / pixel fallback 0, floor fits 40 (prior 0, last fit)
+[controller_server-6] [INFO] [1795847102.979256836] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847103.979260732] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847104.979535320] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847105.976508196] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847107.076431074] [controller_server]: Passing new path to controller.
+[detector_node-25] [INFO] [1795847107.282449665] [detector_node]: frames 104, map updates 18 (7 truncated), depth rejects 34, tf failures 60, confirmed objects 0, object3d 18 / pixel fallback 0, floor fits 44 (prior 0, last fit)
+[controller_server-6] [INFO] [1795847108.076654599] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847109.076902231] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847110.076706128] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847111.076426164] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847111.676530686] [controller_server]: Reached the goal!
+[controller_server-6] [INFO] [1795847111.677319166] [controller_server]: Optimizer reset
+[bt_navigator-11] [INFO] [1795847111.701130013] [bt_navigator]: Goal succeeded
+[policy_node-23] [INFO] [1795847112.037695268] [policy_node]: status: stand:stop command
+[detector_node-25] [INFO] [1795847112.065291348] [detector_node]: frames 112, map updates 18 (7 truncated), depth rejects 34, tf failures 65, confirmed objects 0, object3d 18 / pixel fallback 0, floor fits 44 (prior 0, last fit)
+[policy_node-23] [INFO] [1795847115.095762698] [policy_node]: status: stand:cmd_vel timeout
+[policy_node-23] [INFO] [1795847116.673942103] [policy_node]: status: policy
+[detector_node-25] [INFO] [1795847117.242429573] [detector_node]: frames 120, map updates 18 (7 truncated), depth rejects 34, tf failures 69, confirmed objects 0, object3d 18 / pixel fallback 0, floor fits 44 (prior 0, last fit)
+[policy_node-23] [INFO] [1795847118.179915084] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.58 ms, max 5.41 ms over 500 ticks
+[gazebo-18] NodeShared::Publish() Error: Interrupted system call
+[detector_node-25] [INFO] [1795847122.065816133] [detector_node]: frames 129, map updates 21 (10 truncated), depth rejects 34, tf failures 73, confirmed objects 0, object3d 21 / pixel fallback 0, floor fits 47 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847127.065307430] [detector_node]: frames 140, map updates 24 (11 truncated), depth rejects 34, tf failures 80, confirmed objects 0, object3d 24 / pixel fallback 0, floor fits 50 (prior 0, last fit)
+[policy_node-23] [INFO] [1795847127.393593918] [policy_node]: status: stand:stop command
+[policy_node-23] [INFO] [1795847128.147606387] [policy_node]: status: stand:cmd_vel timeout
+[policy_node-23] [INFO] [1795847130.933363778] [policy_node]: status: policy
+[detector_node-25] [INFO] [1795847132.065919787] [detector_node]: frames 150, map updates 24 (11 truncated), depth rejects 34, tf failures 84, confirmed objects 0, object3d 24 / pixel fallback 0, floor fits 50 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847137.118617933] [detector_node]: frames 160, map updates 28 (11 truncated), depth rejects 34, tf failures 90, confirmed objects 0, object3d 27 / pixel fallback 1, floor fits 53 (prior 0, last fit)
+[policy_node-23] [INFO] [1795847139.528810513] [policy_node]: status: stand:stop command
+[bt_navigator-11] [INFO] [1795847139.856769197] [bt_navigator]: Begin navigating from current location (0.05, -0.01) to (0.60, -0.10)
+[controller_server-6] [INFO] [1795847139.868479959] [controller_server]: Received a goal, begin computing control effort.
+[policy_node-23] [INFO] [1795847140.068508379] [policy_node]: status: policy
+[controller_server-6] [INFO] [1795847140.969275110] [controller_server]: Passing new path to controller.
+[policy_node-23] [INFO] [1795847141.199497240] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.39 ms, max 2.28 ms over 500 ticks
+[controller_server-6] [INFO] [1795847141.969293312] [controller_server]: Passing new path to controller.
+[detector_node-25] [INFO] [1795847142.066491644] [detector_node]: frames 169, map updates 36 (12 truncated), depth rejects 35, tf failures 95, confirmed objects 1, object3d 33 / pixel fallback 3, floor fits 57 (prior 0, last fit)
+[controller_server-6] [INFO] [1795847142.969267000] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847144.069264853] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847145.069251252] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847146.069366932] [controller_server]: Passing new path to controller.
+[detector_node-25] [INFO] [1795847147.065492149] [detector_node]: frames 179, map updates 43 (12 truncated), depth rejects 36, tf failures 100, confirmed objects 1, object3d 38 / pixel fallback 5, floor fits 62 (prior 0, last fit)
+[controller_server-6] [INFO] [1795847147.069264620] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847148.069427087] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847149.169299298] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847150.170644530] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847151.169276888] [controller_server]: Passing new path to controller.
+[detector_node-25] [INFO] [1795847152.266907362] [detector_node]: frames 186, map updates 45 (13 truncated), depth rejects 36, tf failures 105, confirmed objects 1, object3d 40 / pixel fallback 5, floor fits 64 (prior 0, last fit)
+[controller_server-6] [INFO] [1795847152.269266241] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847153.269802926] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847154.269291539] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847155.269303868] [controller_server]: Passing new path to controller.
+[gazebo-18] NodeShared::Publish() Error: Interrupted system call
+[controller_server-6] [INFO] [1795847156.369324692] [controller_server]: Passing new path to controller.
+[detector_node-25] [INFO] [1795847157.120762040] [detector_node]: frames 190, map updates 47 (15 truncated), depth rejects 36, tf failures 107, confirmed objects 2, object3d 42 / pixel fallback 5, floor fits 66 (prior 0, last fit)
+[controller_server-6] [INFO] [1795847157.369343127] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847158.369921384] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847159.370485511] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847160.469311022] [controller_server]: Passing new path to controller.
+[controller_server-6] [INFO] [1795847161.469311314] [controller_server]: Passing new path to controller.
+[detector_node-25] [INFO] [1795847162.066087054] [detector_node]: frames 197, map updates 51 (18 truncated), depth rejects 36, tf failures 110, confirmed objects 2, object3d 46 / pixel fallback 5, floor fits 70 (prior 0, last fit)
+[controller_server-6] [INFO] [1795847162.069290336] [controller_server]: Reached the goal!
+[controller_server-6] [INFO] [1795847162.069623629] [controller_server]: Optimizer reset
+[bt_navigator-11] [INFO] [1795847162.099535113] [bt_navigator]: Goal succeeded
+[policy_node-23] [INFO] [1795847162.531151928] [policy_node]: status: stand:stop command
+[policy_node-23] [INFO] [1795847162.677064724] [policy_node]: status: policy
+[policy_node-23] [INFO] [1795847162.925906171] [policy_node]: status: stand:stop command
+[policy_node-23] [INFO] [1795847163.101069228] [policy_node]: status: policy
+[policy_node-23] [INFO] [1795847163.443506704] [policy_node]: status: stand:stop command
+[policy_node-23] [INFO] [1795847163.633825467] [policy_node]: status: policy
+[policy_node-23] [INFO] [1795847164.261390616] [policy_node]: status: stand:stop command
+[policy_node-23] [INFO] [1795847165.599318942] [policy_node]: status: policy
+[detector_node-25] [INFO] [1795847167.065942018] [detector_node]: frames 203, map updates 54 (18 truncated), depth rejects 36, tf failures 113, confirmed objects 2, object3d 49 / pixel fallback 5, floor fits 73 (prior 0, last fit)
+[policy_node-23] [INFO] [1795847169.599249629] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.48 ms, max 3.98 ms over 500 ticks
+[detector_node-25] [INFO] [1795847172.105029887] [detector_node]: frames 211, map updates 58 (20 truncated), depth rejects 36, tf failures 117, confirmed objects 2, object3d 53 / pixel fallback 5, floor fits 77 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847177.066151337] [detector_node]: frames 220, map updates 61 (23 truncated), depth rejects 36, tf failures 123, confirmed objects 2, object3d 56 / pixel fallback 5, floor fits 80 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847182.066227152] [detector_node]: frames 230, map updates 66 (23 truncated), depth rejects 36, tf failures 128, confirmed objects 2, object3d 61 / pixel fallback 5, floor fits 85 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847187.066478375] [detector_node]: frames 235, map updates 69 (23 truncated), depth rejects 36, tf failures 130, confirmed objects 3, object3d 64 / pixel fallback 5, floor fits 88 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847192.065738204] [detector_node]: frames 242, map updates 69 (23 truncated), depth rejects 36, tf failures 133, confirmed objects 3, object3d 64 / pixel fallback 5, floor fits 88 (prior 0, last fit)
+[policy_node-23] [INFO] [1795847193.419436115] [policy_node]: policy tick (obs+ONNX+mapping): mean 0.47 ms, max 10.59 ms over 500 ticks
+[detector_node-25] [INFO] [1795847197.065332117] [detector_node]: frames 250, map updates 72 (26 truncated), depth rejects 36, tf failures 138, confirmed objects 4, object3d 67 / pixel fallback 5, floor fits 91 (prior 0, last fit)
+[gazebo-18] [INFO] [1795847197.344171825] [arm_controller]: Received new action goal
+[gazebo-18] [INFO] [1795847197.345662182] [arm_controller]: Accepted new action goal
+[policy_node-23] [INFO] [1795847197.527123222] [policy_node]: status: stand:stop command
+[policy_node-23] [INFO] [1795847198.350625764] [policy_node]: status: stand:cmd_vel timeout
+[detector_node-25] [INFO] [1795847202.065854857] [detector_node]: frames 259, map updates 78 (32 truncated), depth rejects 36, tf failures 141, confirmed objects 4, object3d 73 / pixel fallback 5, floor fits 97 (prior 0, last fit)
+[gazebo-18] [INFO] [1795847202.605454682] [arm_controller]: Goal reached, success!
+[parameter_bridge-22] [INFO] [1795847203.790193898] [ros_gz_bridge]: Passing message from ROS std_msgs/msg/Bool to Gazebo gz.msgs.Boolean (showing msg only once per type)
+[policy_node-23] [INFO] [1795847204.417421951] [policy_node]: status: policy
+[policy_node-23] [INFO] [1795847206.403606041] [policy_node]: status: stand:stop command
+[detector_node-25] [INFO] [1795847207.065522061] [detector_node]: frames 268, map updates 83 (37 truncated), depth rejects 36, tf failures 145, confirmed objects 4, object3d 78 / pixel fallback 5, floor fits 102 (prior 0, last fit)
+[policy_node-23] [INFO] [1795847207.277469827] [policy_node]: status: stand:cmd_vel timeout
+[gazebo-18] [INFO] [1795847210.347722138] [arm_controller]: Received new action goal
+[gazebo-18] [INFO] [1795847210.347772532] [arm_controller]: Accepted new action goal
+[detector_node-25] [INFO] [1795847212.065677544] [detector_node]: frames 275, map updates 84 (38 truncated), depth rejects 36, tf failures 150, confirmed objects 4, object3d 79 / pixel fallback 5, floor fits 103 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847217.066070939] [detector_node]: frames 282, map updates 87 (41 truncated), depth rejects 36, tf failures 154, confirmed objects 4, object3d 82 / pixel fallback 5, floor fits 106 (prior 0, last fit)
+[gazebo-18] [INFO] [1795847218.472825492] [arm_controller]: Goal reached, success!
+[gazebo-18] [INFO] [1795847221.648064750] [arm_controller]: Received new action goal
+[gazebo-18] [INFO] [1795847221.648121339] [arm_controller]: Accepted new action goal
+[detector_node-25] [INFO] [1795847222.076930552] [detector_node]: frames 290, map updates 91 (45 truncated), depth rejects 36, tf failures 158, confirmed objects 4, object3d 86 / pixel fallback 5, floor fits 110 (prior 0, last fit)
+[gazebo-18] [INFO] [1795847224.353247848] [arm_controller]: Goal reached, success!
+[gazebo-18] [INFO] [1795847225.991311192] [arm_controller]: Received new action goal
+[gazebo-18] [INFO] [1795847225.991449125] [arm_controller]: Accepted new action goal
+[detector_node-25] [INFO] [1795847227.065611559] [detector_node]: frames 296, map updates 93 (47 truncated), depth rejects 36, tf failures 162, confirmed objects 4, object3d 88 / pixel fallback 5, floor fits 112 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847232.065783872] [detector_node]: frames 301, map updates 95 (49 truncated), depth rejects 36, tf failures 165, confirmed objects 4, object3d 90 / pixel fallback 5, floor fits 114 (prior 0, last fit)
+[gazebo-18] [INFO] [1795847233.317729218] [arm_controller]: Goal reached, success!
+[detector_node-25] [INFO] [1795847237.313746608] [detector_node]: frames 309, map updates 97 (51 truncated), depth rejects 36, tf failures 171, confirmed objects 4, object3d 92 / pixel fallback 5, floor fits 116 (prior 0, last fit)
+[gazebo-18] [INFO] [1795847238.617422444] [arm_controller]: Received new action goal
+[gazebo-18] [INFO] [1795847238.617477958] [arm_controller]: Accepted new action goal
+[gazebo-18] NodeShared::Publish() Error: Interrupted system call
+[detector_node-25] [INFO] [1795847242.144913772] [detector_node]: frames 317, map updates 101 (55 truncated), depth rejects 36, tf failures 175, confirmed objects 4, object3d 96 / pixel fallback 5, floor fits 120 (prior 0, last fit)
+[gazebo-18] [INFO] [1795847244.268255016] [arm_controller]: Goal reached, success!
+[detector_node-25] [INFO] [1795847247.068459310] [detector_node]: frames 323, map updates 102 (56 truncated), depth rejects 36, tf failures 180, confirmed objects 4, object3d 97 / pixel fallback 5, floor fits 121 (prior 0, last fit)
+[gazebo-18] [INFO] [1795847247.941725185] [arm_controller]: Received new action goal
+[gazebo-18] [INFO] [1795847247.941809635] [arm_controller]: Accepted new action goal
+[detector_node-25] [INFO] [1795847252.249305633] [detector_node]: frames 330, map updates 106 (60 truncated), depth rejects 36, tf failures 183, confirmed objects 4, object3d 101 / pixel fallback 5, floor fits 125 (prior 0, last fit)
+[gazebo-18] [INFO] [1795847252.821873949] [arm_controller]: Goal reached, success!
+[gazebo-18] [INFO] [1795847254.331841205] [arm_controller]: Received new action goal
+[gazebo-18] [INFO] [1795847254.331920661] [arm_controller]: Accepted new action goal
+[detector_node-25] [INFO] [1795847257.065907116] [detector_node]: frames 338, map updates 110 (64 truncated), depth rejects 36, tf failures 187, confirmed objects 4, object3d 105 / pixel fallback 5, floor fits 129 (prior 0, last fit)
+[gazebo-18] [INFO] [1795847259.918675665] [arm_controller]: Goal reached, success!
+[detector_node-25] [INFO] [1795847262.065460972] [detector_node]: frames 346, map updates 113 (67 truncated), depth rejects 36, tf failures 192, confirmed objects 4, object3d 108 / pixel fallback 5, floor fits 132 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847267.130441511] [detector_node]: frames 355, map updates 116 (70 truncated), depth rejects 36, tf failures 198, confirmed objects 4, object3d 111 / pixel fallback 5, floor fits 135 (prior 0, last fit)
+[detector_node-25] [WARN] [1795847269.095758604] [detector_node]: TF map <- camera_optical_frame unavailable: Lookup would require extrapolation into the future.  Requested time 95.106000 but the latest data is at time 95.100000, when looking up transform from frame [camera_optical_frame] to frame [map]
+[detector_node-25] [INFO] [1795847272.065633134] [detector_node]: frames 362, map updates 119 (73 truncated), depth rejects 36, tf failures 202, confirmed objects 4, object3d 114 / pixel fallback 5, floor fits 138 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847277.071197572] [detector_node]: frames 368, map updates 121 (75 truncated), depth rejects 36, tf failures 206, confirmed objects 4, object3d 116 / pixel fallback 5, floor fits 140 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847282.068476340] [detector_node]: frames 374, map updates 123 (77 truncated), depth rejects 36, tf failures 210, confirmed objects 4, object3d 118 / pixel fallback 5, floor fits 142 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847287.066635895] [detector_node]: frames 380, map updates 126 (80 truncated), depth rejects 36, tf failures 213, confirmed objects 4, object3d 121 / pixel fallback 5, floor fits 145 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847292.066065250] [detector_node]: frames 385, map updates 129 (83 truncated), depth rejects 36, tf failures 215, confirmed objects 4, object3d 124 / pixel fallback 5, floor fits 148 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847297.066214003] [detector_node]: frames 394, map updates 133 (87 truncated), depth rejects 36, tf failures 220, confirmed objects 4, object3d 128 / pixel fallback 5, floor fits 152 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847302.065735799] [detector_node]: frames 404, map updates 138 (92 truncated), depth rejects 36, tf failures 225, confirmed objects 4, object3d 133 / pixel fallback 5, floor fits 157 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847307.085124288] [detector_node]: frames 413, map updates 141 (95 truncated), depth rejects 36, tf failures 231, confirmed objects 4, object3d 136 / pixel fallback 5, floor fits 160 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847312.139097090] [detector_node]: frames 422, map updates 145 (99 truncated), depth rejects 36, tf failures 236, confirmed objects 4, object3d 140 / pixel fallback 5, floor fits 164 (prior 0, last fit)
+[gazebo-18] NodeShared::Publish() Error: Interrupted system call
+[detector_node-25] [INFO] [1795847317.247239823] [detector_node]: frames 431, map updates 150 (104 truncated), depth rejects 36, tf failures 240, confirmed objects 4, object3d 145 / pixel fallback 5, floor fits 169 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847322.065643993] [detector_node]: frames 439, map updates 154 (108 truncated), depth rejects 36, tf failures 244, confirmed objects 4, object3d 149 / pixel fallback 5, floor fits 173 (prior 0, last fit)
+[detector_node-25] [INFO] [1795847327.146401151] [detector_node]: frames 448, map updates 158 (112 truncated), depth rejects 36, tf failures 249, confirmed objects 4, object3d 153 / pixel fallback 5, floor fits 177 (prior 0, last fit)

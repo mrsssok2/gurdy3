@@ -38,3 +38,20 @@ batches interleaved in the ~1 s gaps between stacks (and the overlap also broke 
 therefore NOT valid measurements of the code; smoke_1128b (no overlap seen) is the last clean can result (3/3 held).
 Gazebo work is stopped until a shared GPU lock exists. Re-check the can (x3) and the verify fix only under that lock;
 `DETECTOR_TTL` (start_web_robot.sh passthrough) allows a ttl 10 vs 30 A/B in the same session if still needed.
+
+## Re-check under the shared GPU lock (smoke_1128e, 06:23-06:40 UTC, lock held for the whole batch)
+
+| try | can held by GT | robot said | lift check |
+|---|---|---|---|
+| can 1 | yes (z 0.235 / 0.239 after 5 s), 174 s | "... I can't confirm I'm holding it (my wrist camera couldn't see the spot where it stood) ..." | spot not visible: 0 points within 4 cm (known floor and in-view fit) |
+| can 2 | yes (z 0.232 / 0.235), 122 s | same | same; in-view fit: no floor (119 points) |
+| can 3 | yes (z 0.236 / 0.240), 296 s | same | same; in-view fit: no floor (159 points) |
+
+Can 3/3 by ground truth again (the c/d failures were the machine sharing). The fingers read 33 / 33 mm (= can width) in all three.
+The robot confirmed 0/3: at the verify (view) pose the HELD can sits exactly between the wrist camera and the spot where it
+stood, so that spot is never visible -- the check is geometrically blind while holding, and the new code correctly says
+"unknown" (the old code read the hidden spot as 0 standing points = "lifted", i.e. earlier confirmations there were not
+based on seeing the spot). Consequence: every real pick now ends GRASP_UNCONFIRMED -> a fetch / "bring me" stops after the
+pick and keeps holding. Proposed fix (not made): confirm the carried weight from the arm joint efforts (shoulder / elbow
+effort with vs without the payload; grasp_test already logs `effort_closed_on_floor` / `effort_hold`, Phase 9i confirmed the
+can's weight this way), or a verify pose that looks at the spot from the side, past the held object.
