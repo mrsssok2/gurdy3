@@ -56,7 +56,9 @@ def outcome_reply(out, objects, handover_text: str = "Here you are: {what}.") ->
     if code == "NOT_REACHABLE":
         return f"I found {what} but I couldn't line my gripper up with it ({out.detail}). Can you move it into the open?"
     if code == "GRASP_FAILED":
-        return f"I couldn't get a grip on {what} after {out.detail}. It is still where it was."
+        # no claim about where it is now: a missed grasp can push / knock the object over (2026-11-28 GUI take: knocked
+        # 20 cm and lying on its side while the reply said "It is still where it was")
+        return f"I couldn't get a grip on {what} after {out.detail}. I may have pushed it, so it might not be where it was."
     if code == "DROPPED":
         return f"I dropped {what} on the way. It's on the floor in {out.where}. Shall I try to pick it up again?"
     if code == "NOT_TAKEN":
