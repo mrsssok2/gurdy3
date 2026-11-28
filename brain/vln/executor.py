@@ -183,7 +183,8 @@ class VLNExecutor:
                     else:
                         mine_cancel = True
                         self.b.stop()
-                        return VLNResult(False, "WRONG_ROOM", f"I ended up in {world.room_label(room)} instead of {world.room_label(plan.rooms[pointer + 1] if pointer + 1 < len(plan.rooms) else plan.rooms[pointer])}.")
+                        want = plan.rooms[pointer + 1] if pointer + 1 < len(plan.rooms) else plan.rooms[pointer]
+                        return VLNResult(False, "WRONG_ROOM", f"I ended up in {world.room_label(room)} instead of {world.room_label(want)}.")
                 if wp.get("landmark") and wp["kind"] == "pass":
                     L = wp["landmark"]
                     min_d = min(min_d, math.hypot(x - L["x"], y - L["y"]))

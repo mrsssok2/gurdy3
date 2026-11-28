@@ -28,8 +28,12 @@ def path_length(traj) -> float:
 
 
 def in_goal(x, y, goal, world) -> bool:
+    """room: inside the rectangle; point: within `radius` of the point; near (grading of "stop near / at X"): within `radius`
+    of the landmark itself AND in its room -- any free stand-off the planner chose counts, not only the one the reference chose."""
     if goal["kind"] == "room":
         return world.room_of(x, y) == goal["room"]
+    if goal["kind"] == "near":
+        return math.hypot(x - goal["x"], y - goal["y"]) <= goal["radius"] and world.room_of(x, y) == goal["room"]
     return math.hypot(x - goal["x"], y - goal["y"]) <= goal.get("radius", 0.5)
 
 

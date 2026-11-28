@@ -76,7 +76,8 @@ LAB4_PLACES = ROOT / "maps" / "lab4.places.yaml"
 LAB4_GT = ROOT / "docs" / "results" / "data" / "lab4" / "lab4_gt.json"
 LAB4_DOOR_W = 1.0                          # scripts/gen_world_lab4.py DOOR_W
 # half of the larger footprint side of each class (vision/objects.py footprint(), measured once; keeps this file free of the vision package)
-_LAB4_RADIUS = {"box": 0.20, "traffic_cone": 0.18, "barrel": 0.28, "fire_extinguisher": 0.095, "mannequin": 0.28, "toolbox": 0.225}
+_LAB4_RADIUS = {"box": 0.20, "traffic_cone": 0.18, "barrel": 0.28, "fire_extinguisher": 0.095, "mannequin": 0.28, "toolbox": 0.225,
+                "chair": 0.30}            # chair: lab4_vln (0.42 m square collision box)
 
 
 def lab4_walls(bounds: list[float], doors: dict[str, list[float]], div_x: float, div_y: float, thick: float) -> list[Rect]:
@@ -95,14 +96,16 @@ def lab4_walls(bounds: list[float], doors: dict[str, list[float]], div_x: float,
     return out
 
 
-def gazebo_lab4() -> World:
+def gazebo_lab4(variant: str = "lab4") -> World:
     """Mock of the Gazebo `lab4` world (Gurdy 3.0): four rooms A-D in a ring, doorways A-B, B-D, D-C, C-A, the 10 objects at their ground-truth
     positions. Generated from the committed lab4 files (`maps/lab4.places.yaml`, `docs/results/data/lab4/lab4_gt.json`, both written by
     scripts/gen_world_lab4.py); `gazebo_flat_lab()` and `flat_lab()` are untouched. Used by the public demo only."""
     import json
     g = _load_generator()
-    gt = json.loads(LAB4_GT.read_text())
-    spec = yaml.safe_load(LAB4_PLACES.read_text())
+    gt_file, places_file = (LAB4_GT, LAB4_PLACES) if variant == "lab4" else \
+        (ROOT / "docs" / "results" / "data" / variant / f"{variant}_gt.json", ROOT / "maps" / f"{variant}.places.yaml")   # lab4_vln: + a chair
+    gt = json.loads(gt_file.read_text())
+    spec = yaml.safe_load(places_file.read_text())
     rooms: dict[str, Rect] = {}
     places: dict[str, tuple[float, float]] = {}
     for pname, v in spec["places"].items():

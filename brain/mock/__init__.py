@@ -10,7 +10,7 @@ def gazebo_flat_lab() -> World:
     return build()
 
 
-def gazebo_lab4() -> World:
-    """The mock world of the Gazebo lab4 (four rooms A-D), for the public demo (see lab_world.py)."""
+def gazebo_lab4(variant: str = "lab4") -> World:
+    """The mock world of the Gazebo lab4 (four rooms A-D), for the public demo (see lab_world.py); variant "lab4_vln" = + a chair."""
     from .lab_world import gazebo_lab4 as build
-    return build()
+    return build(variant)

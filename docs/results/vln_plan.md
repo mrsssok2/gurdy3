@@ -382,3 +382,36 @@ clearance for σ 0 / 0.04 / 0.10 (σ 0.15 everywhere → honest NO_FREE_SPOT), k
    detection on a noisy `/map`; landmark re-observation with the real detector (`last_seen`, sim time); temporary zones
    are backend-side only (Nav2 keepout filter still not used).
 5. A Gazebo VLN runner (fresh stack per episode, GT trajectory, `metrics.py`), as in section 9 step 3.
+
+## 14. Gazebo VLN runner + the lab4_vln world (2026-11-28, branch `phase10-vln`; written and tested on the host, NOT run in Gazebo)
+
+**Tomorrow, one command:** `scripts/vln_dev_run.sh` (= `scripts/vln_eval.sh brain/eval/vln_episodes_dev.yaml`). Takes the shared
+GPU lock for the whole batch, refuses when `docker ps` is not empty, builds the worktree's colcon workspace in the container first
+if `lab4_vln.sdf` is not installed (a fresh worktree has no `ros2_ws/install`), then 3 episodes, one fresh stack each, keyword
+planner (no Ollama; `MODEL=gurdy-sft-400` for the LLM + fallback), report in `brain/runs/vln_eval/<ts>/report.md`.
+
+| piece | what it does |
+|---|---|
+| `scripts/gen_world_lab4_vln.py` → `worlds/lab4_vln.sdf`, `maps/lab4_vln.places.yaml`, `docs/results/data/lab4_vln/lab4_vln_gt.json` | lab4 unchanged + ONE chair in room D (the kitchen) at (4.3, 3.9), validated by lab4's own placement rules; collision = a solid 0.42 x 0.42 x 0.93 m box (the lidar sees a block, not 4 legs). lab4 / lab4_fetch regenerate byte-identical (test). The chair is NOT in the saved `lab4_map`: Nav2 sees it only in the live costmaps. Mock: `gazebo_lab4("lab4_vln")`. |
+| `brain/eval/vln_episodes_dev.yaml` | 3 DEV episodes (mine, NOT held-out): kitchen + past the chair + near the red barrel; kitchen, stay out of the office; "past the sofa" → UNKNOWN_LANDMARK. Format for the user's blind suite: `id`, `text`, `limit_s`, `expect` = a reference plan (JSON of `plan.py`) or `{error: CODE}`. |
+| `brain/ros/vln_eval_runner.py` | in the container, one episode: RclpyPort (+ `/odom/ground_truth` subscription, new optional `gt_topic`), readiness gate, RosBackend, agent with VLN; the GT trajectory is sampled on EVERY backend tick next to the TF pose (`gt_tf_max_m` = their largest gap, to check that the GT topic is in the map frame); watchdog thread for the sim-time limit and a stuck `/clock` (→ `be.stop()`); record: reply, plan (source, error, rooms, waypoints), walk result (code, claims, rooms visited). Landmarks `gt` (default): positions from the world's GT, σ 0.10 m, confirmation (`last_seen`) from a live detector track of the same class within 1 m; `map`: the live semantic map only. |
+| `brain/vln/gazebo_eval.py` | pure grading from GROUND TRUTH: the reference plan is validated on the GT world from the robot's REAL start; success / SPL / oracle / wrong room / avoid violation / false claims via `metrics.py`; refusal accuracy (right code, moved ≤ 0.3 m); a nav episode refused = over-refusal; infrastructure failures reported, kept out of the rates. `python3 -m brain.vln.gazebo_eval RUN SUITE` re-scores a run. |
+| `scripts/vln_eval.sh` | the batch: fresh stack per episode, ATTEMPTS (3) for infrastructure failures, wall limit max(WALL_MIN 600 s, 4 x limit_s), resume (valid episodes skipped), partial report after every episode. |
+
+**Grading decision (new): "stop near / at X" is reached within 1.2 m of the GT landmark, in its room** (`NEAR_M`; goal kind
+`near`). Found while testing: with σ 0.10 m on the robot's landmarks the planner picked a stand-off 0.53 m from the one the σ 0
+reference picked, both free and both "near the red barrel"; grading the exact point made a correct stop a failure AND its
+arrival claim a "false claim". Relation goals (left of / behind / between) keep the exact point (radius 0.5 m).
+
+**Tests** (`brain/tests/test_vln_gazebo.py`, 23): world variant + lab4 / lab4_fetch untouched; suite loading + bad suites;
+the keyword parser agrees with every DEV reference; landmark seeding; scoring (success + SPL, false claim + wrong room, avoid
+violation, refusals right / wrong / moved, over-refusal, infra out of the rates, near vs far, relations exact); the runner on
+RosBackend + FakePort (the DEV walk graded a success from GT, the refusal does not move, the sim limit stops the walk); the host
+script with a STUB docker and a TEMPORARY lock file (all episodes + report, retries → infra record, refuses with containers
+running, builds when the world is not installed). Suites: brain 1398 passed (test_final_eval_wall_timeout left out: it takes the
+real lock), gurdy_core 450, vision 59, web OK, safety gate PASS, keyword v1 58 %.
+
+**Not verified until the run:** the GT odometry frame = map frame (spawn at the origin; `gt_tf_max_m` will show it); the
+detector seeing the chair and the red barrel (re-observation of the goal landmark needs a live sighting within 1 m; `landmarks:
+map` needs exploring first); Nav2 around a chair that is not in the static map; per-waypoint `path_check` time; the colcon build
+time of the worktree (first run only); sim-time limits (1200 s per walk episode) are guesses.

@@ -118,6 +118,9 @@ class FakePort:
     def pose(self):
         return (self.x, self.y, self.yaw)
 
+    def gt_pose(self):
+        return (self.x, self.y, self.yaw)      # the fake has one true pose
+
     def speed(self):
         return math.hypot(*self.cmd[:2]) if any(self.cmd) else 0.0
 
