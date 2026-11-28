@@ -283,6 +283,12 @@ class VisualServo:
             if (not obs.ok and obs.reason == "implausible") or suspect:
                 if suspect:
                     last_suspect = np.asarray(obs.xy, float)
+                too_far = obs.xy is not None and float(np.hypot(*obs.xy)) > float(np.hypot(*target)) + 0.03
+                if not backed_off and map_prior is not None and too_far:
+                    backed_off = True                               # already beyond the zone: backing off makes it worse;
+                    res.log.append({"t": round(self.r.now(), 1), "step": None,  # look again from here instead
+                                    "why": "suspect view, object beyond the zone: look again without moving"})
+                    continue
                 if not backed_off and map_prior is not None:
                     away = -map_prior / max(float(np.linalg.norm(map_prior)), 1e-6) * p.back_off
                     self._step(away, res, "suspect view: back off and look again")

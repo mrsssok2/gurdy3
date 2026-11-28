@@ -40,6 +40,7 @@ from ..fetch.machine import FetchAborted
 from ..fetch.mock import HOME, ROOMS, Obj
 
 BACKUP_M = 0.25
+RE_APPROACH_SLACK = 0.08         # m: object (map) farther than this from the grasp zone after the approach -> walk closer
 GRIP_EFFORT = 3.0                  # N per finger (joint limit 10 N; 80 g at mu 1 needs ~0.4 N)
 HOLD_EFFORT = 1.0                  # N while presenting (the user can pull it out)
 def align_log_path(attempt_log: str) -> str:
@@ -343,11 +344,44 @@ class RosFetchRobot:
             ok, why = self._nav(stand[0], stand[1], yaw + math.pi, self.cfg.nav_timeout_s)   # facing the object
             if not ok:
                 continue
+            p_nav = self.p.pose()
             if not self._turn_to(yaw):
                 return False, "could not turn round"
-            self._move_body(-BACKUP_M, 0.0, speed=0.05, tol=0.015)  # back up towards it (wrist camera looks behind)
+            p_turn = self.p.pose()
+            t_b = self.now()
+            ok_b = self._move_body(-BACKUP_M, 0.0, speed=0.05, tol=0.015)   # back up towards it (wrist camera looks behind)
+            p_back = self.p.pose()
+            reapp = self._re_approach(o)
+            rec = {"t": round(self.now(), 1), "approach": "done", "object": name, "stand_goal": [round(stand[0], 3), round(stand[1], 3)],
+                   "re_approach": reapp,
+                   "after_nav": [round(v, 3) for v in p_nav], "after_turn": [round(v, 3) for v in p_turn],
+                   "after_backup": [round(v, 3) for v in p_back], "backup_cmd_m": BACKUP_M, "backup_ok": bool(ok_b),
+                   "backup_done_m": round(math.hypot(p_back[0] - p_turn[0], p_back[1] - p_turn[1]), 3),
+                   "backup_s": round(self.now() - t_b, 1), "obj_base": [round(float(v), 3) for v in self._base((o.x, o.y))]}
+            self.log.append(rec)
+            if self.cfg.attempt_log:                     # diagnostics (2026-11-28 GUI take: can 0.59 m behind instead of 0.35)
+                with open(align_log_path(self.cfg.attempt_log), "a") as fh:
+                    fh.write(json.dumps(rec) + "\n")
             return True, o.room
         return False, why
+
+    def _re_approach(self, o, tries: int = 2):
+        """After the approach: if the object (map pose) is still outside the grasp zone (farther than the zone distance +
+        RE_APPROACH_SLACK, or more than that sideways), walk straight toward the zone before any alignment. 2026-11-28 GUI take:
+        Nav2 'Goal succeeded' (12 cm tolerance) but the 0.25 m back-up did not happen -> can 0.59 m behind, the servo's 3 steps
+        of <= 6 cm could not close it. -> list of the moves made ({from, to, ok})."""
+        from gurdy_core.visual_servo import CLASS_INFO
+        zone = np.array(CLASS_INFO[o.cls][3] if o.cls in CLASS_INFO else (-0.35, 0.0), float)
+        moves = []
+        for _ in range(tries):
+            rel = self._base((o.x, o.y))
+            err = rel - zone
+            if float(np.hypot(*err)) <= RE_APPROACH_SLACK:
+                break
+            ok = self._move_body(float(err[0]), float(err[1]), speed=0.05, tol=0.015, timeout=30.0)
+            moves.append({"from": [round(float(v), 3) for v in rel], "to": [round(float(v), 3) for v in self._base((o.x, o.y))],
+                          "ok": bool(ok)})
+        return moves
 
     def _servo_robot(self, view_q=None, frames_dir=None):
         """Robot interface for VisualServo. settle_view: wait (sim time) until the arm is still at the view pose before each

@@ -69,3 +69,33 @@ def test_pre_grasp_is_planned_with_open_fingers_so_moveit_accepts_it():
     assert not any(m.get("rejected") for m in arm.moves)            # no rejected MoveIt goal -> no direct fallback
     a = rob.attempts[0]
     assert min(a["fingers_open"]) >= G.FINGERS_OPEN_MIN and a["pre_via"] == "moveit"
+
+
+def test_re_approach_when_the_back_up_did_not_happen():
+    """2026-11-28 GUI take: stand-off reached (Nav2 'Goal succeeded'), but the 0.25 m back-up did not happen -> the can was
+    0.59 m behind instead of the 0.35 m zone and alignment failed. Now: walk closer before any alignment."""
+    import math
+    s, rob, arm, fp = rig()
+    real = rob._move_body
+    calls = {"n": 0}
+
+    def move_body(dx, dy, **kw):
+        calls["n"] += 1
+        if calls["n"] == 1 and dx == -0.25:                         # the back-up: nothing happens (as in the GUI take)
+            return False
+        return real(dx, dy, **kw)
+    rob._move_body = move_body
+    r = s.handle("pick up the blue can")
+    rec = next(x for x in rob.log if x.get("approach") == "done")
+    assert rec["backup_done_m"] < 0.01                              # the fake back-up really did nothing
+    first = rec["re_approach"][0]["from"]
+    assert math.hypot(*first) > 0.5                                 # like the GUI take: ~0.6 m behind
+    assert abs(math.hypot(*rec["re_approach"][-1]["to"]) - 0.35) < 0.08
+    assert r.startswith("I picked up the blue can")
+
+
+def test_no_re_approach_when_the_object_is_in_the_zone():
+    s, rob, arm, fp = rig()
+    s.handle("pick up the blue can")
+    rec = next(x for x in rob.log if x.get("approach") == "done")
+    assert rec["re_approach"] == [] and rec["backup_done_m"] > 0.2

@@ -46,7 +46,7 @@ def test_alignment_without_a_measurement_states_no_number(monkeypatch, code, tmp
     assert "99" not in r and "cm" not in r
     assert set(numbers(r)) <= measured_numbers(rob, "bring me the blue can")
     assert not (tmp_path / "attempts.jsonl").exists()                       # no grasp attempt: attempt log untouched
-    al = [json.loads(x) for x in open(align_log_path(str(tmp_path / "attempts.jsonl")))]
+    al = [r for r in (json.loads(x) for x in open(align_log_path(str(tmp_path / "attempts.jsonl")))) if "align" in r]
     assert len(al) == MAX_ALIGN and {a["align"] for a in al} == {code} and all(a["residual"] is None for a in al)
 
 

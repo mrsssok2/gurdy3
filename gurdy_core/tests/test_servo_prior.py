@@ -114,3 +114,15 @@ def test_recorded_off_estimates_would_be_suspect(trace, align_file):
     assert worst - gt_zone_err >= 0.027                              # the wrist estimate was off the can by >= 2.7 cm
     if worst >= 0.09:
         assert worst - gt_zone_err > VS.ServoParams().prior_gate - 0.01
+
+
+def test_beyond_the_zone_a_suspect_view_is_re_looked_without_backing_off():
+    """2026-11-28 GUI take: the approach left the can 0.59 m behind (zone 0.35), the map prior was 7 cm off -> the servo
+    backed off 5 cm AWAY from the can and ran out of steps. Beyond the zone it must look again without moving."""
+    rel = (-0.59, -0.06)
+    r = SimRobot("can", rel, yaw_obj=0.0, step_noise=0.0)
+    res = VS.VisualServo(r, VS.ServoParams(max_tries=6), arm_reachable=arm_ok).run("can", prior_xy=(rel[0] + 0.05, rel[1] + 0.05))
+    steps = [e["step"] for e in res.log if e.get("step") is not None]
+    assert all(s[0] <= 0 for s in steps), steps                 # never a step away from the can (+x)
+    assert any("without moving" in (e.get("why") or "") for e in res.log)
+    assert res.ok

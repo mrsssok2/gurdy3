@@ -23,3 +23,21 @@ MoveIt: 0 x "Unable to sample any valid states" in all three (before: once in ev
 executed (5 / 3 / 5). Both grasps held on the first attempt. Remaining failure (r2): the approach + wrist servo ended with the
 can 11 cm off and then judged the view 'implausible' twice -- an approach / servo problem before any grasp (also seen in
 smoke_1128c can_1 and d can_2), not fixed here.
+
+## After the alignment fix (a9ad32c): 3 headless takes (09:00-09:42 UTC, one lock hold) + GUI take 3
+
+| take | GT result | reply | alignment |
+|---|---|---|---|
+| s1 | **delivered**, standing 0.31 m from the requester's start | "Here's your blue can." | 1 implausible view re-looked, ALIGNED (1.4 cm) |
+| s2 | **delivered**, 0.29 m | "Here's your blue can." | ALIGNED_ARM |
+| s3 | **delivered**, 0.19 m | "Here's your blue can." | 1st call NOT_ALIGNED (6 cm, 3 steps), 2nd ALIGNED (1.1 cm); 2 implausible views re-looked |
+| gui 3 (09:44, recording) | not picked, can untouched | "I found the blue can but I couldn't line my gripper up with it (residual 18 cm after 3 tries)." | wrist estimates CORRECT (last view -0.525 / -0.050 vs GT -0.524 / -0.049); the can was 0.59 m behind after the approach (headless: 0.26-0.33 m) |
+
+All three headless grasps: first attempt, MoveIt pre-grasp, closed 33/33 mm, hold check HOLDING (ratio 1.05-1.07).
+The 'implausible' views now have saved frames; offline replay: whole can in view, on the map prior (1-5 cm), but measured
+height 3.0 / 3.0 / 6.3 cm instead of 12 cm -- a height-measurement problem of the wrist estimate (open), handled by the re-look.
+
+GUI take 3: Nav2 reached the stand-off (same goal as headless, 'Goal succeeded', 12 cm tolerance) but the can was 0.59 m behind
+at the first wrist view = the 0.25 m back-up after the turn did not happen (cause not logged then: the approach is now logged
+per take); and the new prior gate backed off 5 cm AWAY from the can, spending one of the 3 steps. Fixes: re-approach when the
+object (map) is > 8 cm from the zone after the approach; beyond the zone a suspect view is re-looked without moving.
