@@ -182,6 +182,7 @@ def observe(depth, K, T_base_opt, cls: str, box=None, prm: ServoParams | None = 
     if est is None:
         return Observation(False, "no_points", box=box, floor=(n, d))
     centre_f = est.centre
+    height = float(est.height)
     cam_f = T_fo[:3, 3]
     elev = math.atan2(cam_f[2] - est.centre[2], math.hypot(*(est.centre[:2] - cam_f[:2])))
     Hh, Ww = depth.shape
@@ -198,6 +199,10 @@ def observe(depth, K, T_base_opt, cls: str, box=None, prm: ServoParams | None = 
             m = O3.depth_cluster(z, o3p.gap, o3p.seed_pct, o3p.max_extent)
             pts, uv = pts[m], uv[m]
             top = float(np.percentile(pts[:, 2], 98))
+            # looking down, the object's height IS its measured top above the fitted floor (2026-11-28 saved fetch frames:
+            # this top was 12.2-12.4 cm for the 12 cm can in every frame, while est.height of the 8c side-view estimate read
+            # 0.8-6.3 cm in some of them -> 'implausible' -> re-look)
+            height = top
             sel = pts[:, 2] >= top - prm.top_band
             band, buv = pts[sel], uv[sel]
             if len(band) >= 5:
@@ -205,14 +210,14 @@ def observe(depth, K, T_base_opt, cls: str, box=None, prm: ServoParams | None = 
                 # what matters looking down is whether the TOP FACE is complete (a tall object's lower body may leave the image)
                 partial = bool(buv[:, 0].min() < 3 or buv[:, 1].min() < 3 or buv[:, 0].max() > Ww - 4 or buv[:, 1].max() > Hh - 4)
     c_base = LO.apply_T(np.linalg.inv(T_fb), centre_f)
-    if not (np.all(np.isfinite(c_base)) and np.isfinite(est.height)):      # NaN guard: never pass a NaN position on
+    if not (np.all(np.isfinite(c_base)) and np.isfinite(height)):         # NaN guard: never pass a NaN position on
         return Observation(False, "non_finite", box=box, floor=(n, d))
-    obs = Observation(True, "", (float(c_base[0]), float(c_base[1])), c_base, est.height, box, (n, d), partial=partial)
+    obs = Observation(True, "", (float(c_base[0]), float(c_base[1])), c_base, height, box, (n, d), partial=partial)
     # looking down, the height (top above the fitted floor) is measured whenever the object is fully in the image; the
     # 8c 'top' flag (pixels at the object's depth above the box) misfires there because that is the floor
     height_known = (top_view and not partial) or (not top_view and est.top_known)
-    too_tall = est.height > h_cls + prm.height_tol          # even a cut view's height is a lower bound: conclusive
-    if too_tall or (height_known and abs(est.height - h_cls) > prm.height_tol):
+    too_tall = height > h_cls + prm.height_tol              # even a cut view's height is a lower bound: conclusive
+    if too_tall or (height_known and abs(height - h_cls) > prm.height_tol):
         obs.ok, obs.reason = False, "implausible"
     return obs
 
