@@ -41,3 +41,15 @@ GUI take 3: Nav2 reached the stand-off (same goal as headless, 'Goal succeeded',
 at the first wrist view = the 0.25 m back-up after the turn did not happen (cause not logged then: the approach is now logged
 per take); and the new prior gate backed off 5 cm AWAY from the can, spending one of the 3 steps. Fixes: re-approach when the
 object (map) is > 8 cm from the zone after the approach; beyond the zone a suspect view is re-looked without moving.
+
+## With the re-approach (119d46e): 1 headless + 1 GUI take, one lock hold (09:57-10:35 UTC)
+
+| take | GT result | reply | approach | grasp |
+|---|---|---|---|---|
+| t1 headless | **delivered**, standing 0.27 m from the requester's start | "Here's your blue can." (544 s) | can 0.54 m behind after the back-up -> re-approach to 0.357 m | ALIGNED (0 steps), MoveIt pre-grasp, 33/33 mm, HOLDING 1.06 |
+| **gui 4 (recorded)** | **delivered**, standing 0.28 m from the requester's start | **"Here's your blue can."** (1300 s at RTF ~0.2) | can 0.52 m behind -> re-approach to 0.364 m | 1 implausible view re-looked, ALIGNED (1 step), 33/33 mm, HOLDING 1.05 |
+
+Why the approach ended too far (now logged): NOT a skipped back-up -- the back-up did 0.25 m both times. Nav2 stops up to its
+12 cm tolerance short of the stand-off goal (5.4 / 10.9 cm here), and the 180-degree turn walks the body 10-17 cm (the hexapod
+does not turn exactly on the spot), away from the can. Together: can ~0.5 m behind after the back-up; the re-approach (measured
+from the map, walk the difference) closes it before the alignment.
