@@ -349,14 +349,32 @@ class RosFetchRobot:
             return True, o.room
         return False, why
 
-    def _servo_robot(self):
+    def _servo_robot(self, view_q=None, frames_dir=None):
+        """Robot interface for VisualServo. settle_view: wait (sim time) until the arm is still at the view pose before each
+        look (an effort-controlled arm still swinging makes the measured q != the camera pose of the frame). Every frame is
+        saved to frames_dir (npz: depth float16, K, T_base_opt, arm q, sim t) for offline replay of the alignment."""
         rob = self
+        n = {"k": 0}
 
         class _R:
+            def settle_view(self):
+                if view_q is not None and hasattr(rob.arm, "settle"):
+                    rob.arm.settle(view_q, tol=0.005, timeout=2.0)
+
             def wrist_view(self):
                 v = rob.arm.wrist_view()
                 if v is None:
                     raise RuntimeError("no wrist frame")
+                if frames_dir is not None:
+                    try:
+                        frames_dir.mkdir(parents=True, exist_ok=True)
+                        q = rob.arm.arm_q()
+                        np.savez_compressed(frames_dir / f"view_{n['k']:02d}.npz", depth=np.asarray(v[0], np.float16),
+                                            K=np.asarray(v[1], float), T=np.asarray(v[2], float),
+                                            q=np.asarray(q if q is not None else [], float), t=float(rob.now()))
+                    except OSError:
+                        pass
+                n["k"] += 1
                 return v
 
             def step(self, dx, dy):
@@ -371,10 +389,13 @@ class RosFetchRobot:
         from gurdy_core import grasp_test as G
         from gurdy_core.visual_servo import VIEW_POSE, VisualServo
         o = self.objects[name]
-        self._move_arm([self.ARM.poses[VIEW_POSE[o.cls]]], 3.0, big=True)
+        view_q = self.ARM.poses[VIEW_POSE[o.cls]]
+        self._move_arm([view_q], 3.0, big=True)
         self._wait(0.5)
         reach = lambda c, xy: G.grasp_plan(self.ARM, self.RB, c, xy).ok       # noqa: E731
-        res = VisualServo(self._servo_robot(), arm_reachable=reach).run(o.cls, prior_xy=self._base((o.x, o.y)))
+        self._n_align = getattr(self, "_n_align", 0) + 1
+        frames = (Path(self.cfg.attempt_log).parent / "servo_frames" / f"align_{self._n_align:02d}") if self.cfg.attempt_log else None
+        res = VisualServo(self._servo_robot(view_q, frames), arm_reachable=reach).run(o.cls, prior_xy=self._base((o.x, o.y)))
         self._servo = res
         self.log.append({"t": round(self.now(), 1), "servo": res.code, "steps": res.steps, "residual": res.residual})
         self.align_code = res.code
@@ -382,7 +403,9 @@ class RosFetchRobot:
             with open(align_log_path(self.cfg.attempt_log), "a") as fh:      # log's line counts are used by the run scripts)
                 fh.write(json.dumps({"t": round(self.now(), 1), "align": res.code, "object": name, "cls": o.cls,
                                      "steps": res.steps, "residual": res.residual,
-                                     "obs": res.obs.reason if res.obs is not None else None}, default=float) + "\n")
+                                     "obs": res.obs.reason if res.obs is not None else None,
+                                     "frames": str(frames.name) if frames is not None else None,
+                                     "log": res.log}, default=float) + "\n")
         # residual None = never measured (the wrist camera never saw the object): pass None on, never a made-up number
         return res.ok, res.residual
 

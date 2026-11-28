@@ -53,6 +53,14 @@ class ServoParams:
     blob_min_px: int = 25
     top_view_deg: float = 50.0      # camera elevation above which the top-face centroid replaces the side-view fit
     top_band: float = 0.012         # m below the measured top counted as the top face
+    prior_gate: float = 0.06        # m: a wrist estimate this far from the map prior is suspect -> settle, back off, re-look
+    back_off: float = 0.05          # m body step away from the object before the re-look
+    agree: float = 0.02             # m: two wrist estimates within this of each other are trusted over the map prior
+    step_doubt: float = 0.5         # the map prior is moved by the COMMANDED steps; the gate widens by this x the distance
+    #                                 stepped (walking steps are imprecise: legs slip)
+    plaus_lo: float = 0.6           # an 'implausible' view is still accepted when it sits on the map prior (within
+    plaus_hi: float = 1.5           #   prior_accept) and its height is within [plaus_lo, plaus_hi] x the class height
+    prior_accept: float = 0.04
 
 
 @dataclass
@@ -70,7 +78,7 @@ class Observation:
 @dataclass
 class ServoResult:
     ok: bool
-    code: str                       # ALIGNED | ALIGNED_ARM | TARGET_LOST | OCCLUDED | NOT_ALIGNED | TIMEOUT
+    code: str                       # ALIGNED | ALIGNED_ARM | TARGET_LOST | OCCLUDED | INCONSISTENT | NOT_ALIGNED | TIMEOUT
     steps: int = 0
     residual: float | None = None
     obs: Observation | None = None
@@ -94,9 +102,10 @@ def floor_transform(n, d) -> np.ndarray:
     return T
 
 
-def box_from_depth(depth, K, T_floor_opt, prm: ServoParams):
-    """Bounding box of the connected blob of pixels standing > blob_min_h above the floor that is nearest the image
-    centre (works without a detector for the small classes). -> (x1, y1, x2, y2) or None."""
+def box_from_depth(depth, K, T_floor_opt, prm: ServoParams, prefer_uv=None):
+    """Bounding box of the connected blob of pixels standing > blob_min_h above the floor that is nearest `prefer_uv`
+    (pixel where the map prior says the object is; default: the image centre) (works without a detector for the small
+    classes). -> (x1, y1, x2, y2) or None."""
     H, W = depth.shape
     s = 2
     fx, fy, cx, cy = K
@@ -129,11 +138,29 @@ def box_from_depth(depth, K, T_floor_opt, prm: ServoParams):
     if not comps:
         return None
     ctr = np.array([m.shape[0] / 2, m.shape[1] / 2])
+    if prefer_uv is not None:                                    # (row, col) on the decimated grid
+        ctr = np.array([prefer_uv[1] / s, prefer_uv[0] / s])
     best = min(comps, key=lambda c: float(np.linalg.norm(c.mean(0) - ctr)))
     return (float(best[:, 1].min() * s), float(best[:, 0].min() * s), float(best[:, 1].max() * s + s), float(best[:, 0].max() * s + s))
 
 
-def observe(depth, K, T_base_opt, cls: str, box=None, prm: ServoParams | None = None) -> Observation:
+def prior_pixel(K, T_base_opt, floor, xy_base, h: float, shape_hw):
+    """Pixel (u, v) of the point half the class height above the floor at base-frame xy (the map prior), or None when
+    it is behind the camera / outside the image."""
+    n, d = np.asarray(floor[0], float), float(floor[1])
+    if abs(n[2]) < 1e-6:
+        return None
+    zf = -(d + n[0] * xy_base[0] + n[1] * xy_base[1]) / n[2]
+    p = np.linalg.inv(T_base_opt) @ np.array([xy_base[0], xy_base[1], zf + h / 2, 1.0])
+    if p[2] <= 0.05:
+        return None
+    fx, fy, cx, cy = K
+    u, v = fx * p[0] / p[2] + cx, fy * p[1] / p[2] + cy
+    H, W = shape_hw
+    return (float(u), float(v)) if 0 <= u < W and 0 <= v < H else None
+
+
+def observe(depth, K, T_base_opt, cls: str, box=None, prm: ServoParams | None = None, prior_xy=None) -> Observation:
     prm = prm or ServoParams()
     shape, rprior, h_cls, _ = CLASS_INFO[cls]
     lp = LO.LowObstacleParams(stride=2, min_range=prm.near, max_range=prm.far, floor_band=0.08)
@@ -146,7 +173,8 @@ def observe(depth, K, T_base_opt, cls: str, box=None, prm: ServoParams | None = 
         return Observation(False, "no_floor")
     T_fb = floor_transform(n, d)
     T_fo = T_fb @ T_base_opt
-    box = box or box_from_depth(depth, K, T_fo, prm)
+    pref = prior_pixel(K, T_base_opt, (n, d), prior_xy, h_cls, depth.shape) if prior_xy is not None else None
+    box = box or box_from_depth(depth, K, T_fo, prm, prefer_uv=pref)
     if box is None:
         return Observation(False, "no_blob", floor=(n, d))
     est = O3.estimate(depth, box, K, T_fo, O3.Object3DParams(near=prm.near, far=prm.far, floor_z=0.0, stride=1, min_points=10),
@@ -210,28 +238,71 @@ class VisualServo:
         res.log.append({"t": round(self.r.now(), 1), "step": [round(float(v[0]), 4), round(float(v[1]), 4)], "why": why})
 
     def run(self, cls: str, prior_xy=None, box_fn=None) -> ServoResult:
+        """prior_xy: the object in base_link from the BODY-camera map. It picks which depth blob is the object (nearest its
+        projection, not the image centre) and gates the wrist estimates: one farther than prm.prior_gate is suspect ->
+        settle, back off, look again (2026-11-28: estimates 9-11 cm off the can were followed). An 'implausible' view is
+        re-looked the same way, and accepted when it sits on the prior with a not-absurd height."""
         p = self.prm
         target = np.array(CLASS_INFO[cls][3])
+        h_cls = CLASS_INFO[cls][2]
         res = ServoResult(False, "NOT_ALIGNED")
         t0 = self.r.now()
         prior = None if prior_xy is None else np.array(prior_xy, float)
         if prior is not None and not np.all(np.isfinite(prior)):
             prior = None                    # NaN guard: a non-finite map prior is no prior
+        map_prior = None if prior is None else prior.copy()       # moved with every body step, never replaced by the wrist
         lost = occl = 0
+        backed_off, last_suspect = False, None
         while True:
             if self.r.now() - t0 > p.timeout_s:
                 res.code = "TIMEOUT"
                 return res
+            if hasattr(self.r, "settle_view"):
+                self.r.settle_view()                                # arm still swinging -> camera pose != measured q
             depth, K, T = self.r.wrist_view()
-            obs = observe(depth, K, T, cls, box_fn(depth) if box_fn else None, p)
+            obs = observe(depth, K, T, cls, box_fn(depth) if box_fn else None, p,
+                          prior_xy=tuple(map_prior) if map_prior is not None else None)
             res.obs = obs
-            res.log.append({"t": round(self.r.now(), 1), "obs": obs.reason or "ok", "xy": obs.xy})
-            if not obs.ok and obs.reason == "implausible":
+            d_prior = (float(np.hypot(*(np.asarray(obs.xy) - map_prior))) if obs.xy is not None and map_prior is not None
+                       else None)
+            res.log.append({"t": round(self.r.now(), 1), "obs": obs.reason or "ok", "xy": obs.xy,
+                            "height": None if obs.height is None else round(float(obs.height), 4), "partial": obs.partial,
+                            "box": None if obs.box is None else [round(float(v), 1) for v in obs.box],
+                            "d_prior": None if d_prior is None else round(d_prior, 4)})
+            if not obs.ok and obs.reason == "implausible" and d_prior is not None and d_prior <= p.prior_accept \
+                    and obs.height is not None and p.plaus_lo * h_cls <= obs.height <= p.plaus_hi * h_cls:
+                obs.ok, obs.reason = True, ""                       # on the map prior, height not absurd: use it
+                res.log[-1]["obs"] = "ok (implausible height, on the map prior)"
+            stepped = sum(float(np.hypot(*e["step"])) for e in res.log if e.get("step") is not None)
+            suspect = (obs.ok and d_prior is not None and d_prior > p.prior_gate + p.step_doubt * stepped
+                       and res.steps < p.max_tries)                # out of steps: the old NOT_ALIGNED / ALIGNED rules decide
+            if suspect and last_suspect is not None and float(np.hypot(*(np.asarray(obs.xy) - last_suspect))) <= p.agree:
+                suspect = False                                    # two wrist views agree: trust them over the map
+                res.log[-1]["obs"] = "ok (two wrist views agree, off the map prior)"
+                map_prior = np.asarray(obs.xy, float).copy()        # re-anchor: from now on the wrist is the reference
+            if (not obs.ok and obs.reason == "implausible") or suspect:
+                if suspect:
+                    last_suspect = np.asarray(obs.xy, float)
+                if not backed_off and map_prior is not None:
+                    away = -map_prior / max(float(np.linalg.norm(map_prior)), 1e-6) * p.back_off
+                    self._step(away, res, "suspect view: back off and look again")
+                    moved = np.asarray(res.log[-1]["step"]) if res.log[-1].get("step") is not None else np.zeros(2)
+                    map_prior = map_prior - moved
+                    if last_suspect is not None:
+                        last_suspect = last_suspect - moved          # same frame as the next view
+                    backed_off = True
+                    res.steps += 1
+                    continue
+                if suspect:
+                    res.code = "INCONSISTENT"
+                    return res
                 occl += 1
                 if occl > 1 or res.steps >= p.max_tries:
                     res.code = "OCCLUDED"
                     return res
                 self._step((0.0, 0.03 if (obs.xy or (0, 0))[1] <= 0 else -0.03), res, "occluded: sideways")
+                if map_prior is not None and res.log[-1].get("step") is not None:
+                    map_prior = map_prior - np.asarray(res.log[-1]["step"])
                 res.steps += 1
                 continue
             if not obs.ok:
@@ -243,6 +314,8 @@ class VisualServo:
                 self._step(e, res, "lost: toward prior")
                 moved = np.asarray(res.log[-1]["step"]) if res.log[-1].get("step") is not None else np.zeros(2)
                 prior = prior - moved
+                if map_prior is not None:
+                    map_prior = map_prior - moved
                 res.steps += 1
                 continue
             lost = 0
@@ -261,4 +334,7 @@ class VisualServo:
                 res.code = "NOT_ALIGNED"
                 return res
             self._step(err, res, "align")
+            if map_prior is not None and res.log[-1].get("step") is not None:
+                map_prior = map_prior - np.asarray(res.log[-1]["step"])
+            last_suspect = None
             res.steps += 1

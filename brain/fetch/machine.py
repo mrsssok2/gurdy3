@@ -21,6 +21,7 @@ MAX_ALIGN, MAX_GRASP = 3, 3
 ALIGN_WHY = {"TARGET_LOST": "my wrist camera couldn't see it, so I couldn't measure where it is",
              "OCCLUDED": "something blocked my wrist camera's view, so I couldn't measure where it is",
              "TIMEOUT": "I ran out of time before I could measure where it is",
+             "INCONSISTENT": "my wrist camera and my map disagreed about where it is, even after a second look",
              None: "I couldn't measure where it is"}
 
 
