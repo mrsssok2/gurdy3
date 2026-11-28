@@ -494,8 +494,11 @@ class RosFetchRobot:
                 return v
             if (n >= self.cfg.view_tries and self.now() - t_sim >= self.cfg.view_window_s) or \
                     time.monotonic() - t_wall >= self.cfg.view_wall_cap_s:
-                self.log.append({"t": round(self.now(), 1), "wrist_view": f"no frame after {n} requests, "
-                                 f"{self.now() - t_sim:.1f} s sim"})
+                why = (f"no frame after {n} requests, {self.now() - t_sim:.1f} s sim, {time.monotonic() - t_wall:.1f} s wall"
+                       + (f" ({self.arm.last_view_why})" if getattr(self.arm, "last_view_why", None) else ""))
+                self.log.append({"t": round(self.now(), 1), "wrist_view": why})
+                if self._att is not None:
+                    self._att["wrist_view"] = why                 # saved with the attempt (attempts.jsonl)
                 return None
             self._wait(0.5)
 

@@ -136,14 +136,23 @@ class RclpyArmPort:
         return None if l is None or r is None else (float(l), float(r))
 
     def wrist_view(self):
+        """Trigger + wait <= 3 s wall for a depth frame newer than the call. On None, `last_view_why` says what was missing
+        (diagnostics, 2026-11-28 smoke: verify views came back empty while the servo's views worked)."""
         t0 = time.monotonic()
+        n_trig = 0
         while time.monotonic() - t0 < 3.0:
             self.trig.publish(self.Bool(data=True))
+            n_trig += 1
             time.sleep(0.15)
             d = self.depth
             q = self.arm_q()
             if d and d[0] > t0 and self.K and q is not None:
+                self.last_view_why = None
                 return d[1], self.K, self.A.T_base_wrist_optical(self.ARM, q)
+        d = self.depth
+        self.last_view_why = (f"{n_trig} triggers; last depth frame "
+                              f"{'never' if not d else f'{t0 - d[0]:.1f} s before the request'}"
+                              f"{'; no camera_info' if not self.K else ''}{'; no arm joint states' if self.arm_q() is None else ''}")
         return None
 
     def settle(self, q, tol=0.003, timeout=3.0):
